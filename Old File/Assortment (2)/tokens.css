@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Item Smart v3 — Design Tokens
+   Source of truth: insideinsight-mtp-mfe-itemsmart-v3/src/app/index.scss
+                    tailwind.config.js (impact-nova)
+   All `hsl()` values are expressed as "H S% L%" triples consumed via hsl(var(--token)).
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@600&family=Poppins:wght@400;500&display=swap');
+
+:root {
+  /* ---------- Type families ---------------------------------------------- */
+  --font-sans: 'Manrope', 'Poppins', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  --font-display: 'Manrope', sans-serif;   /* Used for headings, KPI values */
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---------- Raw color scale (from Figma usage counts) ------------------ */
+  /* Brand blue / primary */
+  --c-primary-50:  #ECEEFD;   /*  227 80% 96% — subtle-primary-bg / accent */
+  --c-primary-100: #EFF2FA;   /*  220 50% 97% — primary-bg surface */
+  --c-primary-200: #B3BDF8;   /*  231 85% 84% — accordion bg, shimmer accent */
+  --c-primary-300: #8C9AF4;
+  --c-primary-500: #4259EE;   /*  232 83% 60% — PRIMARY (brand blue) */
+  --c-primary-600: #3A4CCB;   /*  232 59% 47% — primary hover */
+  --c-primary-700: #31416E;   /*  232 59% 39% — primary-700 (deep) */
+
+  /* Neutrals / cool grays (cool tint: the brand's identity) */
+  --c-ink-900:    #0D152C;    /* 224 54% 11% — deep text / titles */
+  --c-ink-800:    #1F2B4D;    /* 224 43% 21% — foreground */
+  --c-ink-700:    #394860;
+  --c-ink-600:    #60697D;    /* 221 13% 43% — text-secondary-cool */
+  --c-ink-500:    #758490;    /* 210 9% 51% */
+  --c-ink-400:    #B4BAC7;    /* 222 14% 74% — disabled-text */
+  --c-ink-300:    #C3C8D4;    /* 222 14% 80% — tertiary-border */
+  --c-ink-200:    #D9DDE7;    /* 223 23% 88% — border / muted */
+  --c-ink-150:    #EFF2FA;    /* 220 50% 97% — surface / primary-bg */
+  --c-ink-100:    #F5F6FA;    /* 227 40% 97% — secondary */
+  --c-ink-50:     #F8F9FB;    /* 225 33% 98% — sidebar-light */
+  --c-white:      #FFFFFF;
+
+  /* Sidebar / navy (dark surface) */
+  --c-navy-900:   #0F172A;    /* 222 47% 11% — sidebar-background */
+  --c-navy-800:   #14213C;    /* 222 47% 15% — sidebar-accent */
+  --c-navy-700:   #1E2B4D;    /* 222 47% 20% — sidebar-border */
+  --c-navy-active-green: #00FF00;  /* sidebar-active-accent */
+
+  /* Semantic */
+  --c-success:       #3BB273;  /* 148 50% 46% */
+  --c-success-bg:    #E7F6EC;  /* 148 46% 94% */
+  --c-success-border:#B6E0C4;  /* 148 48% 84% */
+
+  --c-warning:       #E1BC29;  /* 48 76% 52% */
+  --c-warning-bg:    #FFFAD6;  /* 49 100% 92% */
+  --c-warning-border:#FFDD6B;
+
+  --c-destructive:   #E74C67;  /* 354 81% 61% */
+  --c-error-bg:      #FDECF2;
+  --c-error-border:  #F1BFC0;
+
+  --c-info-bg:       #E0F3FF;
+  --c-info-border:   #C5CFF9;
+
+  /* Chart palette — from --chart-1 … --chart-5 */
+  --c-chart-1: #4259EE;       /* primary blue */
+  --c-chart-2: #3BB273;       /* green */
+  --c-chart-3: #E74C67;       /* rose/red */
+  --c-chart-4: #E1BC29;       /* yellow */
+  --c-chart-5: #4259EE;
+
+  /* Highlight / edit state (AG Grid cell edited) */
+  --c-edited-cell-bg: #F9EBAE;
+
+  /* ---------- Semantic aliases (match impact-nova hsl() vars) ------------ */
+  --bg:           var(--c-white);
+  --bg-subtle:    var(--c-ink-150);       /* app canvas (#EFF2FA) */
+  --bg-muted:     var(--c-ink-100);       /* secondary */
+  --fg:           var(--c-ink-800);       /* primary foreground */
+  --fg-subtle:    var(--c-ink-600);       /* secondary text */
+  --fg-muted:     var(--c-ink-500);       /* tertiary */
+  --fg-disabled:  var(--c-ink-400);
+
+  --border:         var(--c-ink-200);     /* default divider */
+  --border-subtle:  #ECEDF3;              /* 240 13% 93% */
+  --border-strong:  var(--c-ink-300);
+
+  --primary:        var(--c-primary-500);
+  --primary-hover:  var(--c-primary-600);
+  --primary-subtle: var(--c-primary-50);  /* tinted pill bg */
+  --accent:         var(--c-primary-50);
+
+  --ring:           var(--c-ink-800);
+
+  /* ---------- Radius ----------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;    /* default (--radius: .5rem) */
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+
+  /* ---------- Shadow / elevation ---------------------------------------- */
+  /* impact-nova uses soft cool-tinted shadows; 0.06 and 0.12 alpha */
+  --shadow-sm:  0 1px 2px 0 rgba(13, 21, 44, 0.06);
+  --shadow-md:  0 4px 10px 0 rgba(13, 21, 44, 0.08);
+  --shadow-lg:  0 8px 10px 0 rgba(0, 0, 0, 0.06);   /* header shadow */
+  --shadow-xl:  0 12px 24px 0 rgba(13, 21, 44, 0.12);
+  --shadow-popover: 0 8px 24px 0 rgba(13, 21, 44, 0.12), 0 0 0 1px rgba(13, 21, 44, 0.04);
+
+  /* ---------- Spacing scale (4-pt) -------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---------- Type scale (all Manrope) ---------------------------------- */
+  /* Data-dense UI: most interface text sits between 10–14 px */
+  --text-10: 10px;     /* micro labels, badges */
+  --text-12: 12px;     /* body / table (default weight: Medium) */
+  --text-14: 14px;     /* body emphasised / form text */
+  --text-16: 16px;     /* subheadings, KPI values */
+  --text-20: 20px;     /* section headings */
+  --text-24: 24px;     /* page titles */
+  --text-32: 32px;     /* hero numbers */
+
+  --lh-tight: 1.2;
+  --lh-normal: 1.4;
+  --lh-relaxed: 1.55;
+}
+
+/* =============================================================
+   Semantic styles — ready to reuse in any design HTML
+   ============================================================= */
+
+html, body { font-family: var(--font-sans); color: var(--fg); background: var(--bg); font-feature-settings: 'ss01', 'cv11'; -webkit-font-smoothing: antialiased; }
+
+/* Display / headings */
+.h1, h1.ia { font: 800 var(--text-32)/var(--lh-tight) var(--font-display); color: var(--c-ink-900); letter-spacing: -0.01em; }
+.h2, h2.ia { font: 700 var(--text-24)/var(--lh-tight) var(--font-display); color: var(--c-ink-900); letter-spacing: -0.005em; }
+.h3, h3.ia { font: 700 var(--text-20)/var(--lh-tight) var(--font-display); color: var(--c-ink-900); }
+.h4, h4.ia { font: 600 var(--text-16)/var(--lh-normal) var(--font-display); color: var(--c-ink-800); }
+.h5, h5.ia { font: 600 var(--text-14)/var(--lh-normal) var(--font-display); color: var(--c-ink-800); }
+
+/* Body */
+.p, p.ia   { font: 400 var(--text-14)/var(--lh-relaxed) var(--font-sans); color: var(--fg); }
+.p-sm      { font: 400 var(--text-12)/var(--lh-normal) var(--font-sans); color: var(--fg); }
+.p-xs      { font: 500 var(--text-10)/1.2 var(--font-sans); color: var(--fg-subtle); }
+
+/* Table/Grid text — the core of the product */
+.ia-cell         { font: 500 var(--text-12)/1.4 var(--font-sans); color: var(--c-ink-800); }
+.ia-cell-header  { font: 600 var(--text-12)/1.2 var(--font-sans); color: var(--c-ink-600); text-transform: none; letter-spacing: 0; }
+.ia-cell-num     { font: 500 var(--text-12)/1.2 var(--font-mono); color: var(--c-ink-800); font-variant-numeric: tabular-nums; font-family: var(--font-sans); font-feature-settings: 'tnum'; }
+
+/* Metric / KPI value */
+.ia-kpi-value    { font: 800 var(--text-24)/1.1 var(--font-display); color: var(--c-ink-900); font-feature-settings: 'tnum'; }
+.ia-kpi-label    { font: 500 var(--text-12)/1.2 var(--font-sans); color: var(--fg-subtle); text-transform: none; letter-spacing: 0.01em; }
+
+/* Label / caption */
+.ia-label        { font: 600 var(--text-12)/1.2 var(--font-sans); color: var(--fg-subtle); }
+.ia-caption      { font: 500 var(--text-10)/1.2 var(--font-sans); color: var(--fg-muted); }
+
+/* Code (rare) */
+code.ia, pre.ia  { font-family: var(--font-mono); font-size: var(--text-12); background: var(--bg-subtle); padding: 2px 6px; border-radius: var(--radius-sm); }

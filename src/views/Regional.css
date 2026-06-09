@@ -1,0 +1,38 @@
+/* Regional Review — list-row + sidebar accents.
+   Backgrounds stay neutral; tier colors come from semantic tokens applied
+   inline via the JS token mirror. */
+
+/* Scrollable National Core sidebar list. */
+.rr-core-list {
+  max-height: 620px;
+  overflow-y: auto;
+}
+.rr-core-row {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+.rr-core-row:last-child {
+  border-bottom: none;
+}
+
+/* Interactive cluster-level add rows. */
+.rr-add-row {
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  background: var(--color-surface-alt);
+  transition: border-color 0.12s, background 0.12s;
+}
+.rr-add-row:last-child {
+  border-bottom: none;
+}
+.rr-add-row.is-added {
+  border-left-color: var(--color-success);
+}
+
+/* Colored cluster dot. */
+.rr-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

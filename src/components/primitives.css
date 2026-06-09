@@ -1,0 +1,133 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Layout & typography primitives (Stack / Grid / Text).
+   These are the ONLY place type sizes/weights are declared; views compose
+   them via the <Text>, <Stack>, <Grid> components and never set ad-hoc
+   font-size / margin / padding.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Text ───────────────────────────────────────────────────────────────── */
+.fd-text {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  margin: 0;
+}
+.fd-text--mono {
+  font-family: var(--font-mono);
+}
+
+/* size/weight/line-height per variant */
+.fd-text--display {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-strong);
+}
+.fd-text--title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-strong);
+}
+.fd-text--heading {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  color: var(--color-text-strong);
+}
+.fd-text--subheading {
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+.fd-text--body {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+}
+.fd-text--body-strong {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-normal);
+}
+.fd-text--caption {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-snug);
+}
+.fd-text--micro {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+}
+.fd-text--kpi {
+  font-size: var(--fs-kpi);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.fd-text--overline {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* tone (color role) modifiers */
+.fd-tone--default {
+  color: var(--color-text);
+}
+.fd-tone--strong {
+  color: var(--color-text-strong);
+}
+.fd-tone--muted {
+  color: var(--color-text-muted);
+}
+.fd-tone--subtle {
+  color: var(--color-text-subtle);
+}
+.fd-tone--primary {
+  color: var(--color-primary);
+}
+.fd-tone--error {
+  color: var(--color-error);
+}
+.fd-tone--success {
+  color: var(--color-success);
+}
+.fd-tone--warning {
+  color: var(--color-warning);
+}
+.fd-tone--info {
+  color: var(--color-info);
+}
+.fd-tone--accent {
+  color: var(--color-accent);
+}
+.fd-tone--teal {
+  color: var(--color-teal);
+}
+.fd-tone--wood {
+  color: var(--color-wood);
+}
+.fd-tone--inherit {
+  color: inherit;
+}
+
+.fd-text--truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Stack & Grid ───────────────────────────────────────────────────────── */
+.fd-stack {
+  display: flex;
+  min-width: 0;
+}
+.fd-grid {
+  display: grid;
+  min-width: 0;
+}

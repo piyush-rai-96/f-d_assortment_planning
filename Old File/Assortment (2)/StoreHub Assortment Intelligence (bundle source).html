@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>StoreHub — Assortment Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="tokens.css"/>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    body, html { margin: 0; padding: 0; }
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-thumb { background: #D9DDE7; border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+    *::-webkit-scrollbar-thumb:hover { background: #B4BAC7; border: 2px solid transparent; background-clip: padding-box; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    @keyframes slideInRight { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes paletteIn { from { transform: translateY(-8px) scale(.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+    @keyframes toastIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulseDot { 0%,100% { transform: scale(1); opacity: .8; } 50% { transform: scale(1.15); opacity: 1; } }
+    button:focus-visible, input:focus-visible, [role="button"]:focus-visible {
+      outline: 2px solid #4259EE; outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <template id="__bundler_thumbnail" data-bg-color="#F8F9FB">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="800" fill="#F8F9FB"/>
+      <!-- Sidebar -->
+      <rect x="0" y="0" width="220" height="800" fill="#0F1B3D"/>
+      <rect x="20" y="28" width="32" height="32" rx="8" fill="#4259EE"/>
+      <rect x="60" y="34" width="120" height="10" rx="3" fill="#fff" opacity=".9"/>
+      <rect x="60" y="48" width="80" height="6" rx="2" fill="#8C9AF4" opacity=".7"/>
+      <rect x="20" y="100" width="180" height="34" rx="8" fill="#1E2C5C"/>
+      <rect x="20" y="144" width="180" height="34" rx="8" fill="#14213C"/>
+      <rect x="20" y="188" width="180" height="34" rx="8" fill="#14213C"/>
+      <rect x="20" y="232" width="180" height="34" rx="8" fill="#14213C"/>
+      <rect x="20" y="276" width="180" height="34" rx="8" fill="#14213C"/>
+      <!-- Header -->
+      <rect x="220" y="0" width="980" height="56" fill="#fff"/>
+      <rect x="240" y="20" width="200" height="16" rx="4" fill="#0D152C"/>
+      <circle cx="1160" cy="28" r="14" fill="#4259EE"/>
+      <!-- KPI cards -->
+      <rect x="240" y="80" width="220" height="100" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="260" y="100" width="80" height="8" rx="2" fill="#60697D"/>
+      <rect x="260" y="120" width="120" height="22" rx="3" fill="#0D152C"/>
+      <rect x="260" y="152" width="60" height="8" rx="2" fill="#3BB273"/>
+      <rect x="480" y="80" width="220" height="100" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="500" y="100" width="80" height="8" rx="2" fill="#60697D"/>
+      <rect x="500" y="120" width="120" height="22" rx="3" fill="#0D152C"/>
+      <rect x="500" y="152" width="60" height="8" rx="2" fill="#3BB273"/>
+      <rect x="720" y="80" width="220" height="100" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="740" y="100" width="80" height="8" rx="2" fill="#60697D"/>
+      <rect x="740" y="120" width="120" height="22" rx="3" fill="#0D152C"/>
+      <rect x="740" y="152" width="60" height="8" rx="2" fill="#E74C67"/>
+      <rect x="960" y="80" width="220" height="100" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="980" y="100" width="80" height="8" rx="2" fill="#60697D"/>
+      <rect x="980" y="120" width="120" height="22" rx="3" fill="#0D152C"/>
+      <rect x="980" y="152" width="60" height="8" rx="2" fill="#4259EE"/>
+      <!-- Hero chart -->
+      <rect x="240" y="200" width="940" height="320" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="260" y="220" width="180" height="14" rx="3" fill="#0D152C"/>
+      <rect x="260" y="240" width="240" height="8" rx="2" fill="#60697D"/>
+      <!-- Bubble chart -->
+      <circle cx="380" cy="380" r="32" fill="#4259EE" opacity=".4"/>
+      <circle cx="500" cy="350" r="44" fill="#3BB273" opacity=".4"/>
+      <circle cx="620" cy="400" r="28" fill="#E1BC29" opacity=".4"/>
+      <circle cx="740" cy="430" r="38" fill="#8C9AF4" opacity=".4"/>
+      <circle cx="860" cy="380" r="22" fill="#E74C67" opacity=".4"/>
+      <circle cx="980" cy="410" r="34" fill="#4259EE" opacity=".4"/>
+      <circle cx="1080" cy="370" r="26" fill="#3BB273" opacity=".4"/>
+      <!-- Bottom row -->
+      <rect x="240" y="540" width="460" height="220" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="720" y="540" width="460" height="220" rx="10" fill="#fff" stroke="#ECEDF3"/>
+      <rect x="260" y="560" width="160" height="12" rx="3" fill="#0D152C"/>
+      <rect x="740" y="560" width="160" height="12" rx="3" fill="#0D152C"/>
+    </svg>
+  </template>
+  <div id="root"></div>
+
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="primitives.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="shell.jsx"></script>
+  <script type="text/babel" src="home.jsx"></script>
+  <script type="text/babel" src="peer.jsx"></script>
+  <script type="text/babel" src="recommendations.jsx"></script>
+  <script type="text/babel" src="other-screens.jsx"></script>
+  <script type="text/babel" src="hindsight.jsx"></script>
+  <script type="text/babel" src="clustering.jsx"></script>
+  <script type="text/babel" src="command-palette.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

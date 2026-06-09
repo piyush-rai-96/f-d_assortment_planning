@@ -1,0 +1,72 @@
+/* Planning Admin — matrix grid + accents. Color functional only. */
+
+.pa-tablewrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+/* Exceptions matrix — horizontal scroll container. */
+.pa-matrix {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--r);
+}
+.pa-matrix-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--color-border);
+}
+.pa-matrix-row:last-child {
+  border-bottom: none;
+}
+.pa-matrix-row.is-head {
+  background: var(--color-surface-alt);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+/* Sticky first (label) column. */
+.pa-cell-label {
+  width: 200px;
+  min-width: 200px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+.pa-matrix-row.is-head .pa-cell-label {
+  background: var(--color-surface-alt);
+}
+.pa-cell-store {
+  width: 76px;
+  min-width: 76px;
+  flex-shrink: 0;
+  padding: 4px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--color-border);
+}
+.pa-cell-store:last-child {
+  border-right: none;
+}
+
+/* Collapsible group header button row. */
+.pa-group {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  background: var(--color-surface-alt);
+  padding: 8px 12px;
+}
+.pa-group:hover {
+  background: var(--color-surface-sunken);
+}

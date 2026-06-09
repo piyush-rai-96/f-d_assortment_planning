@@ -1,0 +1,42 @@
+/* Feedback Loop — token-driven bars + accents. Color is functional only. */
+
+.fb-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+.fb-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+/* Thin reason-code bars sit inline with their count label. */
+.fb-codebar {
+  height: 6px;
+  border-radius: 3px;
+  min-width: 4px;
+}
+
+/* Model-update card left accent (color set inline per insight type). */
+.fb-insight {
+  border-left: 3px solid var(--color-border);
+}
+
+/* Step connector cells in the "how it works" strip. */
+.fb-step:not(:first-child) {
+  border-left: 1px solid var(--color-border);
+}
+
+/* Round status dot for session feedback rows. */
+.fb-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+}

@@ -1,0 +1,45 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Hindsight — view-specific visual accents only.
+   Layout (Stack/Grid), typography (Text), and color come from the shared
+   token primitives. This file holds just the header surface, the inline
+   sparkline bar (no Impact UI equivalent), and the signal callout chrome.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Header surface — neutral, matches Impact UI card chrome */
+.hs-header {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r);
+  padding: var(--sp-4) var(--sp-5);
+  box-shadow: var(--sh);
+}
+
+/* Thin sparkline bar — shared by sub-dept, top-5, and attribute rows.
+   Neutral fill: the bar encodes magnitude by width; semantic color is carried
+   by the Impact UI Badges alongside each row, not by the bar itself. */
+.hs-bar {
+  height: 6px;
+  background: var(--color-surface-sunken);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.hs-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--color-text-subtle);
+}
+
+/* Signal callout — neutral surface; the directional glyph + Badges carry meaning */
+.hs-signal {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r2);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+.hs-signal-empty {
+  display: block;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--r2);
+}

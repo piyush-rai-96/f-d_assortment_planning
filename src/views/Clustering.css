@@ -1,0 +1,83 @@
+/* Location Clustering — scenario tabs, two-panel layout, store rows. */
+
+/* Scenario selector cards. */
+.cl-scenario {
+  cursor: pointer;
+  border: 2px solid var(--color-border);
+  border-radius: var(--r2);
+  background: var(--color-surface);
+  padding: 8px 12px;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.cl-scenario:hover {
+  border-color: var(--color-border-strong);
+}
+.cl-scenario.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+/* Score chips in the header. */
+.cl-score {
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  background: var(--color-surface-alt);
+  padding: 5px 14px;
+  text-align: center;
+  min-width: 88px;
+}
+
+/* Two-panel body. */
+.cl-body {
+  align-items: stretch;
+}
+.cl-sidebar {
+  width: 264px;
+  min-width: 264px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Cluster list rows. */
+.cl-clusterrow {
+  cursor: pointer;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  transition: background 0.1s ease;
+}
+.cl-clusterrow:hover {
+  background: var(--color-surface-alt);
+}
+.cl-clusterrow.is-active {
+  background: var(--color-surface-alt);
+}
+
+.cl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cl-section-label {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+}
+
+/* Store preview rows in overview cards. */
+.cl-storehead,
+.cl-storerow {
+  padding: 6px 12px;
+  align-items: center;
+}
+.cl-storerow {
+  border-top: 1px solid var(--color-border);
+}
+.cl-storerow.alt {
+  background: var(--color-surface-alt);
+}

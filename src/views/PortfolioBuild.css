@@ -1,0 +1,27 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Portfolio Build — view-specific accents only.
+   Layout (Stack/Grid), typography (Text), interactive + tabular chrome all come
+   from the shared token primitives and Impact UI components. This file holds the
+   scrollable master list and its selection accent (no component equivalent).
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Scrollable master list inside the split-panel tabs */
+.pf-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Selectable list row — left accent marks the active selection */
+.pf-list-row {
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.pf-list-row:hover {
+  background: var(--color-surface-alt);
+}
+.pf-list-row.is-active {
+  background: var(--color-surface-alt);
+  border-left-color: var(--color-primary);
+}

@@ -1,0 +1,74 @@
+/* Lead Time & Oracle — pipeline timeline + KPI + SKU card accents. */
+
+/* KPI stat tiles in the header. */
+.lt-kpi {
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  background: var(--color-surface-alt);
+  padding: 12px 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Pipeline timeline. */
+.lt-timeline {
+  position: relative;
+  align-items: flex-start;
+}
+/* The connecting line runs behind the numbered nodes. */
+.lt-timeline::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: var(--color-border);
+  z-index: 0;
+}
+.lt-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+.lt-node {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* SKU card accents. */
+.lt-card {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--r);
+  background: var(--color-surface);
+  box-shadow: var(--sh);
+}
+.lt-card.at-risk {
+  border-color: var(--color-error);
+  border-left: 3px solid var(--color-error);
+}
+
+/* Detail mini-boxes. */
+.lt-detail {
+  background: var(--color-surface-alt);
+  border-radius: var(--r2);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

@@ -1,0 +1,84 @@
+/* Market Intelligence — 3-column inbox accents. Color is functional only
+   (threat/opportunity); everything else uses neutral semantic tokens. */
+
+.mi-sidebar {
+  width: 252px;
+  min-width: 252px;
+  flex-shrink: 0;
+}
+.mi-list {
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+/* Sidebar signal row */
+.mi-list-row {
+  border: 1px solid transparent;
+  border-radius: var(--r2);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.mi-list-row:hover {
+  background: var(--color-surface-alt);
+}
+.mi-list-row.is-active {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+/* Intel card */
+.mi-card {
+  cursor: pointer;
+  border-left: 3px solid var(--color-border);
+  transition: box-shadow 0.12s, border-color 0.12s;
+}
+.mi-card.is-threat {
+  border-left-color: var(--color-error);
+}
+.mi-card.is-opportunity {
+  border-left-color: var(--color-success);
+}
+.mi-card.is-selected {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* Choice button (log form) — selectable card */
+.mi-choice {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--r2);
+  background: var(--color-surface);
+  padding: 10px 12px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.mi-choice:hover {
+  border-color: var(--color-border-strong);
+}
+.mi-choice.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+/* Detail panel */
+.mi-detail {
+  width: 340px;
+  min-width: 340px;
+  flex-shrink: 0;
+}
+
+/* Cluster map bar */
+.mi-bar {
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  background: var(--color-surface-sunken);
+}
+.mi-bar-threat {
+  background: var(--color-error);
+}
+.mi-bar-opp {
+  background: var(--color-success);
+}

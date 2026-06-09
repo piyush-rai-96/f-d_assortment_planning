@@ -1,0 +1,18 @@
+/* National Core — agent-recommendation row accents.
+   Backgrounds stay neutral (surface-alt); the left border encodes the
+   merchant's decision state (approve = success, reject = error). */
+.nat-rec-row {
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  background: var(--color-surface-alt);
+  transition: border-color 0.12s, background 0.12s;
+}
+.nat-rec-row:last-child {
+  border-bottom: none;
+}
+.nat-rec-row.is-approved {
+  border-left-color: var(--color-success);
+}
+.nat-rec-row.is-rejected {
+  border-left-color: var(--color-error);
+}

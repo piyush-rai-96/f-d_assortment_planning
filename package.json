@@ -1,0 +1,30 @@
+{
+  "name": "fd-assortment",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Floor & Decor · Agentic Assortment Planning — modern React rebuild on Impact UI",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "ag-grid-community": "^32.3.2",
+    "ag-grid-enterprise": "^32.3.2",
+    "ag-grid-react": "^32.3.2",
+    "highcharts": "^12.4.0",
+    "highcharts-border-radius": "^0.0.4",
+    "highcharts-react-official": "^3.2.3",
+    "impact-ui": "^3.7.20",
+    "impact-ui-mcp-server": "^1.0.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}

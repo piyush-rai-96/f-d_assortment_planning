@@ -1,0 +1,30 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Store Hub — view-specific visual accents only.
+   Layout (Stack/Grid), typography (Text), color roles and all interactive /
+   tabular chrome come from the shared token primitives + Impact UI components.
+   This file holds just the dense scroll panels and zebra striping that have no
+   component equivalent.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Scrollable SKU list inside each comparison pane */
+.sh-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+/* Dense comparison rows — zebra striping for scanability */
+.sh-row {
+  border-bottom: 1px solid var(--color-border);
+}
+.sh-row:nth-child(even) {
+  background: var(--color-surface-alt);
+}
+.sh-row:last-child {
+  border-bottom: none;
+}
+
+/* Carry-indicator glyph (●/○/⊕) — sized a touch larger than body copy */
+.sh-dot {
+  font-size: var(--fs-heading);
+  line-height: 1;
+}

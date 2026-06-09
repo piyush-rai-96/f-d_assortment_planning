@@ -1,0 +1,22 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Today dashboard — view-specific visual accents only.
+   Layout (Stack/Grid), typography (Text), and color all come from the shared
+   token primitives; nothing here sets type sizes or ad-hoc spacing.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Decorative emoji glyphs (sized intentionally larger than body copy) */
+.today-feed-icon {
+  font-size: var(--fs-heading);
+  flex-shrink: 0;
+}
+.today-quick-icon {
+  font-size: var(--fs-title);
+}
+
+/* Zebra striping for the activity feed rows */
+.today-feed-row {
+  border-radius: var(--r2);
+}
+.today-feed-row:nth-child(odd) {
+  background: var(--color-surface-alt);
+}

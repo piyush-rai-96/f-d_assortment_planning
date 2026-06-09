@@ -1,0 +1,28 @@
+/* Store Curation — SKU row decision accents.
+   Neutral backgrounds; the left border + tint encode the add/drop decision. */
+.sc-row {
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  background: var(--color-surface);
+  transition: border-color 0.12s, background 0.12s;
+}
+.sc-row:nth-child(even) {
+  background: var(--color-surface-alt);
+}
+.sc-row:last-child {
+  border-bottom: none;
+}
+.sc-row.is-add {
+  border-left-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+.sc-row.is-drop {
+  border-left-color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+/* Cap tall sections so the page stays scannable. */
+.sc-scroll {
+  max-height: 520px;
+  overflow-y: auto;
+}

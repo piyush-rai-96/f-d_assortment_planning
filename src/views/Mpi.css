@@ -1,0 +1,31 @@
+/* MPI / NPI — list-row accents for the interactive tabs.
+   Neutral backgrounds; left border encodes severity (retire/leakage). */
+.mpi-row {
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  background: var(--color-surface);
+}
+.mpi-row:nth-child(even) {
+  background: var(--color-surface-alt);
+}
+.mpi-row:last-child {
+  border-bottom: none;
+}
+.mpi-row.is-retire {
+  border-left-color: var(--color-error);
+}
+.mpi-row.is-warn {
+  border-left-color: var(--color-warning);
+}
+
+/* Cap long row lists. */
+.mpi-scroll {
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+/* Inline markdown / exit-pricing editor strip. */
+.mpi-edit {
+  background: var(--color-warning-soft);
+  border-top: 1px solid var(--color-border);
+}
