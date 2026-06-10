@@ -87,4 +87,20 @@
 .today-pipeline-bar-track { height: 6px; background: var(--color-border); border-radius: var(--r2); overflow: hidden; }
 .today-pipeline-bar-fill { height: 100%; border-radius: var(--r2); transition: width 0.3s; }
 .today-pipeline-pct  { width: 38px; font-size: var(--fs-caption); font-weight: var(--fw-extrabold); text-align: right; flex-shrink: 0; }
-.today-pipeline-icon { width: 20px; font-size: var(--fs-subheading); text-align: center; flex-shrink: 0; }
+
+/* CSS status indicator replaces emoji icon */
+.today-pipeline-status {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: block;
+}
+.today-pipeline-status--done    { background: var(--color-success); }
+.today-pipeline-status--active  {
+  background: var(--color-info);
+  box-shadow: 0 0 0 3px var(--color-info-soft);
+  animation: pipeline-pulse 1.8s ease-in-out infinite;
+}
+.today-pipeline-status--pending { background: var(--color-border-strong); }
+
+@keyframes pipeline-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--color-info-soft); }
+  50%       { box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.12); }
+}

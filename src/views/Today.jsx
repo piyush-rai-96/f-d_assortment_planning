@@ -32,13 +32,10 @@ const SEVERITY_TAG = {
   info:    { label: "Signal",    color: "info"    },
 };
 
-const PHASE_STATUS_ICON = {
-  100: "✅", 0: "⏳",
-};
-function phaseIcon(pct) {
-  if (pct === 100) return "✅";
-  if (pct > 0) return "▶";
-  return "○";
+function phaseStatusClass(pct) {
+  if (pct === 100) return "done";
+  if (pct > 0) return "active";
+  return "pending";
 }
 function phaseColor(pct) {
   if (pct === 100) return color.success;
@@ -206,7 +203,7 @@ export default function Today({ onNavigate, user: userProp }) {
                 </div>
               </div>
               <span className="today-pipeline-pct" style={{ color: phaseColor(p.pct) }}>{p.pct}%</span>
-              <span className="today-pipeline-icon">{phaseIcon(p.pct)}</span>
+              <span className={`today-pipeline-status today-pipeline-status--${phaseStatusClass(p.pct)}`} />
             </button>
           ))}
         </div>
