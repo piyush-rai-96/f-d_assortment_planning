@@ -450,8 +450,28 @@ export default function Hindsight({ user }) {
         </Grid>
       </Grid>
 
-      {/* ── Row 4: vs National benchmark table + signals ─────────────────────── */}
-      <Grid min={340} gap={4} align="start">
+      {/* ── Row 4: Signals banner + full-width vs National table ──────────────── */}
+      <Stack direction="column" gap={4}>
+        {/* Signals — horizontal strip above the table */}
+        <Card sx={panelSx} style={{ padding: "var(--sp-3) var(--sp-4)" }}>
+          <Stack direction="row" align="flex-start" gap={4} style={{ flexWrap: "wrap" }}>
+            <Text variant="overline" tone="subtle" style={{ whiteSpace: "nowrap", minWidth: 56, paddingTop: 2 }}>Signals</Text>
+            {model.insights.length ? (
+              model.insights.map((ins, i) => (
+                <Stack key={i} direction="row" align="flex-start" gap={2} className="hs-signal" style={{ flex: "1 1 220px" }}>
+                  <Text variant="body-strong" tone={ins.tone} as="span">{ins.icon}</Text>
+                  <Text variant="caption" tone="default">{ins.txt}</Text>
+                </Stack>
+              ))
+            ) : (
+              <Text variant="caption" tone="subtle" className="hs-signal-empty" style={{ flex: 1 }}>
+                No signals — apply a department filter for targeted analysis.
+              </Text>
+            )}
+          </Stack>
+        </Card>
+
+        {/* Full-width benchmark table */}
         <div className="hs-benchmark-table">
           <Table
             defaultColDef={{ resizable: true, sortable: true }}
@@ -466,25 +486,7 @@ export default function Hindsight({ user }) {
             pagination={false}
           />
         </div>
-
-        <Card sx={panelSx}>
-          <Text variant="overline" tone="subtle" style={{ marginBottom: "var(--sp-3)", display: "block" }}>Signals</Text>
-          <Stack direction="column" gap={3}>
-            {model.insights.length ? (
-              model.insights.map((ins, i) => (
-                <Stack key={i} direction="row" align="flex-start" gap={3} className="hs-signal">
-                  <Text variant="heading" tone={ins.tone} as="span">{ins.icon}</Text>
-                  <Text variant="caption" tone="default">{ins.txt}</Text>
-                </Stack>
-              ))
-            ) : (
-              <Text variant="caption" tone="subtle" className="hs-signal-empty">
-                No signals — apply a department filter for targeted analysis.
-              </Text>
-            )}
-          </Stack>
-        </Card>
-      </Grid>
+      </Stack>
     </Stack>
   );
 
