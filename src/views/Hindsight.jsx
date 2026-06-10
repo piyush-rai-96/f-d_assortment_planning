@@ -253,21 +253,67 @@ export default function Hindsight({ user }) {
 
   const benchmarkColumns = useMemo(
     () => [
-      { field: "subDept", headerName: "Sub-Dept", minWidth: 170, flex: 1, filter: "agTextColumnFilter" },
-      { field: "storePct", headerName: "Store %", width: 100, filter: "agNumberColumnFilter", valueFormatter: (p) => `${p.value}%` },
-      { field: "natPct", headerName: "Nat %", width: 95, filter: "agNumberColumnFilter", valueFormatter: (p) => `${p.value}%` },
+      {
+        field: "subDept",
+        headerName: "Sub-Dept",
+        minWidth: 200,
+        flex: 2,
+        filter: "agTextColumnFilter",
+        floatingFilter: true,
+        cellStyle: { fontWeight: 500 },
+      },
+      {
+        field: "storePct",
+        headerName: "Store %",
+        minWidth: 100,
+        flex: 1,
+        filter: false,
+        valueFormatter: (p) => `${p.value}%`,
+        cellStyle: { textAlign: "right" },
+        headerClass: "ag-right-aligned-header",
+      },
+      {
+        field: "natPct",
+        headerName: "Nat %",
+        minWidth: 100,
+        flex: 1,
+        filter: false,
+        valueFormatter: (p) => `${p.value}%`,
+        cellStyle: { textAlign: "right" },
+        headerClass: "ag-right-aligned-header",
+      },
       {
         field: "gap",
         headerName: "Gap",
-        width: 85,
-        filter: "agNumberColumnFilter",
-        valueFormatter: (p) => `${p.value > 0 ? "+" : ""}${p.value}`,
-        cellStyle: (p) => ({
-          color: p.value > 3 ? color.success : p.value < -3 ? color.error : color.textSubtle,
-          fontWeight: 700,
-        }),
+        minWidth: 90,
+        flex: 1,
+        filter: false,
+        cellRenderer: (p) => {
+          const v = p.value;
+          const c = v > 3 ? color.success : v < -3 ? color.error : color.textSubtle;
+          const bg = v > 3 ? color.successSoft : v < -3 ? color.errorSoft : color.surfaceAlt;
+          return (
+            <span style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              padding: "2px 10px", borderRadius: "var(--r2)",
+              background: bg, color: c, fontWeight: 700, fontSize: "var(--fs-caption)",
+            }}>
+              {v > 0 ? "+" : ""}{v}
+            </span>
+          );
+        },
+        cellStyle: { textAlign: "center" },
+        headerClass: "ag-center-aligned-header",
       },
-      { field: "carry", headerName: "Carry", width: 95 },
+      {
+        field: "carry",
+        headerName: "Carry",
+        minWidth: 90,
+        flex: 1,
+        filter: false,
+        cellStyle: { textAlign: "right", color: "var(--color-text-muted)" },
+        headerClass: "ag-right-aligned-header",
+      },
     ],
     []
   );
@@ -406,19 +452,20 @@ export default function Hindsight({ user }) {
 
       {/* ── Row 4: vs National benchmark table + signals ─────────────────────── */}
       <Grid min={340} gap={4} align="start">
-        <Table
-          defaultColDef={{ floatingFilter: true }}
-          tableHeader="vs National"
-          cardContainer
-          rowHeight="compact"
-          columnDefs={benchmarkColumns}
-          rowData={model.benchmark}
-          domLayout="autoHeight"
-          hideTableSetting
-          hideTableActions
-          suppressPaginationPanel
-          pagination={false}
-        />
+        <div className="hs-benchmark-table">
+          <Table
+            defaultColDef={{ resizable: true, sortable: true }}
+            tableHeader="vs National"
+            cardContainer
+            columnDefs={benchmarkColumns}
+            rowData={model.benchmark}
+            domLayout="autoHeight"
+            hideTableSetting
+            hideTableActions
+            suppressPaginationPanel
+            pagination={false}
+          />
+        </div>
 
         <Card sx={panelSx}>
           <Text variant="overline" tone="subtle" style={{ marginBottom: "var(--sp-3)", display: "block" }}>Signals</Text>
