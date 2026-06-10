@@ -86,12 +86,12 @@ export default function Today({ onNavigate, user: userProp }) {
     const greeting = greetingFor(new Date().getHours());
     const firstName = (user?.name || "there").split(" ")[0];
 
-    const kpis = [
-      { value: totalStores, label: "Total Stores",    sub: `${submitted} submitted (${submittedPct}%)`, mod: "store-curation" },
-      { value: totalCore,   label: "National Core",   sub: `${coreCount} hard + ${natLocked} agent`,    mod: "national"       },
-      { value: catalogueSkuCount, label: "Catalogue SKUs", sub: "SS 2026 active",                      mod: "catalogue"      },
-      { value: pending,     label: "Pending Stores",  sub: "Deadline Sep 20",                           mod: "store-curation" },
-      { value: unreadIntel, label: "Intel Signals",   sub: "2 threats · 1 opportunity",                 mod: "intel"          },
+  const kpis = [
+      { value: totalStores, label: "Total Stores",    sub: `${submitted} submitted (${submittedPct}%)`, mod: "store-curation", accent: "var(--color-primary)"  },
+      { value: totalCore,   label: "National Core",   sub: `${coreCount} hard + ${natLocked} agent`,    mod: "national",       accent: "var(--color-teal)"     },
+      { value: catalogueSkuCount, label: "Catalogue SKUs", sub: "SS 2026 active",                      mod: "catalogue",      accent: "var(--color-accent)"   },
+      { value: pending,     label: "Pending Stores",  sub: "Deadline Sep 20",                           mod: "store-curation", accent: "var(--color-error)"    },
+      { value: unreadIntel, label: "Intel Signals",   sub: "2 threats · 1 opportunity",                 mod: "intel",          accent: "var(--color-warning)"  },
     ];
 
     const fill = (s) => s.replace("{pending}", pending);
@@ -212,8 +212,9 @@ export default function Today({ onNavigate, user: userProp }) {
       {/* ── KPI row ──────────────────────────────────────────────────────── */}
       <Grid min={160} gap={3}>
         {model.kpis.map((k) => (
-          <Card key={k.label} sx={clickableSx} onClick={() => go(k.mod)}>
-            <Stack direction="column" gap={1}>
+          <Card key={k.label} sx={{ ...clickableSx, overflow: "hidden", paddingTop: 0 }} onClick={() => go(k.mod)}>
+            <div className="today-kpi-accent" style={{ background: k.accent }} />
+            <Stack direction="column" gap={1} style={{ padding: "var(--sp-4)" }}>
               <Text variant="kpi" tone="strong">{k.value}</Text>
               <Text variant="body-strong">{k.label}</Text>
               <Text variant="caption" tone="subtle">{k.sub}</Text>
