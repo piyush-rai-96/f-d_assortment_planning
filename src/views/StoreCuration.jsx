@@ -4,10 +4,12 @@ import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { color } from "../styles/tokens.js";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { isMandatory, clusterLockedIds, newPlrSkus, storeUniqueRows } from "../data/curation.js";
+import { storeLocationBudget, otbStoreConsumed, fmtCurrency } from "../data/otb.js";
 import "./StoreCuration.css";
 
 const panelSx = {
@@ -46,7 +48,10 @@ function CurationRow({ sku, assocRow, locked, decision, localPrice, onDecision, 
     <Stack className={cls} direction="row" align="center" gap={3} wrap paddingX={4} paddingY={2}>
       {/* Identity */}
       <Stack direction="column" gap={1} flex="1 1 240px" style={{ minWidth: 0 }}>
-        <Text variant="caption" tone="strong">{sku.desc}</Text>
+        <Stack direction="row" align="center" gap={1}>
+          <SkuSwatch sku={sku} size={24} />
+          <Text variant="caption" tone="strong">{sku.desc}</Text>
+        </Stack>
         <Stack direction="row" gap={1} wrap align="center">
           <Text variant="micro" tone="subtle" mono>{sku.sku}</Text>
           {sku.tag ? <Badge variant="subtle" size="small" color="success" label={sku.tag} /> : null}
@@ -128,8 +133,9 @@ function SCSection({ icon, title, count, sub, tone, badgeColor, scroll, children
   );
 }
 
-export default function StoreCuration({ onNavigate }) {
-  const [storeId, setStoreId] = useState(101);
+export default function StoreCuration({ onNavigate, user }) {
+  const defaultStore = user?.storeId || 101;
+  const [storeId, setStoreId] = useState(defaultStore);
   const [view, setView] = useState("form");
   const [deptFilter, setDeptFilter] = useState("All");
   const [decisions, setDecisions] = useState({});
@@ -241,8 +247,15 @@ export default function StoreCuration({ onNavigate }) {
         <Stack direction="column" gap={3}>
           <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
             <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
-              <Text variant="title">Store Curation</Text>
-              <Text variant="caption" tone="muted">Add / Drop decisions per store · PLR live</Text>
+              <Stack direction="row" align="center" gap={2}>
+                <Text variant="title">Store Curation</Text>
+                {user?.id === "store" ? (
+                  <span className="sc-persona-badge sc-persona-badge--store">My Store View</span>
+                ) : (
+                  <span className="sc-persona-badge sc-persona-badge--corp">All Stores</span>
+                )}
+              </Stack>
+              <Text variant="caption" tone="muted">Add / Drop decisions per store · SS 2026 PLR live</Text>
             </Stack>
             {ViewToggle}
           </Stack>
@@ -271,6 +284,36 @@ export default function StoreCuration({ onNavigate }) {
           {DeptFilterButtons}
         </Stack>
       </Card>
+
+      {/* ── OTB Banner ─────────────────────────────────────────────────────── */}
+      {(() => {
+        const allRows = [...(lists.existingFree || []), ...(lists.available || [])].map((r) => ({ sku: r.sku.sku, price: r.sku.price }));
+        const storeDecisions = {};
+        Object.entries(decisions).forEach(([k, v]) => {
+          const parts = k.split(":");
+          if (parseInt(parts[0], 10) === storeId) storeDecisions[parts[1]] = v;
+        });
+        const otb = otbStoreConsumed(storeId, storeDecisions, allRows.map((r) => ({ sku: r.sku, price: r.price })));
+        const over = otb.net < 0;
+        return (
+          <div className={`sc-otb-banner ${over ? "sc-otb-banner--over" : ""}`}>
+            <span className="sc-otb-icon">{over ? "⚠️" : "💰"}</span>
+            <span className="sc-otb-label">Location OTB Budget ({store.velocity}-band)</span>
+            <div className="sc-otb-bar-wrap">
+              <div className="sc-otb-bar-track">
+                <div className="sc-otb-bar-fill" style={{ width: `${Math.min(100, otb.pct)}%`, background: over ? "#dc2626" : "#059669" }} />
+              </div>
+            </div>
+            <span className="sc-otb-stats">
+              {over
+                ? <span className="sc-otb-over">{fmtCurrency(Math.abs(otb.net))} over budget</span>
+                : <span>{fmtCurrency(otb.adds)} adds · {fmtCurrency(otb.budget - otb.adds + otb.drops)} remaining</span>
+              }
+            </span>
+            <span className="sc-otb-budget">Budget: {fmtCurrency(otb.budget)}</span>
+          </div>
+        );
+      })()}
 
       {/* ── Tiered sections ────────────────────────────────────────────────── */}
       {mandatory.length ? (

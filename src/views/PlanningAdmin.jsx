@@ -336,7 +336,164 @@ export default function PlanningAdmin() {
     { value: 0, label: "📦 Products" },
     { value: 1, label: "📍 Location Attributes" },
     { value: 2, label: "🚫 Global Exceptions" },
+    { value: 3, label: "🗓 Calendar Mapping" },
   ];
+
+  // V3: Scope wizard gate
+  const [scopeConfirmed, setScopeConfirmed] = useState(() => {
+    try { return localStorage.getItem("pa_scope_confirmed") === "1"; } catch { return false; }
+  });
+  const [scopeStep, setScopeStep] = useState(0);
+  const [scopeDepts, setScopeDepts] = useState(["Wood", "Tile", "Laminate & Vinyl"]);
+  const [scopeChannels, setScopeChannels] = useState(["All Stores"]);
+  const SCOPE_DEPT_OPTS = ["Wood", "Tile", "Laminate & Vinyl", "Natural Stone", "Accessories"];
+  const SCOPE_CHANNEL_OPTS = ["All Stores", "Domestic Only", "High-volume only", "Southeast cluster"];
+  const SCOPE_STEPS = ["Departments", "Channels", "Calendar"];
+
+  const confirmScope = () => {
+    try { localStorage.setItem("pa_scope_confirmed", "1"); } catch {}
+    setScopeConfirmed(true);
+  };
+
+  // Calendar Mapping tab content
+  const FY_CARDS = [
+    { year: "FY2025", status: "complete", color: "#059669", periods: 52, season: "FW 2025 · SS 2025" },
+    { year: "FY2026", status: "current",  color: "#2563eb", periods: 52, season: "FW 2026 · SS 2026 (active)" },
+    { year: "FY2027", status: "future",   color: "#9ca3af", periods: 52, season: "FW 2027 · SS 2027" },
+  ];
+  const SS_PERIODS = [
+    { period: "SS26-W01", start: "Jan 26, 2026", end: "Feb 1, 2026",  status: "complete" },
+    { period: "SS26-W04", start: "Feb 16, 2026", end: "Feb 22, 2026", status: "complete" },
+    { period: "SS26-W08", start: "Mar 16, 2026", end: "Mar 22, 2026", status: "current"  },
+    { period: "SS26-W12", start: "Apr 13, 2026", end: "Apr 19, 2026", status: "upcoming" },
+    { period: "SS26-W16", start: "May 11, 2026", end: "May 17, 2026", status: "upcoming" },
+    { period: "SS26-W20", start: "Jun 8, 2026",  end: "Jun 14, 2026", status: "active"   },
+    { period: "SS26-W24", start: "Jul 6, 2026",  end: "Jul 12, 2026", status: "upcoming" },
+  ];
+  const calendarPanel = (
+    <Stack direction="column" gap={4}>
+      <Stack direction="row" gap={3} wrap>
+        {FY_CARDS.map((fy) => (
+          <div key={fy.year} className="pa-fy-card" style={{ borderColor: fy.color }}>
+            <div className="pa-fy-year" style={{ color: fy.color }}>{fy.year}</div>
+            <div className="pa-fy-season">{fy.season}</div>
+            <div className="pa-fy-meta">{fy.periods} periods</div>
+            <div className="pa-fy-status" style={{ background: `${fy.color}20`, color: fy.color }}>
+              {fy.status === "complete" ? "✅ Complete" : fy.status === "current" ? "▶ Current" : "○ Future"}
+            </div>
+          </div>
+        ))}
+      </Stack>
+      <div className="pa-period-list-header">
+        <Text variant="body-strong" tone="strong">SS 2026 Period List</Text>
+      </div>
+      <div className="pa-period-list">
+        {SS_PERIODS.map((p) => (
+          <div key={p.period} className={`pa-period-row pa-period-row--${p.status}`}>
+            <span className="pa-period-id">{p.period}</span>
+            <span className="pa-period-range">{p.start} – {p.end}</span>
+            <span className={`pa-period-status pa-period-status--${p.status}`}>
+              {p.status === "complete" ? "Complete" : p.status === "current" ? "▶ Active" : p.status === "active" ? "▶ Current" : "Upcoming"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Stack>
+  );
+
+  if (!scopeConfirmed) {
+    return (
+      <Stack direction="column" gap={4} style={{ maxWidth: 600, margin: "0 auto" }}>
+        <Card sx={panelSx}>
+          <Stack direction="column" gap={3}>
+            <Stack direction="row" align="center" gap={2}>
+              <Text variant="title">Planning Admin</Text>
+              <Badge variant="subtle" size="small" color="warning" label="Scope required" />
+            </Stack>
+            <Text variant="caption" tone="muted">
+              Define your planning scope before accessing the data. Your selections will persist for this session.
+            </Text>
+          </Stack>
+        </Card>
+
+        <Card sx={panelSx}>
+          {/* Step indicator */}
+          <div className="pa-scope-steps">
+            {SCOPE_STEPS.map((s, i) => (
+              <div key={s} className={`pa-scope-step ${i === scopeStep ? "active" : i < scopeStep ? "done" : ""}`}>
+                <div className="pa-scope-step-circle">{i < scopeStep ? "✓" : i + 1}</div>
+                <span>{s}</span>
+                {i < SCOPE_STEPS.length - 1 && <div className="pa-scope-connector" />}
+              </div>
+            ))}
+          </div>
+
+          <div className="pa-scope-body">
+            {scopeStep === 0 && (
+              <Stack direction="column" gap={3}>
+                <Text variant="body-strong" tone="strong">Which departments are in scope?</Text>
+                <div className="pa-scope-checks">
+                  {SCOPE_DEPT_OPTS.map((d) => (
+                    <label key={d} className="pa-scope-check-label">
+                      <input
+                        type="checkbox"
+                        checked={scopeDepts.includes(d)}
+                        onChange={() => setScopeDepts((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d])}
+                      />
+                      {d}
+                    </label>
+                  ))}
+                </div>
+              </Stack>
+            )}
+            {scopeStep === 1 && (
+              <Stack direction="column" gap={3}>
+                <Text variant="body-strong" tone="strong">Which channels?</Text>
+                <div className="pa-scope-checks">
+                  {SCOPE_CHANNEL_OPTS.map((c) => (
+                    <label key={c} className="pa-scope-check-label">
+                      <input
+                        type="checkbox"
+                        checked={scopeChannels.includes(c)}
+                        onChange={() => setScopeChannels((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c])}
+                      />
+                      {c}
+                    </label>
+                  ))}
+                </div>
+              </Stack>
+            )}
+            {scopeStep === 2 && (
+              <Stack direction="column" gap={3}>
+                <Text variant="body-strong" tone="strong">Confirm planning period</Text>
+                <div className="pa-scope-summary">
+                  <div><strong>Season:</strong> SS 2026</div>
+                  <div><strong>Departments:</strong> {scopeDepts.join(", ")}</div>
+                  <div><strong>Channels:</strong> {scopeChannels.join(", ")}</div>
+                  <div><strong>Active period:</strong> SS26-W20 (Jun 8 – Jun 14, 2026)</div>
+                </div>
+              </Stack>
+            )}
+          </div>
+
+          <Stack direction="row" justify="space-between" style={{ marginTop: 24 }}>
+            <Button variant="secondary" size="medium" disabled={scopeStep === 0} onClick={() => setScopeStep(scopeStep - 1)}>
+              ← Back
+            </Button>
+            {scopeStep < 2 ? (
+              <Button variant="primary" size="medium" onClick={() => setScopeStep(scopeStep + 1)}>
+                Next →
+              </Button>
+            ) : (
+              <Button variant="primary" size="medium" onClick={confirmScope}>
+                Confirm &amp; Unlock →
+              </Button>
+            )}
+          </Stack>
+        </Card>
+      </Stack>
+    );
+  }
 
   return (
     <Stack direction="column" gap={4}>
@@ -344,12 +501,18 @@ export default function PlanningAdmin() {
         <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
           <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
             <Text variant="title">Planning Admin</Text>
+            <Text variant="caption" tone="muted">Scope: {scopeDepts.join(" · ")} · SS 2026</Text>
           </Stack>
-          <Badge variant="subtle" size="small" color="warning" label="● Source system data — read only" />
+          <Stack direction="row" gap={2} align="center">
+            <Badge variant="subtle" size="small" color="warning" label="● Source system data — read only" />
+            <Button variant="tertiary" size="small" onClick={() => { setScopeConfirmed(false); setScopeStep(0); try { localStorage.removeItem("pa_scope_confirmed"); } catch {} }}>
+              Reset scope
+            </Button>
+          </Stack>
         </Stack>
       </Card>
 
-      <Tabs value={tab} onChange={(_e, v) => setTab(v)} tabNames={TAB_NAMES} tabPanels={[productsPanel, locationsPanel, exceptionsPanel]} />
+      <Tabs value={tab} onChange={(_e, v) => setTab(v)} tabNames={TAB_NAMES} tabPanels={[productsPanel, locationsPanel, exceptionsPanel, calendarPanel]} />
     </Stack>
   );
 }

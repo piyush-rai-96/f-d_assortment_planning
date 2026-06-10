@@ -1,12 +1,12 @@
 /*
- * Hardcoded user registry — scraped verbatim from legacy fd-assortment-v4-2.html
- * lines 523-528 (CURRENT_USER / USERS object).
+ * Hardcoded user registry — extended in V3 with persona fields.
  *
- * All three users, roles, avatars, and brand colors are exact matches.
- * Emails and passwords are added for this implementation (no real DB).
- *
- * modules: "ALL" means every route value in navigation.jsx is accessible.
- *          An array lists the exact route values that are permitted.
+ * New V3 fields per user:
+ *   defaultModule  — the module to land on after login (replaces hard-coded "today")
+ *   greeting       — personalised greeting shown in Today persona banner
+ *   focusModules   — modules highlighted in the sidebar nav with a dot indicator
+ *   storeId        — for store personas, pre-select this store on load
+ *   phase / phaseDesc — role context shown on the login quick-fill cards
  */
 
 export const ALL_MODULES = "ALL";
@@ -21,6 +21,12 @@ export const USERS = [
     avatar: "K",
     color: "#2D6A2D",
     landing: "today",
+    defaultModule: "today",
+    greeting: "Here's your SS 2026 assortment overview.",
+    phase: "Phase 1 & 3",
+    phaseDesc: "Setup · Clustering · Approval",
+    focusModules: ["admin-planning", "clustering", "catalogue", "national", "approval", "workspace"],
+    storeId: null,
     modules: ALL_MODULES,
   },
   {
@@ -28,10 +34,16 @@ export const USERS = [
     email: "jason.r@flooranddecor.com",
     password: "Fd!Region2025",
     name: "Jason R.",
-    role: "Regional VP · Southeast Cluster",
+    role: "Regional VP · Southeast",
     avatar: "J",
     color: "#0B7A6C",
-    landing: "today",
+    landing: "regional",
+    defaultModule: "regional",
+    greeting: "Here's your Southeast cluster status.",
+    phase: "Phase 2",
+    phaseDesc: "Regional Review · Store Hub · Hindsight",
+    focusModules: ["regional", "store-hub", "hindsight", "intel"],
+    storeId: null,
     modules: ALL_MODULES,
   },
   {
@@ -39,10 +51,16 @@ export const USERS = [
     email: "lisa.t@flooranddecor.com",
     password: "Fd!Store2025",
     name: "Lisa T.",
-    role: "Store Manager · Atlanta Midtown",
+    role: "Store Manager · 101 I-85 Atlanta",
     avatar: "L",
     color: "#D97706",
-    landing: "today",
+    landing: "store-curation",
+    defaultModule: "store-curation",
+    greeting: "Here's what needs your attention at 101 I-85 Atlanta.",
+    phase: "Phase 2",
+    phaseDesc: "Store Curation · Store Hub · Hindsight",
+    focusModules: ["store-curation", "store-hub", "hindsight"],
+    storeId: 101,
     modules: ALL_MODULES,
   },
 ];
@@ -59,7 +77,6 @@ export function authenticate(email, password) {
       u.password === password
   );
   if (!match) return null;
-  // Strip the password before returning so it never leaks into state/storage.
   const { password: _pw, ...safeUser } = match;
   return safeUser;
 }

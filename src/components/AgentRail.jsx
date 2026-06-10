@@ -49,11 +49,26 @@ function PipelineStep({ step, isLast, onNavigate }) {
 /* ── Main AgentRail ────────────────────────────────────────────────── */
 export default function AgentRail({ onOpenChat, onNavigate }) {
   const [tab, setTab] = useState("Signals");
+  const [collapsed, setCollapsed] = useState(false);
 
   const donePct = Math.round(
     (PIPELINE_STEPS.filter((s) => s.status === "done").length / PIPELINE_STEPS.length) * 100
   );
   const errorSigs = AGENT_SIGNALS.filter((s) => s.severity === "error" || s.severity === "warning").length;
+
+  if (collapsed) {
+    return (
+      <aside className="fd-agent-rail fd-agent-rail--collapsed" aria-label="Agent activity collapsed">
+        <button
+          className="fd-agent-expand-tab"
+          onClick={() => setCollapsed(false)}
+          title="Expand Agent Rail"
+        >
+          🤖 <span>Agent</span>
+        </button>
+      </aside>
+    );
+  }
 
   return (
     <aside className="fd-agent-rail" aria-label="Agent activity">
@@ -62,8 +77,16 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
         <div className="fd-agent-title">
           <span className="fd-agent-dot" />
           Agent Activity
-          <span className="fd-agent-period">FW 2025</span>
+          <span className="fd-agent-period">SS 2026</span>
         </div>
+        <button
+          className="fd-agent-collapse-btn"
+          onClick={() => setCollapsed(true)}
+          title="Collapse agent rail"
+          aria-label="Collapse agent rail"
+        >
+          »
+        </button>
         {/* Mini KPI strip */}
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {[

@@ -5,10 +5,12 @@ import MainLayout from "./layouts/MainLayout.jsx";
 import Login from "./views/Login.jsx";
 import ModulePlaceholder from "./views/ModulePlaceholder.jsx";
 import Today from "./views/Today.jsx";
+import Workspace from "./views/Workspace.jsx";
 import Hindsight from "./views/Hindsight.jsx";
 import StoreHub from "./views/StoreHub.jsx";
 import PortfolioBuild from "./views/PortfolioBuild.jsx";
 import LikeItemForecast from "./views/LikeItemForecast.jsx";
+import AssortmentIntelligence from "./views/AssortmentIntelligence.jsx";
 import Catalogue from "./views/Catalogue.jsx";
 import National from "./views/National.jsx";
 import Regional from "./views/Regional.jsx";
@@ -34,15 +36,17 @@ import PeerIntelligence from "./views/PeerIntelligence.jsx";
  * rendering nothing.
  */
 const VIEWS = {
-  today: ({ navigate }) => <Today onNavigate={navigate} />,
-  hindsight: () => <Hindsight />,
+  today: ({ navigate, user }) => <Today onNavigate={navigate} user={user} />,
+  workspace: ({ navigate, user }) => <Workspace onNavigate={navigate} user={user} />,
+  hindsight: ({ user }) => <Hindsight user={user} />,
   "store-hub": () => <StoreHub />,
   portfolio: () => <PortfolioBuild />,
   forecast: () => <LikeItemForecast />,
+  "assortment-intelligence": ({ navigate }) => <AssortmentIntelligence onNavigate={navigate} />,
   catalogue: ({ navigate }) => <Catalogue onNavigate={navigate} />,
   national: ({ navigate }) => <National onNavigate={navigate} />,
   regional: ({ navigate }) => <Regional onNavigate={navigate} />,
-  "store-curation": ({ navigate }) => <StoreCuration onNavigate={navigate} />,
+  "store-curation": ({ navigate, user }) => <StoreCuration onNavigate={navigate} user={user} />,
   mpi: () => <Mpi />,
   intel: () => <MarketIntel />,
   feedback: () => <FeedbackLoop />,
@@ -82,7 +86,7 @@ export default function App() {
         }
         const View = VIEWS[activeModule];
         return View ? (
-          View({ navigate })
+          View({ navigate, user })
         ) : (
           <ModulePlaceholder
             activeModule={activeModule}

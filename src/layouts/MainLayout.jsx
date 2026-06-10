@@ -39,8 +39,8 @@ export default function MainLayout({
   // Derive the allowed routes for this user once.
   const allowedRoutes = filterRoutesByAccess(routes, user?.modules ?? []);
 
-  // Derive initial parent/child state from user's landing module.
-  const initialModule = user?.landing ?? "today";
+  // Derive initial parent/child state from user's defaultModule (falls back to landing then today).
+  const initialModule = user?.defaultModule ?? user?.landing ?? "today";
   const deriveInitialParent = (mod) => {
     const topLevel = allowedRoutes.find((r) => r.value === mod);
     if (topLevel) return topLevel.value;
@@ -63,11 +63,24 @@ export default function MainLayout({
   const [isChatBotOpen,    setIsChatBotOpen]   = useState(false);
   const [chatInitialMsg,   setChatInitialMsg]   = useState("");
 
-  // Re-sync to the user's landing whenever the authenticated user changes
+  /* ── Override Mode state ─────────────────────────────────────────── */
+  const [overrideMode, setOverrideMode] = useState(false);
+  const [overrideDept, setOverrideDept] = useState("All");
+  const OVERRIDE_DEPTS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
+  const [overrideRows] = useState([
+    { sku: "SKU-10839", desc: "Mojave Sand 24×24 Porcelain", dept: "Tile", price: 3.29, reason: "" },
+    { sku: "SKU-10901", desc: "Sage Green Zellige 4×4",      dept: "Tile", price: 5.49, reason: "" },
+    { sku: "SKU-10198", desc: "Barnwood Oak 6×36 LVP",       dept: "Wood", price: 4.19, reason: "" },
+    { sku: "SKU-11020", desc: "Driftwood Ash 7×48 LVP",      dept: "Wood", price: 5.89, reason: "" },
+  ]);
+  const [overridePrices, setOverridePrices] = useState({});
+  const [overrideReasons, setOverrideReasons] = useState({});
+
+  // Re-sync to the user's defaultModule whenever the authenticated user changes
   // (e.g. after a logout+login sequence within the same session).
   useEffect(() => {
     if (!user) return;
-    const landing = user.landing ?? "today";
+    const landing = user.defaultModule ?? user.landing ?? "today";
     setActiveModule(landing);
     setParentActive(deriveInitialParent(landing));
     setChildActive(deriveInitialChild(landing));
@@ -166,14 +179,78 @@ export default function MainLayout({
         showMessageIcon={false}
         showChatBotIcon
         handleChatBotClick={() => openChatBot()}
-        handleLogoClick={() => navigate(user?.landing ?? "today")}
+        handleLogoClick={() => navigate(user?.defaultModule ?? user?.landing ?? "today")}
       />
+
+      {/* Override Mode bar */}
+      {overrideMode && (
+        <div className="override-bar">
+          <div className="override-bar-header">
+            <span className="override-bar-title">🔴 Override Mode</span>
+            <div className="override-dept-tabs">
+              {OVERRIDE_DEPTS.map((d) => (
+                <button
+                  key={d}
+                  className={`override-dept-tab ${overrideDept === d ? "active" : ""}`}
+                  onClick={() => setOverrideDept(d)}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <div className="override-bar-actions">
+              <button className="override-btn-ghost" onClick={() => { setOverrideMode(false); setOverridePrices({}); setOverrideReasons({}); }}>
+                Discard
+              </button>
+              <button className="override-btn-submit" onClick={() => setOverrideMode(false)}>
+                Submit overrides ({Object.keys(overridePrices).length})
+              </button>
+            </div>
+          </div>
+          <div className="override-grid">
+            {overrideRows
+              .filter((r) => overrideDept === "All" || r.dept === overrideDept)
+              .map((r) => (
+                <div key={r.sku} className="override-row">
+                  <span className="override-sku">{r.sku}</span>
+                  <span className="override-desc">{r.desc}</span>
+                  <span className="override-dept">{r.dept}</span>
+                  <div className="override-price-group">
+                    <span className="override-price-label">$</span>
+                    <input
+                      className="override-price-input"
+                      type="number"
+                      step="0.01"
+                      value={overridePrices[r.sku] ?? r.price.toFixed(2)}
+                      onChange={(e) => setOverridePrices((p) => ({ ...p, [r.sku]: e.target.value }))}
+                    />
+                  </div>
+                  <input
+                    className="override-reason-input"
+                    placeholder="Reason (optional)"
+                    value={overrideReasons[r.sku] ?? ""}
+                    onChange={(e) => setOverrideReasons((p) => ({ ...p, [r.sku]: e.target.value }))}
+                  />
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Override Mode topnav button — injected via portal into fixed header */}
+      <button
+        className={`override-topnav-btn ${overrideMode ? "active" : ""}`}
+        onClick={() => setOverrideMode((v) => !v)}
+        title="Toggle Override Mode"
+      >
+        {overrideMode ? "🔴 Override On" : "Override Mode"}
+      </button>
 
       <div className="fd-body">
         <main className="fd-content" role="main" aria-live="polite">
           <div className="fd-content-inner">
             {typeof children === "function"
-              ? children({ activeModule, moduleLabel, groupLabel, navigate, hasAccess })
+              ? children({ activeModule, moduleLabel, groupLabel, navigate, hasAccess, user })
               : children}
           </div>
         </main>

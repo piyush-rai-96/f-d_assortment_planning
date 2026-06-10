@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, Badge, Table } from "impact-ui";
+import { Card, Badge, Table, Tabs } from "impact-ui";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
@@ -35,9 +35,10 @@ const SKU_BY_ID = FD_SKUS.reduce((m, s) => {
   return m;
 }, {});
 
-export default function Hindsight() {
-  const [storeId, setStoreId] = useState(101);
+export default function Hindsight({ user }) {
+  const [storeId, setStoreId] = useState(user?.storeId || 101);
   const [dept, setDept] = useState("All");
+  const [tab, setTab] = useState(0);
 
   const store = useMemo(
     () => FD_STORES.find((s) => s.id === storeId) || FD_STORES[0],
@@ -190,13 +191,37 @@ export default function Hindsight() {
         txt: `${finishDist[0].val} finish up +${finishDist[0].delta}pts — align PLR adds`,
       });
 
+    // Cluster peer comparison (mock: same velocity band stores)
+    const clusterStores = FD_STORES.filter((s) => s.velocity === store.velocity && s.id !== storeId);
+    const clusterRows = deptFilter(FD_ASSORTMENT.filter((r) => clusterStores.some((s) => s.id === r.storeId)));
+    const clusterSales = clusterRows.reduce((a, r) => a + r.r13Sqft * r.menuPrice, 0);
+    const clusterSqft = clusterRows.reduce((a, r) => a + r.r13Sqft, 0);
+    const clusterAvgSales = clusterStores.length > 0 ? clusterSales / clusterStores.length : 0;
+    const clusterAvgSqft = clusterStores.length > 0 ? clusterSqft / clusterStores.length : 0;
+    const vsClusterSales = clusterAvgSales > 0 ? Math.round(((totalSales - clusterAvgSales) / clusterAvgSales) * 100) : 0;
+    const vsClusterSqft = clusterAvgSqft > 0 ? Math.round(((totalSqft - clusterAvgSqft) / clusterAvgSqft) * 100) : 0;
+
+    // Nat avg per store
+    const natAvgSales = natSales > 0 ? natSales / FD_STORES.length : 0;
+    const vsNetworkSales = natAvgSales > 0 ? Math.round(((totalSales - natAvgSales) / natAvgSales) * 100) : 0;
+
     const kpis = [
-      { label: "R13 Sales", value: fmtK(totalSales), sub: `${filtUnique.length} SKUs` },
-      { label: "R13 Sqft", value: Math.round(totalSqft).toLocaleString(), sub: "sqft" },
-      { label: "Nat'l Share", value: `${storeShare}%`, sub: "of network" },
-      { label: "Wkly $/SKU", value: `$${wklySku}`, sub: "avg" },
-      { label: "Top Sub-Dept", value: sdList[0] ? sdList[0].sub.split(" ")[0] : "—", sub: sdList[0] ? fmtK(sdList[0].sales) : "" },
-      { label: "SKU count", value: filtUnique.length, sub: "active" },
+      { label: "R13 Sales",         value: fmtK(totalSales),                        sub: `${filtUnique.length} SKUs` },
+      { label: "R13 Sqft",          value: Math.round(totalSqft).toLocaleString(),   sub: "sqft" },
+      { label: "Nat'l Share",       value: `${storeShare}%`,                         sub: "of network" },
+      { label: "Wkly $/SKU",        value: `$${wklySku}`,                            sub: "avg" },
+      {
+        label: "vs Cluster avg",
+        value: `${vsClusterSales > 0 ? "+" : ""}${vsClusterSales}%`,
+        sub: `Vel ${store.velocity} peers`,
+        delta: vsClusterSales,
+      },
+      {
+        label: "vs Network avg",
+        value: `${vsNetworkSales > 0 ? "+" : ""}${vsNetworkSales}%`,
+        sub: "all stores",
+        delta: vsNetworkSales,
+      },
     ];
 
     const deptGroups = [
@@ -219,6 +244,19 @@ export default function Hindsight() {
       ],
       benchmark,
       insights,
+      // V3 Benchmarks tab: dept-level bars (store vs cluster vs network)
+      deptBenchmarks: (() => {
+        const DEPTS = ["Wood", "Tile", "Laminate & Vinyl"];
+        return DEPTS.map((d) => {
+          const storeR = deptFilter(rows.filter((r) => SKU_BY_ID[r.sku]?.dept === d));
+          const clR = clusterRows.filter((r) => SKU_BY_ID[r.sku]?.dept === d);
+          const natR = natRows.filter((r) => SKU_BY_ID[r.sku]?.dept === d);
+          const sSales = storeR.reduce((a, r) => a + r.r13Sqft * r.menuPrice, 0);
+          const cAvgSales = clusterStores.length > 0 ? clR.reduce((a, r) => a + r.r13Sqft * r.menuPrice, 0) / clusterStores.length : 0;
+          const nAvgSales = natR.reduce((a, r) => a + r.r13Sqft * r.menuPrice, 0) / FD_STORES.length;
+          return { dept: d, store: Math.round(sSales), cluster: Math.round(cAvgSales), network: Math.round(nAvgSales) };
+        });
+      })(),
     };
   }, [storeId, dept]);
 
@@ -243,38 +281,52 @@ export default function Hindsight() {
     []
   );
 
-  return (
-    <Stack direction="column" gap={4}>
-      {/* ── Header: store / dept filters ──────────────────────────────────── */}
-      <Card sx={{ ...panelSx, padding: "var(--sp-3) var(--sp-4)" }}>
-        <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
-          <Stack direction="column" gap={2} flex="1 1 auto" style={{ minWidth: 0 }}>
-            <Stack direction="row" align="baseline" gap={2} wrap>
-              <Text variant="title">{store.name}</Text>
-              <Text variant="caption" tone="subtle">Business Review · R13</Text>
-            </Stack>
-          </Stack>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)", flex: "0 0 auto", minWidth: 0, width: "clamp(260px, 28vw, 380px)" }}>
-            <FdSelect label="Store" value={storeId} options={STORE_OPTIONS} onChange={(v) => setStoreId(Number(v))} width={220} isWithSearch />
-            <FdSelect label="Department" value={dept} options={DEPT_OPTIONS} onChange={setDept} width={180} />
-          </div>
-        </Stack>
-      </Card>
+  // KPI delta coloring
+  const deltaColor = (d) => d > 0 ? color.success : d < 0 ? color.error : color.textSubtle;
 
-      {/* ── Row 1: KPI strip — neutral cards; emphasis via typography only ─── */}
+  const benchmarksTab = (
+    <Stack direction="column" gap={4}>
+      <Text variant="body-strong" tone="strong">Department R13 — This Store vs Cluster Avg vs Network Avg</Text>
+      {model.deptBenchmarks.map((db) => {
+        const max = Math.max(db.store, db.cluster, db.network, 1);
+        return (
+          <Card key={db.dept} sx={panelSx}>
+            <Text variant="body-strong" tone="strong" style={{ marginBottom: 12 }}>{db.dept}</Text>
+            {[
+              { label: "This store", value: db.store, color: color.primary },
+              { label: "Cluster avg",   value: db.cluster, color: color.teal },
+              { label: "Network avg",  value: db.network, color: "#9ca3af" },
+            ].map((row) => (
+              <Stack key={row.label} direction="row" align="center" gap={2} style={{ marginBottom: 8 }}>
+                <Text variant="micro" tone="muted" style={{ width: 90, flexShrink: 0 }}>{row.label}</Text>
+                <div style={{ flex: 1, height: 8, background: "var(--color-border)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(row.value / max) * 100}%`, background: row.color, borderRadius: 4 }} />
+                </div>
+                <Text variant="micro" mono tone="strong" style={{ width: 68, flexShrink: 0, textAlign: "right" }}>{fmtK(row.value)}</Text>
+              </Stack>
+            ))}
+          </Card>
+        );
+      })}
+    </Stack>
+  );
+
+  const overviewTab = (
+    <Stack direction="column" gap={4}>
+      {/* ── Row 1: KPI strip (6 cols) ──────────────────────────────────────── */}
       <Grid min={150} gap={3}>
         {model.kpis.map((k) => (
           <Card key={k.label} sx={{ ...panelSx, padding: "var(--sp-3)" }}>
             <Stack direction="column" gap={1}>
               <Text variant="overline" tone="muted">{k.label}</Text>
-              <Text variant="kpi" tone="strong">{k.value}</Text>
+              <Text variant="kpi" style={{ color: k.delta != null ? deltaColor(k.delta) : undefined }}>{k.value}</Text>
               <Text variant="caption" tone="subtle">{k.sub}</Text>
             </Stack>
           </Card>
         ))}
       </Grid>
 
-      {/* ── Row 2: sub-dept performance by department ─────────────────────── */}
+      {/* ── Row 2: sub-dept performance ────────────────────────────────────── */}
       <Grid min={280} gap={4}>
         {model.deptGroups.map((dg) => {
           const tot = dg.list.reduce((a, d) => a + d.sales, 0);
@@ -311,7 +363,7 @@ export default function Hindsight() {
         })}
       </Grid>
 
-      {/* ── Row 3: top 5 SKUs + attribute mix ─────────────────────────────── */}
+      {/* ── Row 3: top 5 SKUs + attribute mix ──────────────────────────────── */}
       <Grid min={340} gap={4} align="start">
         <Card sx={panelSx}>
           <Text variant="subheading" tone="strong" style={{ marginBottom: "var(--sp-3)" }}>Top 5 SKUs by R13</Text>
@@ -361,10 +413,10 @@ export default function Hindsight() {
         </Grid>
       </Grid>
 
-      {/* ── Row 4: vs National benchmark table + signals ──────────────────── */}
+      {/* ── Row 4: vs National benchmark table + signals ─────────────────────── */}
       <Grid min={340} gap={4} align="start">
         <Table
-      defaultColDef={{ floatingFilter: true }}
+          defaultColDef={{ floatingFilter: true }}
           tableHeader="vs National"
           cardContainer
           rowHeight="compact"
@@ -395,6 +447,33 @@ export default function Hindsight() {
           </Stack>
         </Card>
       </Grid>
+    </Stack>
+  );
+
+  const TAB_NAMES = [
+    { value: 0, label: "📊 Overview" },
+    { value: 1, label: "📈 Benchmarks" },
+  ];
+
+  return (
+    <Stack direction="column" gap={4}>
+      {/* ── Header: store / dept filters ──────────────────────────────────── */}
+      <Card sx={{ ...panelSx, padding: "var(--sp-3) var(--sp-4)" }}>
+        <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
+          <Stack direction="column" gap={2} flex="1 1 auto" style={{ minWidth: 0 }}>
+            <Stack direction="row" align="baseline" gap={2} wrap>
+              <Text variant="title">{store.name}</Text>
+              <Text variant="caption" tone="subtle">Business Review · R13 · SS 2026</Text>
+            </Stack>
+          </Stack>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)", flex: "0 0 auto", minWidth: 0, width: "clamp(260px, 28vw, 380px)" }}>
+            <FdSelect label="Store" value={storeId} options={STORE_OPTIONS} onChange={(v) => setStoreId(Number(v))} width={220} isWithSearch />
+            <FdSelect label="Department" value={dept} options={DEPT_OPTIONS} onChange={setDept} width={180} />
+          </div>
+        </Stack>
+      </Card>
+
+      <Tabs value={tab} onChange={(_e, v) => setTab(v)} tabNames={TAB_NAMES} tabPanels={[overviewTab, benchmarksTab]} />
     </Stack>
   );
 }

@@ -20,6 +20,7 @@ import {
   PRIORITY_LABEL,
   STATUS_BADGE,
 } from "../data/portfolioSeed.js";
+import { INTEL_SEED } from "../data/intel.js";
 import "./PortfolioBuild.css";
 
 /* Shared Card style — neutralizes Impact UI defaults, token-driven (matches other views). */
@@ -210,8 +211,53 @@ function PanelEmpty({ heading, description }) {
 }
 
 export default function PortfolioBuild({ onNavigate }) {
-  const [gaps, setGaps] = useState(INITIAL_GAPS);
-  const [wishlists, setWishlists] = useState(INITIAL_WISHLISTS);
+  // V3: Auto-populate gaps and wishlists from actioned intel signals on first mount
+  const intelGaps = useMemo(() => {
+    return INTEL_SEED
+      .filter((sig) => sig.catalogueGap && (sig.status === "actioned" || sig.status === "reviewed"))
+      .map((sig) => ({
+        id: `intel-${sig.id}`,
+        type: "White Space",
+        priority: sig.urgency === "immediate" ? "high" : sig.urgency === "season" ? "medium" : "low",
+        category: sig.categories?.[0] || "Tile",
+        priceRange: "",
+        desc: sig.catalogueRequest || sig.title,
+        date: sig.date,
+        addedBy: sig.author?.split(" ")[0] || "Intel",
+        source: "intel",
+        intelId: sig.id,
+      }));
+  }, []);
+
+  const intelWishlists = useMemo(() => {
+    return INTEL_SEED
+      .filter((sig) => sig.type === "market" && sig.direction === "opportunity" && sig.status === "actioned")
+      .map((sig) => {
+        const store = FD_STORES.find((s) => sig.store && s.id.toString().includes("01"));
+        return {
+          id: `wish-intel-${sig.id}`,
+          store: store?.name || sig.cluster || "Southeast",
+          region: store?.region || sig.cluster || "",
+          item: sig.title,
+          evidence: "Market intel",
+          urgency: sig.urgency || "season",
+          note: sig.body?.slice(0, 120) + "...",
+          date: sig.date,
+          source: "intel",
+        };
+      });
+  }, []);
+
+  const [gaps, setGaps] = useState(() => {
+    const existing = INITIAL_GAPS;
+    const existingIds = new Set(existing.map((g) => g.id));
+    return [...intelGaps.filter((g) => !existingIds.has(g.id)), ...existing];
+  });
+  const [wishlists, setWishlists] = useState(() => {
+    const existing = INITIAL_WISHLISTS;
+    const existingIds = new Set(existing.map((w) => w.id));
+    return [...intelWishlists.filter((w) => !existingIds.has(w.id)), ...existing];
+  });
   const [vendorSkus, setVendorSkus] = useState(() => buildVendorSkus());
 
   const [tab, setTab] = useState(0); // 0 summary · 1 gaps · 2 wishlist · 3 vendor

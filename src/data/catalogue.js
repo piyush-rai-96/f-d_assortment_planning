@@ -76,6 +76,38 @@ function clusterScore(sku, cl) {
   return { sku, stores: stores.size, carryPct: Math.round(carryPct), avgSqft: Math.round(avgSqft), score: Math.round(carryPct * 0.4 + avgSqft * 0.6) };
 }
 
+/*
+ * apIntelModifier — V3 intel-to-agent scoring integration.
+ * Reads actioned Market Intel signals and returns a score delta (capped ±30)
+ * plus warning flags for the National/Catalogue recommendation cards.
+ */
+const INTEL_DELTA_MAP = {
+  competitive: -15,
+  supply:      -20,
+  product:     -12,
+  market:      +10,
+  trend:       +8,
+  customer:    +5,
+};
+
+export function apIntelModifier(skuId, intelSeed) {
+  if (!intelSeed) return { delta: 0, flags: [], signalCount: 0 };
+  const actioned = intelSeed.filter(
+    (i) => i.feedsModel &&
+      (i.status === "actioned" || i.status === "reviewed") &&
+      i.skus?.includes(String(skuId))
+  );
+  let delta = 0;
+  const flags = [];
+  actioned.forEach((sig) => {
+    delta += INTEL_DELTA_MAP[sig.type] || 0;
+    if (sig.type === "supply") flags.push("supply-constrained");
+    if (sig.type === "product") flags.push("quality-hold");
+  });
+  delta = Math.max(-30, Math.min(30, delta));
+  return { delta, flags, signalCount: actioned.length };
+}
+
 /* Run the agent — returns a fresh plan (decisions + rec caches) the view stores in state. */
 export function runCatalogueAgent() {
   const nonCore = FD_SKUS.filter((s) => !s.tag && s.status === "Active");

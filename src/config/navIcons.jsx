@@ -171,3 +171,20 @@ export const PeerIntelIcon = () => (
 );
 
 export const SettingsIcon = AdminIcon;
+
+export const WorkspaceIcon = () => (
+  <Icon>
+    <rect x="2" y="3" width="20" height="14" rx="2" />
+    <path d="M8 21h8M12 17v4" />
+    <path d="M7 7h10M7 11h6" />
+  </Icon>
+);
+
+export const AssortIntelIcon = () => (
+  <Icon>
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z" />
+    <path d="M12 8v4l2 2" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+    <path d="m9 3 1 4M15 3l-1 4M21 9l-4 1M21 15l-4-1M15 21l-1-4M9 21l1-4M3 15l4-1M3 9l4 1" />
+  </Icon>
+);

@@ -16,7 +16,14 @@ import {
   nationalR13,
   storeUniqueRows,
 } from "../data/regional.js";
+import { CLUSTER_SLOTS, otbClusterConsumed, fmtCurrency, otbPct } from "../data/otb.js";
+import { CATALOGUE_SKUS } from "../data/catalogue.js";
 import "./Regional.css";
+
+/* Shared ASSORTMENT_PLAN state — written by Regional, read by StoreCuration */
+export const ASSORTMENT_PLAN = {
+  clusterDecisions: {},
+};
 
 const panelSx = {
   maxWidth: "none",
@@ -95,13 +102,23 @@ export default function Regional({ onNavigate }) {
   const openCluster = (id) => { setActiveCluster(id); setActiveStore(null); };
   const openStore = (clusterId, storeId) => { setActiveCluster(clusterId); setActiveStore(storeId); };
   const back = () => { if (activeStore) setActiveStore(null); else setActiveCluster(null); };
-  const toggleAdd = (clusterId, skuId) =>
+  const toggleAdd = (clusterId, skuId) => {
     setClusterAdds((prev) => {
       const cl = { ...(prev[clusterId] || {}) };
       if (cl[skuId]) delete cl[skuId];
       else cl[skuId] = true;
-      return { ...prev, [clusterId]: cl };
+      const next = { ...prev, [clusterId]: cl };
+      // V3: sync to shared ASSORTMENT_PLAN so StoreCuration can read cluster decisions
+      const flatDecisions = {};
+      Object.entries(next).forEach(([cid, adds]) => {
+        Object.keys(adds).forEach((sid) => {
+          flatDecisions[`${cid}:${sid}`] = "add";
+        });
+      });
+      ASSORTMENT_PLAN.clusterDecisions = flatDecisions;
+      return next;
     });
+  };
 
   const coreSidebar = useMemo(
     () => byDept(FD_SKUS.filter((s) => s.tag === "Core" || s.tag === "BG")),
@@ -267,6 +284,23 @@ function ClusterOverview({ byDept, clusterAdds, onReview, onStore }) {
                   </Button>
                 ))}
               </Stack>
+
+              {/* OTB slot indicator */}
+              <div className="rr-otb-slot">
+                <span className="rr-otb-slot-label">Cluster slots</span>
+                <span className={`rr-otb-slot-count ${addCount > (CLUSTER_SLOTS[cl.id] || 10) ? "over" : ""}`}>
+                  {addCount} / {CLUSTER_SLOTS[cl.id] || 10} used
+                </span>
+                <div className="rr-otb-slot-bar">
+                  <div
+                    className="rr-otb-slot-fill"
+                    style={{
+                      width: `${Math.min(100, (addCount / (CLUSTER_SLOTS[cl.id] || 10)) * 100)}%`,
+                      background: addCount > (CLUSTER_SLOTS[cl.id] || 10) ? "#dc2626" : "#2563eb",
+                    }}
+                  />
+                </div>
+              </div>
 
               {/* Top SKU chips */}
               {clSkus.length ? (

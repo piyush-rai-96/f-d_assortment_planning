@@ -13,11 +13,10 @@ import {
   NEEDS_ATTENTION,
   RECENT_ACTIVITY,
   QUICK_ACTIONS,
+  PRIORITY_ACTIONS,
 } from "../data/todaySeed.js";
 import "./Today.css";
 
-/* Card style — neutralizes Impact UI Card's default minHeight/maxWidth so
-   cards size to content with consistent token-driven padding. */
 const panelSx = {
   maxWidth: "none",
   minHeight: "auto",
@@ -32,20 +31,29 @@ const clickableSx = {
   ...panelSx,
   cursor: "pointer",
   transition: "border-color .15s, box-shadow .15s, transform .15s",
-  "&:hover": {
-    borderColor: "var(--color-primary)",
-    boxShadow: "var(--sh2)",
-    transform: "translateY(-2px)",
-  },
 };
 
 const VELOCITY_BADGE = { A: "success", B: "info", C: "warning", D: "error" };
 const SEVERITY_TAG = {
-  error: { label: "Urgent", color: "error" },
-  warning: { label: "Soon", color: "warning" },
-  success: { label: "On track", color: "success" },
-  info: { label: "Signal", color: "info" },
+  error:   { label: "Urgent",    color: "error"   },
+  warning: { label: "Soon",      color: "warning" },
+  success: { label: "On track",  color: "success" },
+  info:    { label: "Signal",    color: "info"    },
 };
+
+const PHASE_STATUS_ICON = {
+  100: "✅", 0: "⏳",
+};
+function phaseIcon(pct) {
+  if (pct === 100) return "✅";
+  if (pct > 0) return "▶";
+  return "○";
+}
+function phaseColor(pct) {
+  if (pct === 100) return "#059669";
+  if (pct > 0) return "#2563eb";
+  return "#9ca3af";
+}
 
 function greetingFor(hour) {
   if (hour < 12) return "Good morning";
@@ -53,13 +61,21 @@ function greetingFor(hour) {
   return "Good evening";
 }
 
-export default function Today({ onNavigate }) {
-  const go = (mod) => onNavigate?.(mod);
-  const { user } = useAuth();
+/* Determine priority action from pipeline state */
+function getPriorityAction(seed) {
+  if (!seed.agentRan) return PRIORITY_ACTIONS.find((a) => a.condition === "agentNotRun");
+  if (seed.natLocked === 0) return PRIORITY_ACTIONS.find((a) => a.condition === "natCorePending");
+  if (seed.submittedRatio < 0.3) return PRIORITY_ACTIONS.find((a) => a.condition === "storesIncomplete");
+  return PRIORITY_ACTIONS.find((a) => a.condition === "default");
+}
 
-  // ── All legacy renderToday() calculations, ported to a single memo ────────
+export default function Today({ onNavigate, user: userProp }) {
+  const go = (mod) => onNavigate?.(mod);
+  const { user: authUser } = useAuth();
+  const user = userProp || authUser;
+
   const model = useMemo(() => {
-    const { coreCount, natLocked, agentRan, fcstReceived, submittedRatio, catalogueSkuCount } = TODAY_SEED;
+    const { coreCount, natLocked, agentRan, fcstReceived, submittedRatio, catalogueSkuCount, activePlans = 2, unreadIntel = 4 } = TODAY_SEED;
 
     const totalStores = FD_STORES.length;
     const submitted = Math.round(totalStores * submittedRatio);
@@ -68,93 +84,145 @@ export default function Today({ onNavigate }) {
     const totalCore = coreCount + natLocked;
 
     const phases = PIPELINE_PHASES.map((p) => {
-      let pct = 0;
-      switch (p.mod) {
-        case "portfolio": pct = 100; break;
-        case "forecast": pct = fcstReceived > 0 ? 80 : 20; break;
-        case "catalogue": pct = agentRan ? 100 : 0; break;
-        case "national": pct = natLocked > 0 ? 60 : 0; break;
-        case "regional": pct = 10; break;
-        case "store-curation": pct = submittedPct; break;
-        default: pct = 0;
-      }
+      let pct = p.pct ?? 0;
+      // Runtime override based on flags
+      if (p.mod === "forecast") pct = fcstReceived > 0 ? 100 : 100;
+      if (p.mod === "catalogue") pct = agentRan ? 100 : 45;
+      if (p.mod === "store-curation") pct = submittedPct;
       return { ...p, pct };
     });
     const overallPct = Math.round(phases.reduce((a, p) => a + p.pct, 0) / phases.length);
 
-    const bands = ["A", "B", "C", "D"].map((v) => {
-      const stores = FD_STORES.filter((s) => s.velocity === v);
-      const done = Math.round(stores.length * 0.72);
-      const pct = stores.length ? Math.round((done / stores.length) * 100) : 0;
-      return { v, total: stores.length, done, pct, networkPct: VELOCITY_NETWORK_PCT[v] };
-    });
+    const priorityAction = getPriorityAction(TODAY_SEED);
 
     const greeting = greetingFor(new Date().getHours());
     const firstName = (user?.name || "there").split(" ")[0];
 
     const kpis = [
-      { value: totalStores, label: "Total Stores", sub: `${totalStores} in network`, mod: "store-curation" },
-      { value: submitted, label: "Stores Submitted", sub: `${submittedPct}% complete`, mod: "store-curation" },
-      { value: pending, label: "Pending", sub: "deadline Sep 20", mod: "store-curation" },
-      { value: totalCore, label: "National Core", sub: `${coreCount} hard + ${natLocked} agent`, mod: "national" },
-      { value: catalogueSkuCount, label: "Catalogue SKUs", sub: "FW 2025 locked", mod: "catalogue" },
+      { value: totalStores, label: "Total Stores",    sub: `${submitted} submitted (${submittedPct}%)`, mod: "store-curation" },
+      { value: totalCore,   label: "National Core",   sub: `${coreCount} hard + ${natLocked} agent`,    mod: "national"       },
+      { value: catalogueSkuCount, label: "Catalogue SKUs", sub: "SS 2026 active",                      mod: "catalogue"      },
+      { value: pending,     label: "Pending Stores",  sub: "Deadline Sep 20",                           mod: "store-curation" },
+      { value: unreadIntel, label: "Intel Signals",   sub: "2 threats · 1 opportunity",                 mod: "intel"          },
     ];
 
     const fill = (s) => s.replace("{pending}", pending);
-    const attention = NEEDS_ATTENTION.filter((a) => !(a.hideWhenAgentRan && agentRan)).map((a) => ({
-      ...a,
-      title: fill(a.title),
-    }));
+    const attention = NEEDS_ATTENTION
+      .filter((a) => !(a.hideWhenAgentRan && agentRan))
+      .slice(0, 4)
+      .map((a) => ({ ...a, title: fill(a.title) }));
     const quick = QUICK_ACTIONS.map((q) => ({ ...q, sub: fill(q.sub) }));
 
-    return { greeting, firstName, pending, phases, overallPct, bands, kpis, attention, quick };
+    return {
+      greeting, firstName, pending, phases, overallPct, kpis, attention, quick,
+      priorityAction, activePlans, unreadIntel, submittedPct, totalStores, submitted,
+    };
   }, [user]);
+
+  const prioritySeverityColor = {
+    error: "#dc2626", warning: "#d97706", info: "#2563eb", success: "#059669",
+  };
+  const prioritySeverityBg = {
+    error: "#fef2f2", warning: "#fffbeb", info: "#eff6ff", success: "#ecfdf5",
+  };
 
   return (
     <Stack direction="column" gap={5} className="today">
-      {/* ── Greeting + status pills ─────────────────────────────────────── */}
+
+      {/* ── Header: greeting + header pills ──────────────────────────────── */}
       <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
         <Stack direction="column" gap={1}>
           <Text variant="display">
             {model.greeting}, {model.firstName} 👋
           </Text>
           <Text variant="caption" tone="muted">
-            Floor &amp; Decor · {user?.role || "Assortment Planning"} · FW 2025
+            Floor &amp; Decor · {user?.role || "Assortment Planning"} · SS 2026
           </Text>
         </Stack>
         <Stack direction="row" align="center" gap={2} wrap>
-          <Badge variant="subtle" color="error" label={`${model.pending} stores pending`} />
+          <div className="today-header-pill today-header-pill--intel" onClick={() => go("intel")}>
+            📡 {model.unreadIntel} intel signals
+          </div>
+          <div className="today-header-pill today-header-pill--plans" onClick={() => go("workspace")}>
+            📋 {model.activePlans} active plans
+          </div>
           <Badge variant="subtle" color="warning" label="Sep 20 deadline" />
         </Stack>
       </Stack>
 
-      {/* ── Pipeline ────────────────────────────────────────────────────── */}
+      {/* ── Persona context banner ────────────────────────────────────────── */}
+      {user?.greeting && (
+        <div className="today-persona-banner">
+          <div className="today-persona-avatar" style={{ background: user.color || "#2d6a2d" }}>
+            {user.avatar}
+          </div>
+          <div className="today-persona-content">
+            <p className="today-persona-greeting">{user.greeting}</p>
+            {user.focusModules && (
+              <div className="today-persona-chips">
+                {user.focusModules.slice(0, 4).map((mod) => (
+                  <button key={mod} className="today-persona-chip" onClick={() => go(mod)}>
+                    {mod.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Priority action card ──────────────────────────────────────────── */}
+      {model.priorityAction && (
+        <div
+          className="today-priority-card"
+          style={{
+            background: prioritySeverityBg[model.priorityAction.severity],
+            borderColor: prioritySeverityColor[model.priorityAction.severity],
+          }}
+          onClick={() => go(model.priorityAction.mod)}
+        >
+          <div className="today-priority-urgency" style={{ background: prioritySeverityColor[model.priorityAction.severity] }}>
+            {model.priorityAction.severity === "error" ? "Urgent" : model.priorityAction.severity === "warning" ? "Action needed" : "Next step"}
+          </div>
+          <div className="today-priority-body">
+            <p className="today-priority-title">{model.priorityAction.title}</p>
+            <p className="today-priority-sub">{model.priorityAction.sub}</p>
+          </div>
+          <button
+            className="today-priority-cta"
+            style={{ background: prioritySeverityColor[model.priorityAction.severity] }}
+            onClick={(e) => { e.stopPropagation(); go(model.priorityAction.mod); }}
+          >
+            {model.priorityAction.cta} →
+          </button>
+        </div>
+      )}
+
+      {/* ── Pipeline status table ─────────────────────────────────────────── */}
       <Card sx={panelSx}>
-        <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>
-          FW 2025 Pipeline
-        </Text>
-        <Grid min={180} gap={3}>
-          {model.phases.map((p) => (
-            <Card key={p.mod} sx={{ ...clickableSx, padding: "var(--sp-3)" }} onClick={() => go(p.mod)}>
-              <Stack direction="column" gap={2}>
-                <Stack direction="row" justify="space-between" align="center">
-                  <Text variant="caption" tone="muted">{p.label}</Text>
-                  <Text variant="caption" tone="subtle" mono>{p.pct}%</Text>
-                </Stack>
-                <ProgressBar
-                  value={p.pct}
-                  status={p.pct === 100 ? "completed" : "remaining"}
-                  showTime={false}
-                  customLabel=" "
-                />
-              </Stack>
-            </Card>
+        <Stack direction="row" justify="space-between" align="center" style={{ marginBottom: "var(--sp-3)" }}>
+          <Text variant="subheading" as="h3">SS 2026 Pipeline</Text>
+          <Badge variant="subtle" color="info" label={`${model.overallPct}% overall`} />
+        </Stack>
+        <div className="today-pipeline-table">
+          {model.phases.map((p, i) => (
+            <div key={p.mod} className="today-pipeline-row" onClick={() => go(p.mod)}>
+              <span className="today-pipeline-num">{i + 1}</span>
+              <span className="today-pipeline-phase">{p.label}</span>
+              <div className="today-pipeline-bar-wrap">
+                <div className="today-pipeline-bar-track">
+                  <div className="today-pipeline-bar-fill" style={{ width: `${p.pct}%`, background: phaseColor(p.pct) }} />
+                </div>
+              </div>
+              <span className="today-pipeline-pct" style={{ color: phaseColor(p.pct) }}>{p.pct}%</span>
+              <span className="today-pipeline-icon">{phaseIcon(p.pct)}</span>
+            </div>
           ))}
-        </Grid>
+        </div>
       </Card>
 
-      {/* ── KPI row ─────────────────────────────────────────────────────── */}
-      <Grid min={180} gap={3}>
+      {/* ── KPI row ──────────────────────────────────────────────────────── */}
+      <Grid min={160} gap={3}>
         {model.kpis.map((k) => (
           <Card key={k.label} sx={clickableSx} onClick={() => go(k.mod)}>
             <Stack direction="column" gap={1}>
@@ -166,40 +234,11 @@ export default function Today({ onNavigate }) {
         ))}
       </Grid>
 
-      {/* ── Mid row: curation bands / overall ring / needs attention ────── */}
+      {/* ── Middle row: overall ring + what needs attention ──────────────── */}
       <Grid min={300} gap={4} align="stretch">
-        {/* Store curation progress by velocity */}
+        {/* SS 2026 overall donut */}
         <Card sx={panelSx}>
-          <Text variant="subheading" as="h3">Store Curation Progress</Text>
-          <Stack direction="column" gap={3} style={{ margin: "var(--sp-4) 0" }}>
-            {model.bands.map((b) => (
-              <Stack key={b.v} direction="column" gap={2}>
-                <Stack direction="row" justify="space-between" align="center">
-                  <Stack direction="row" align="center" gap={2}>
-                    <Badge variant="subtle" size="small" color={VELOCITY_BADGE[b.v]} label={`Vel ${b.v}`} />
-                    <Text variant="caption" tone="muted">
-                      {b.total} stores · {b.networkPct}% of network
-                    </Text>
-                  </Stack>
-                  <Text variant="body-strong" mono>{b.done}/{b.total}</Text>
-                </Stack>
-                <ProgressBar
-                  value={b.pct}
-                  status={b.pct >= 70 ? "completed" : "remaining"}
-                  showTime={false}
-                  customLabel=" "
-                />
-              </Stack>
-            ))}
-          </Stack>
-          <Button variant="primary" size="medium" onClick={() => go("store-curation")}>
-            Open Store Curation →
-          </Button>
-        </Card>
-
-        {/* Overall completion donut */}
-        <Card sx={panelSx}>
-          <Text variant="subheading" as="h3">FW 2025 Overall</Text>
+          <Text variant="subheading" as="h3">SS 2026 Overall</Text>
           <Stack direction="column" align="center" justify="center">
             <Chart
               graphType="pie"
@@ -215,12 +254,12 @@ export default function Today({ onNavigate }) {
               tooltipOptions={{ enabled: false }}
               seriesData={[
                 {
-                  name: "FW 2025",
+                  name: "SS 2026",
                   type: "pie",
                   innerSize: "72%",
                   data: [
-                    { name: "Complete", y: model.overallPct, color: color.primary },
-                    { name: "Remaining", y: 100 - model.overallPct, color: color.track },
+                    { name: "Complete",  y: model.overallPct,        color: color.primary },
+                    { name: "Remaining", y: 100 - model.overallPct,  color: color.track   },
                   ],
                 },
               ]}
@@ -238,19 +277,14 @@ export default function Today({ onNavigate }) {
           </Stack>
         </Card>
 
-        {/* Needs attention */}
+        {/* What needs attention (state-derived, max 4) */}
         <Card sx={panelSx}>
-          <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>Needs attention</Text>
+          <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>What needs attention</Text>
           <Stack direction="column" gap={3}>
             {model.attention.map((a, i) => (
               <Card key={i} sx={{ ...clickableSx, padding: "var(--sp-3)" }} onClick={() => go(a.mod)}>
                 <Stack direction="row" align="center" gap={3}>
-                  <Badge
-                    variant="subtle"
-                    size="small"
-                    color={SEVERITY_TAG[a.severity].color}
-                    label={SEVERITY_TAG[a.severity].label}
-                  />
+                  <Badge variant="subtle" size="small" color={SEVERITY_TAG[a.severity].color} label={SEVERITY_TAG[a.severity].label} />
                   <Stack direction="column" flex="1" style={{ minWidth: 0 }}>
                     <Text variant="body-strong" truncate>{a.title}</Text>
                     <Text variant="caption" tone="subtle">{a.sub}</Text>
@@ -261,28 +295,13 @@ export default function Today({ onNavigate }) {
             ))}
           </Stack>
         </Card>
-      </Grid>
 
-      {/* ── Bottom row: recent activity / quick actions ─────────────────── */}
-      <Grid min={320} gap={4} align="start">
-        <Card sx={panelSx}>
-          <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>Recent activity</Text>
-          <Stack direction="column" gap={1}>
-            {RECENT_ACTIVITY.map((a, i) => (
-              <Stack key={i} direction="row" align="center" gap={3} className="today-feed-row" paddingX={3} paddingY={3}>
-                <span className="today-feed-icon">{a.icon}</span>
-                <Text variant="caption" tone="muted" flex="1" as="span" style={{ flex: 1 }}>{a.text}</Text>
-                <Text variant="micro" tone="subtle" style={{ whiteSpace: "nowrap" }}>{a.time}</Text>
-              </Stack>
-            ))}
-          </Stack>
-        </Card>
-
+        {/* Quick actions */}
         <Card sx={panelSx}>
           <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>Quick actions</Text>
           <Grid columns={2} gap={3}>
             {model.quick.map((q) => (
-              <Card key={q.label} sx={{ ...clickableSx, padding: "var(--sp-4)" }} onClick={() => go(q.mod)}>
+              <Card key={q.label} sx={{ ...clickableSx, padding: "var(--sp-3)" }} onClick={() => go(q.mod)}>
                 <Stack direction="column" gap={1}>
                   <span className="today-quick-icon">{q.icon}</span>
                   <Text variant="subheading">{q.label}</Text>
@@ -293,6 +312,27 @@ export default function Today({ onNavigate }) {
           </Grid>
         </Card>
       </Grid>
+
+      {/* ── Recent activity ──────────────────────────────────────────────── */}
+      <Card sx={panelSx}>
+        <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>Recent activity</Text>
+        <Stack direction="column" gap={1}>
+          {RECENT_ACTIVITY.map((a, i) => (
+            <Stack
+              key={i}
+              direction="row" align="center" gap={3}
+              className="today-feed-row" paddingX={3} paddingY={3}
+              style={{ cursor: a.mod ? "pointer" : "default" }}
+              onClick={() => a.mod && go(a.mod)}
+            >
+              <span className="today-feed-icon">{a.icon}</span>
+              <Text variant="caption" tone="muted" flex="1" as="span" style={{ flex: 1 }}>{a.text}</Text>
+              <Text variant="micro" tone="subtle" style={{ whiteSpace: "nowrap" }}>{a.time}</Text>
+            </Stack>
+          ))}
+        </Stack>
+      </Card>
+
     </Stack>
   );
 }

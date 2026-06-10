@@ -16,3 +16,28 @@
 .nat-rec-row.is-rejected {
   border-left-color: var(--color-error);
 }
+
+/* ── OTB budget grid ─────────────────────────────────────────────────────── */
+.nat-otb-grid { display: flex; flex-direction: column; gap: 14px; }
+.nat-otb-dept { display: flex; flex-direction: column; gap: 5px; }
+.nat-otb-dept-header { display: flex; justify-content: space-between; align-items: center; }
+.nat-otb-dept-name { font-size: 13px; font-weight: 700; color: var(--color-text-primary, #0a1a0a); }
+.nat-otb-dept-val { font-size: 12px; font-weight: 700; color: var(--color-text-muted, #456845); }
+.nat-otb-dept-val.over { color: #dc2626; }
+.nat-otb-bar-track { height: 8px; background: var(--color-border, #c8dcbc); border-radius: 4px; overflow: hidden; }
+.nat-otb-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.nat-otb-dept-pct { font-size: 11px; color: var(--color-text-subtle, #7a9a7a); }
+.nat-otb-over { color: #dc2626; font-weight: 700; }
+
+/* ── Intel delta badges ──────────────────────────────────────────────────── */
+.nat-intel-badge {
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;
+}
+.nat-intel-badge.pos { background: #ecfdf5; color: #059669; }
+.nat-intel-badge.neg { background: #fef2f2; color: #dc2626; }
+
+.nat-flag-badge {
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+.nat-flag--supply { background: #fef2f2; color: #dc2626; }
+.nat-flag--quality { background: #fffbeb; color: #d97706; }

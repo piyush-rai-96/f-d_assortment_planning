@@ -1,11 +1,12 @@
 /*
- * Seed data for the Today dashboard, ported from the legacy renderToday().
+ * Seed data for the Today dashboard — updated for SS 2026.
  *
- * Counts that the legacy derived from FD_SKUS / ASSORTMENT_PLAN / FORECAST_STATE
- * are captured here as their initial-state values (verified against the legacy
- * seed): coreCount = 5 (SKUs tagged Core/BG), catalogueSkuCount = 35
- * (FD_SKUS.length), and the agent/forecast/national flags all start empty.
- * These flow into the same calculations the legacy performed.
+ * V3 changes:
+ *  - Season: SS 2026
+ *  - Pipeline phases: Portfolio renamed Hindsight, Oracle renamed Approval
+ *  - PRIORITY_LOGIC: deterministic priority action based on pipeline state
+ *  - NEEDS_ATTENTION: state-derived, max 4 shown
+ *  - Added workspace data seed reference counts
  */
 export const CURRENT_USER = {
   name: "Karen M.",
@@ -13,31 +14,80 @@ export const CURRENT_USER = {
 };
 
 export const TODAY_SEED = {
+  season: "SS 2026",
   catalogueSkuCount: 35,
   coreCount: 5,
   natLocked: 0,
   agentRan: false,
   fcstReceived: 0,
-  submittedRatio: 0.7, // legacy: 70% of stores submitted
+  submittedRatio: 0.26,   // 18/70 stores submitted
+  activePlans: 2,
+  unreadIntel: 4,
 };
 
-// Per-velocity "% of network" labels (legacy bandPct — display only)
+// Per-velocity "% of network" labels (display only)
 export const VELOCITY_NETWORK_PCT = { A: 5, B: 15, C: 60, D: 15 };
 
-// Pipeline phases (legacy `phases`). `pct` is computed in the view from flags.
+// SS 2026 Pipeline phases (V3: Hindsight first, Approval last)
 export const PIPELINE_PHASES = [
-  { label: "Portfolio", mod: "portfolio" },
-  { label: "Forecast", mod: "forecast" },
-  { label: "Catalogue", mod: "catalogue" },
-  { label: "National", mod: "national" },
-  { label: "Regional", mod: "regional" },
-  { label: "Curation", mod: "store-curation" },
-  { label: "MPI/NPI", mod: "mpi" },
-  { label: "Oracle", mod: "lead-time" },
+  { label: "Hindsight",  mod: "hindsight",       pct: 100 },
+  { label: "Forecast",   mod: "forecast",         pct: 100 },
+  { label: "Catalogue",  mod: "catalogue",        pct:  45 },
+  { label: "National",   mod: "national",         pct:  70 },
+  { label: "Regional",   mod: "regional",         pct:  75 },
+  { label: "Curation",   mod: "store-curation",   pct:  26 },
+  { label: "MPI/NPI",    mod: "mpi",              pct:   0 },
+  { label: "Approval",   mod: "approval",         pct:   0 },
 ];
 
-// "Needs attention" priority cards (legacy). `hideWhenAgentRan` mirrors the
-// legacy `hide:agentRan` flag on the "Agent not run yet" item.
+/*
+ * Priority action logic: determines the single most important action card
+ * on Today, derived from pipeline state. First matching condition wins.
+ */
+export const PRIORITY_ACTIONS = [
+  {
+    condition: "agentNotRun",
+    severity: "error",
+    title: "Run the assortment agent",
+    sub: "Catalogue step is waiting — agent unlock tiers and SKU recommendations for SS 2026.",
+    mod: "catalogue",
+    cta: "Go to Catalogue",
+  },
+  {
+    condition: "natCorePending",
+    severity: "warning",
+    title: "National Core pending review",
+    sub: "Agent has surfaced recommendations — review and lock National Core before regional review opens.",
+    mod: "national",
+    cta: "Review National Core",
+  },
+  {
+    condition: "noClusterAdds",
+    severity: "warning",
+    title: "Regional review not started",
+    sub: "6 of 8 cluster leads have not submitted cluster-level picks for SS 2026.",
+    mod: "regional",
+    cta: "Open Regional Review",
+  },
+  {
+    condition: "storesIncomplete",
+    severity: "warning",
+    title: "8 stores have not started curation",
+    sub: "Gulf cluster auto-closes Sep 20 — 52 stores still pending submission.",
+    mod: "store-curation",
+    cta: "Open Store Curation",
+  },
+  {
+    condition: "default",
+    severity: "info",
+    title: "Curation progressing — review MPI drops",
+    sub: "18 stores submitted. Review MPI / NPI drop reconciliation before final lock.",
+    mod: "mpi",
+    cta: "Review MPI / NPI",
+  },
+];
+
+// "Needs attention" state-derived cards (max 4 shown in V3)
 export const NEEDS_ATTENTION = [
   { severity: "error", title: "8 stores not started", sub: "Gulf cluster · auto-closes Sep 20", mod: "store-curation" },
   { severity: "warning", title: "Agent not run yet", sub: "Run in Catalogue to unlock tiers", mod: "catalogue", hideWhenAgentRan: true },
@@ -47,19 +97,20 @@ export const NEEDS_ATTENTION = [
 ];
 
 export const RECENT_ACTIVITY = [
-  { time: "2m ago", icon: "✅", text: "107 Almeda submitted curation", severity: "success" },
-  { time: "18m ago", icon: "🤖", text: "Agent flagged SOL-SEASHELL for expansion", severity: "violet" },
-  { time: "1h ago", icon: "📊", text: "Forecast received for AQG-WARMOAK", severity: "info" },
-  { time: "2h ago", icon: "🔒", text: "National Core locked · 5 SKUs approved", severity: "success" },
-  { time: "3h ago", icon: "📍", text: "286 West Hartford — 3 store picks added", severity: "warning" },
-  { time: "4h ago", icon: "⚠️", text: "POR-TRAVERT: lead time extended to 20wk", severity: "error" },
+  { time: "2m ago",   icon: "✅", text: "107 Almeda submitted curation",                    severity: "success", mod: "store-curation" },
+  { time: "18m ago",  icon: "🤖", text: "Agent flagged SOL-SEASHELL for expansion",          severity: "violet",  mod: "catalogue" },
+  { time: "1h ago",   icon: "📊", text: "Forecast received for AQG-WARMOAK",                severity: "info",    mod: "forecast" },
+  { time: "2h ago",   icon: "🔒", text: "National Core locked · 5 SKUs approved",           severity: "success", mod: "national" },
+  { time: "3h ago",   icon: "📍", text: "286 West Hartford — 3 store picks added",           severity: "warning", mod: "store-curation" },
+  { time: "4h ago",   icon: "⚠️", text: "POR-TRAVERT: lead time extended to 20wk",         severity: "error",   mod: "lead-time" },
+  { time: "Yesterday",icon: "🏪", text: "Cluster CR-018 promoted to live — SS 2026 ready",  severity: "success", mod: "clustering" },
 ];
 
 export const QUICK_ACTIONS = [
-  { icon: "🤖", label: "Run agent", sub: "Catalogue step", mod: "catalogue" },
-  { icon: "🔒", label: "Review National", sub: "National Core", mod: "national" },
-  { icon: "🗂", label: "Regional Review", sub: "4 clusters", mod: "regional" },
-  { icon: "🏪", label: "Store Curation", sub: "{pending} pending", mod: "store-curation" },
-  { icon: "📊", label: "Hindsight", sub: "Business review", mod: "hindsight" },
-  { icon: "🔍", label: "Market Intel", sub: "7 signals", mod: "intel" },
+  { icon: "🤖", label: "Run agent",      sub: "Catalogue step",     mod: "catalogue" },
+  { icon: "🔒", label: "National Core",  sub: "Review recs",        mod: "national" },
+  { icon: "🗂", label: "Regional",       sub: "4 clusters open",    mod: "regional" },
+  { icon: "🏪", label: "Store Curation", sub: "52 pending",         mod: "store-curation" },
+  { icon: "📊", label: "Hindsight",      sub: "Business review",    mod: "hindsight" },
+  { icon: "📁", label: "My Workspace",   sub: "2 plans active",     mod: "workspace" },
 ];

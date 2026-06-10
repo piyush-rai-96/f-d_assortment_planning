@@ -3,10 +3,14 @@ import { Card, Button, Badge, Table, ProgressBar, EmptyState } from "impact-ui";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { color } from "../styles/tokens.js";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
-import { nationalStats, runCatalogueAgent } from "../data/catalogue.js";
+import { nationalStats, runCatalogueAgent, apIntelModifier } from "../data/catalogue.js";
+import { INTEL_SEED } from "../data/intel.js";
+import { FD_OTB_DEPTS, otbNationalConsumed, otbPct, fmtCurrency } from "../data/otb.js";
+import { CATALOGUE_SKUS } from "../data/catalogue.js";
 import "./National.css";
 
 const panelSx = {
@@ -79,7 +83,18 @@ export default function National({ onNavigate }) {
 
   const lockedColumns = useMemo(
     () => [
-      { field: "name", headerName: "Description", minWidth: 240, flex: 1, filter: "agTextColumnFilter" },
+      {
+        field: "name", headerName: "SKU", minWidth: 280, flex: 1, filter: "agTextColumnFilter",
+        cellRenderer: ({ data }) => {
+          const skuObj = FD_SKUS.find((s) => String(s.sku) === data.sku);
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {skuObj && <SkuSwatch sku={skuObj} size={26} />}
+              <span>{data.name}</span>
+            </div>
+          );
+        },
+      },
       { field: "sku", headerName: "SKU", width: 120, filter: "agTextColumnFilter", cellStyle: () => ({ fontFamily: "var(--font-mono)", color: color.textMuted }) },
       { field: "dept", headerName: "Dept", width: 150, filter: "agSetColumnFilter" },
       { field: "subDept", headerName: "Sub-Dept", minWidth: 150, flex: 1, filter: "agSetColumnFilter" },
@@ -182,6 +197,44 @@ export default function National({ onNavigate }) {
         />
       </Stack>
 
+      {/* ── OTB Budget by Department ────────────────────────────────────────── */}
+      {agentRun && (
+        <Card sx={panelSx}>
+          <Stack direction="column" gap={3}>
+            <Stack direction="row" align="center" gap={2}>
+              <Text variant="body-strong" tone="strong">OTB Budget — National Core (SS 2026)</Text>
+              <Badge variant="subtle" size="small" color="info" label="By department" />
+            </Stack>
+            <div className="nat-otb-grid">
+              {Object.entries(FD_OTB_DEPTS).map(([dept, budget]) => {
+                const consumed = otbNationalConsumed(plan.natDecisions, CATALOGUE_SKUS)[dept] || 0;
+                const pct = otbPct(consumed, budget);
+                const over = consumed > budget;
+                return (
+                  <div key={dept} className="nat-otb-dept">
+                    <div className="nat-otb-dept-header">
+                      <span className="nat-otb-dept-name">{dept}</span>
+                      <span className={`nat-otb-dept-val ${over ? "over" : ""}`}>
+                        {fmtCurrency(consumed)} / {fmtCurrency(budget)}
+                      </span>
+                    </div>
+                    <div className="nat-otb-bar-track">
+                      <div className="nat-otb-bar-fill" style={{ width: `${Math.min(100, pct)}%`, background: over ? "#dc2626" : "#059669" }} />
+                    </div>
+                    <div className="nat-otb-dept-pct">
+                      {over
+                        ? <span className="nat-otb-over">⚠️ Over budget by {fmtCurrency(consumed - budget)}</span>
+                        : <span>{pct}% of budget consumed</span>
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Stack>
+        </Card>
+      )}
+
       {/* ── Section 2: Agent recommendations (post-run) ────────────────────── */}
       {agentRun ? (
         <Stack direction="column" gap={3}>
@@ -194,11 +247,12 @@ export default function National({ onNavigate }) {
           {agentRecs.length ? (
             <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
               {agentRecs.map((rec) => {
-                const id = rec.sku.sku;
+                    const id = rec.sku.sku;
                 const dec = plan.natDecisions[id];
                 const approved = dec === "core";
                 const rejected = dec === "rejected";
                 const reason = REASON_BADGE[rec.reason] || REASON_BADGE.emerging;
+                const intelMod = apIntelModifier(id, INTEL_SEED);
                 return (
                   <Stack
                     key={id}
@@ -215,6 +269,17 @@ export default function National({ onNavigate }) {
                       <Stack direction="row" align="center" gap={2} wrap>
                         <Text variant="body-strong" tone="strong">{rec.sku.desc}</Text>
                         <Badge variant="subtle" size="small" color={reason.color} label={reason.label} />
+                        {intelMod.delta !== 0 && (
+                          <span className={`nat-intel-badge ${intelMod.delta > 0 ? "pos" : "neg"}`}>
+                            📡 Intel {intelMod.delta > 0 ? "+" : ""}{intelMod.delta}pts
+                          </span>
+                        )}
+                        {intelMod.flags.includes("supply-constrained") && (
+                          <span className="nat-flag-badge nat-flag--supply">⚠️ Supply risk</span>
+                        )}
+                        {intelMod.flags.includes("quality-hold") && (
+                          <span className="nat-flag-badge nat-flag--quality">🔍 Quality hold</span>
+                        )}
                       </Stack>
                       <Stack direction="row" align="center" gap={2} wrap>
                         <Text variant="micro" tone="subtle" mono>{id}</Text>

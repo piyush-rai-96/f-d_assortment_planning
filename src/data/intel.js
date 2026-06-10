@@ -117,8 +117,8 @@ export const DIRECTION_OPTIONS = [
 ];
 export const URGENCY_OPTIONS = [
   { id: "immediate", label: "Immediate", desc: "Act now" },
-  { id: "season", label: "This season", desc: "FW 2025" },
-  { id: "next", label: "Next season", desc: "SS 2026" },
+  { id: "season", label: "This season", desc: "SS 2026" },
+  { id: "next", label: "Next season", desc: "FW 2026" },
   { id: "watch", label: "Watch", desc: "Monitor" },
 ];
 export const SCOPE_OPTIONS = [

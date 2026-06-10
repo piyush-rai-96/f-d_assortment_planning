@@ -22,6 +22,8 @@ import {
   LeadTimeIcon,
   PeerIntelIcon,
   SettingsIcon,
+  WorkspaceIcon,
+  AssortIntelIcon,
 } from "./navIcons.jsx";
 
 /*
@@ -46,10 +48,12 @@ export const routes = [
     icon: <AssortmentIcon />,
     link: "#assortment",
     children: [
+      { value: "workspace", label: "My Workspace", icon: <WorkspaceIcon />, link: "/workspace", badge: "Plans" },
       { value: "hindsight", label: "Hindsight", icon: <HindsightIcon />, link: "/hindsight" },
       { value: "store-hub", label: "Store Hub", icon: <StoreHubIcon />, link: "/store-hub" },
       { value: "portfolio", label: "Portfolio Build", icon: <PortfolioIcon />, link: "/portfolio" },
       { value: "forecast", label: "Like-Item Forecast", icon: <ForecastIcon />, link: "/forecast" },
+      { value: "assortment-intelligence", label: "Assortment Intelligence", icon: <AssortIntelIcon />, link: "/assortment-intelligence", badge: "Signals" },
       { value: "catalogue", label: "Catalogue", icon: <CatalogueIcon />, link: "/catalogue" },
       { value: "national", label: "National Core", icon: <NationalIcon />, link: "/national" },
       { value: "regional", label: "Regional Review", icon: <RegionalIcon />, link: "/regional" },
@@ -123,10 +127,12 @@ export function filterRoutesByAccess(tree, allowed) {
 /* value -> human label, for breadcrumb + content placeholder titles */
 export const MODULE_LABELS = {
   today: "Today",
+  workspace: "My Workspace",
   hindsight: "Hindsight",
   "store-hub": "Store Hub",
   portfolio: "Portfolio Build",
   forecast: "Like-Item Forecast",
+  "assortment-intelligence": "Assortment Intelligence",
   catalogue: "Catalogue",
   national: "National Core",
   regional: "Regional Review",
