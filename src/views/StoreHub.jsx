@@ -9,19 +9,10 @@ import { FD_STORES } from "../data/stores.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
 import "./StoreHub.css";
+import { panelSx } from "../styles/panelSx.js";
 
 /* Card style — neutralizes Impact UI's default minHeight/maxWidth so panels
    size to content with consistent token-driven padding (matches Today/Hindsight). */
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 /* Comparison pane: no inner padding (rows own their padding), clip to radius. */
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
 

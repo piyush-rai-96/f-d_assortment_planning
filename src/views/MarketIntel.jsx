@@ -19,18 +19,8 @@ import {
   STATUS_BADGE,
 } from "../data/intel.js";
 import "./MarketIntel.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
 const sidebarSx = { ...paneSx, width: "252px", minWidth: "252px", flexShrink: 0, alignSelf: "flex-start" };
 const detailSx = { ...paneSx, width: "340px", minWidth: "340px", flexShrink: 0, alignSelf: "flex-start" };

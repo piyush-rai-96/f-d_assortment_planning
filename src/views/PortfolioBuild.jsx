@@ -22,18 +22,9 @@ import {
 } from "../data/portfolioSeed.js";
 import { INTEL_SEED } from "../data/intel.js";
 import "./PortfolioBuild.css";
+import { panelSx } from "../styles/panelSx.js";
 
 /* Shared Card style — neutralizes Impact UI defaults, token-driven (matches other views). */
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 /* List container card: rows own their own padding. */
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
 const formCardSx = { ...panelSx, padding: "var(--sp-5)" };

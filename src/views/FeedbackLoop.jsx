@@ -14,18 +14,8 @@ import {
   SESSION_OVERRIDES,
 } from "../data/feedback.js";
 import "./FeedbackLoop.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 
 function Bar({ pct, color }) {
   return (

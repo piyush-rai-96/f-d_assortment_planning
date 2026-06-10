@@ -184,9 +184,9 @@ export default function MainLayout({
 
       {/* Override Mode bar */}
       {overrideMode && (
-        <div className="override-bar">
+        <div className="override-bar" role="region" aria-label="Override Mode — price editor">
           <div className="override-bar-header">
-            <span className="override-bar-title">🔴 Override Mode</span>
+            <span className="override-bar-title"><span aria-hidden="true">🔴</span> Override Mode</span>
             <div className="override-dept-tabs">
               {OVERRIDE_DEPTS.map((d) => (
                 <button
@@ -216,11 +216,12 @@ export default function MainLayout({
                   <span className="override-desc">{r.desc}</span>
                   <span className="override-dept">{r.dept}</span>
                   <div className="override-price-group">
-                    <span className="override-price-label">$</span>
+                    <span className="override-price-label" aria-hidden="true">$</span>
                     <input
                       className="override-price-input"
                       type="number"
                       step="0.01"
+                      aria-label={`Override price for ${r.sku} — ${r.desc}`}
                       value={overridePrices[r.sku] ?? r.price.toFixed(2)}
                       onChange={(e) => setOverridePrices((p) => ({ ...p, [r.sku]: e.target.value }))}
                     />
@@ -228,6 +229,7 @@ export default function MainLayout({
                   <input
                     className="override-reason-input"
                     placeholder="Reason (optional)"
+                    aria-label={`Override reason for ${r.sku} — ${r.desc}`}
                     value={overrideReasons[r.sku] ?? ""}
                     onChange={(e) => setOverrideReasons((p) => ({ ...p, [r.sku]: e.target.value }))}
                   />

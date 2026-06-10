@@ -1,0 +1,73 @@
+/* ── StepIndicator — shared horizontal wizard stepper ───────────────────── */
+.si-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.si-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+}
+
+.si-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.si-step.is-active .si-step-circle {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.si-step.is-done .si-step-circle {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.si-step-label {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.si-step.is-active .si-step-label {
+  color: var(--color-primary);
+  font-weight: var(--fw-bold);
+}
+
+.si-step.is-done .si-step-label {
+  color: var(--color-success);
+}
+
+.si-connector {
+  flex: 1;
+  min-width: var(--sp-4);
+  height: 2px;
+  background: var(--color-border);
+  margin-bottom: 18px; /* aligns with circle center */
+  transition: background 0.2s;
+}
+
+.si-connector.is-done {
+  background: var(--color-success);
+}

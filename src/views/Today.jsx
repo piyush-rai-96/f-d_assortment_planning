@@ -16,17 +16,8 @@ import {
   PRIORITY_ACTIONS,
 } from "../data/todaySeed.js";
 import "./Today.css";
+import { panelSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 const clickableSx = {
   ...panelSx,
   cursor: "pointer",
@@ -50,9 +41,9 @@ function phaseIcon(pct) {
   return "○";
 }
 function phaseColor(pct) {
-  if (pct === 100) return "#059669";
-  if (pct > 0) return "#2563eb";
-  return "#9ca3af";
+  if (pct === 100) return color.success;
+  if (pct > 0) return color.info;
+  return color.neutral;
 }
 
 function greetingFor(hour) {
@@ -120,10 +111,10 @@ export default function Today({ onNavigate, user: userProp }) {
   }, [user]);
 
   const prioritySeverityColor = {
-    error: "#dc2626", warning: "#d97706", info: "#2563eb", success: "#059669",
+    error: color.error, warning: color.warning, info: color.info, success: color.success,
   };
   const prioritySeverityBg = {
-    error: "#fef2f2", warning: "#fffbeb", info: "#eff6ff", success: "#ecfdf5",
+    error: color.errorSoft, warning: color.warningSoft, info: color.infoSoft, success: color.successSoft,
   };
 
   return (
@@ -140,12 +131,12 @@ export default function Today({ onNavigate, user: userProp }) {
           </Text>
         </Stack>
         <Stack direction="row" align="center" gap={2} wrap>
-          <div className="today-header-pill today-header-pill--intel" onClick={() => go("intel")}>
+          <button type="button" className="today-header-pill today-header-pill--intel" onClick={() => go("intel")}>
             📡 {model.unreadIntel} intel signals
-          </div>
-          <div className="today-header-pill today-header-pill--plans" onClick={() => go("workspace")}>
+          </button>
+          <button type="button" className="today-header-pill today-header-pill--plans" onClick={() => go("workspace")}>
             📋 {model.activePlans} active plans
-          </div>
+          </button>
           <Badge variant="subtle" color="warning" label="Sep 20 deadline" />
         </Stack>
       </Stack>
@@ -153,7 +144,7 @@ export default function Today({ onNavigate, user: userProp }) {
       {/* ── Persona context banner ────────────────────────────────────────── */}
       {user?.greeting && (
         <div className="today-persona-banner">
-          <div className="today-persona-avatar" style={{ background: user.color || "#2d6a2d" }}>
+          <div className="today-persona-avatar" style={{ background: user.color || color.primary }}>
             {user.avatar}
           </div>
           <div className="today-persona-content">
@@ -206,7 +197,7 @@ export default function Today({ onNavigate, user: userProp }) {
         </Stack>
         <div className="today-pipeline-table">
           {model.phases.map((p, i) => (
-            <div key={p.mod} className="today-pipeline-row" onClick={() => go(p.mod)}>
+            <button type="button" key={p.mod} className="today-pipeline-row" onClick={() => go(p.mod)}>
               <span className="today-pipeline-num">{i + 1}</span>
               <span className="today-pipeline-phase">{p.label}</span>
               <div className="today-pipeline-bar-wrap">
@@ -216,7 +207,7 @@ export default function Today({ onNavigate, user: userProp }) {
               </div>
               <span className="today-pipeline-pct" style={{ color: phaseColor(p.pct) }}>{p.pct}%</span>
               <span className="today-pipeline-icon">{phaseIcon(p.pct)}</span>
-            </div>
+            </button>
           ))}
         </div>
       </Card>

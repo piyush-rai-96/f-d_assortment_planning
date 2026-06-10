@@ -23,7 +23,7 @@
 }
 .ws-active-badge {
   padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;
-  background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;
+  background: var(--color-info-soft); color: var(--color-info); border: 1px solid var(--color-info-border);
 }
 
 /* ── Filters ── */
@@ -83,8 +83,8 @@
 .ws-pipe-seg {
   flex: 1; border-radius: 3px;
 }
-.ws-pipe-seg.done    { background: var(--color-success, #059669); }
-.ws-pipe-seg.active  { background: #2563eb; }
+.ws-pipe-seg.done    { background: var(--color-success); }
+.ws-pipe-seg.active  { background: var(--color-info); }
 .ws-pipe-seg.pending { background: var(--color-border, #c8dcbc); }
 
 /* ── KPI chips ── */
@@ -108,7 +108,7 @@
 
 /* ── Compare tray ── */
 .ws-compare-tray {
-  position: fixed; bottom: 0; left: 64px; right: 0; background: #1a2e1a;
+  position: fixed; bottom: 0; left: var(--rail-w); right: 0; background: var(--color-text-strong);
   color: white; z-index: 200; border-top: 2px solid var(--color-primary, #2d6a2d);
 }
 .ws-compare-tray-inner { display: flex; align-items: center; gap: 16px; padding: 12px 24px; flex-wrap: wrap; }
@@ -164,16 +164,16 @@
   padding: 12px 14px; border-radius: 10px; border: 1px solid var(--color-border, #c8dcbc);
   background: white;
 }
-.ws-stage-card--done    { border-color: var(--color-success, #059669); background: #ecfdf5; }
-.ws-stage-card--active  { border-color: #2563eb; background: #eff6ff; }
+.ws-stage-card--done    { border-color: var(--color-success); background: var(--color-success-soft); }
+.ws-stage-card--active  { border-color: var(--color-info); background: var(--color-info-soft); }
 .ws-stage-card--pending { opacity: .65; }
 
 .ws-stage-num {
   width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 800; background: var(--color-border, #c8dcbc); color: white; flex-shrink: 0;
 }
-.ws-stage-card--done  .ws-stage-num { background: var(--color-success, #059669); }
-.ws-stage-card--active .ws-stage-num { background: #2563eb; }
+.ws-stage-card--done  .ws-stage-num { background: var(--color-success); }
+.ws-stage-card--active .ws-stage-num { background: var(--color-info); }
 
 .ws-stage-info { flex: 1; }
 .ws-stage-label { display: block; font-size: 13px; font-weight: 700; color: var(--color-text-primary, #0a1a0a); }
@@ -183,7 +183,7 @@
   padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 700;
   background: var(--color-primary, #2d6a2d); color: white; white-space: nowrap;
 }
-.ws-stage-card--done .ws-stage-go { background: var(--color-success, #059669); }
+.ws-stage-card--done .ws-stage-go { background: var(--color-success); }
 
 .ws-detail-cta { margin-top: 8px; }
 .ws-cta-btn {
@@ -220,13 +220,13 @@
   color: var(--color-text-subtle, #7a9a7a);
 }
 .ws-wizard-step.active { color: var(--color-primary, #2d6a2d); }
-.ws-wizard-step.done   { color: var(--color-success, #059669); }
+.ws-wizard-step.done   { color: var(--color-success); }
 .ws-wizard-step-circle {
   width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 800;
   border: 2px solid currentColor; background: transparent;
 }
-.ws-wizard-step.done   .ws-wizard-step-circle { background: var(--color-success, #059669); color: white; border-color: var(--color-success, #059669); }
+.ws-wizard-step.done   .ws-wizard-step-circle { background: var(--color-success); color: white; border-color: var(--color-success); }
 .ws-wizard-step.active .ws-wizard-step-circle { background: var(--color-primary, #2d6a2d); color: white; border-color: var(--color-primary, #2d6a2d); }
 .ws-wizard-step-label { display: none; }
 @media (min-width: 480px) { .ws-wizard-step-label { display: inline; } }
@@ -328,3 +328,17 @@
 }
 .ws-empty-icon { font-size: 40px; margin-bottom: 12px; }
 .ws-empty p { font-size: 14px; margin-bottom: 16px; }
+
+/* ── Mode card badge (replaces emoji icon) ───────────────────────────────── */
+.ws-mode-badge {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  padding: 1px 7px;
+  border-radius: var(--r2);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+.ws-mode-card.selected .ws-mode-badge {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}

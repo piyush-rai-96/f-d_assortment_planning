@@ -9,20 +9,10 @@ import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import "./LikeItemForecast.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
 /* Shared Card style — token-driven, neutral (matches the other views). */
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 
 /* Status → label + Impact UI Badge color (subtle supports default/info/success/warning/error). */
 const STATUS_META = {

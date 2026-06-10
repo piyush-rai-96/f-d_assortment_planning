@@ -3,6 +3,8 @@ import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { CATALOGUE_SKUS, nationalStats, runCatalogueAgent } from "../data/catalogue.js";
+import { color } from "../styles/tokens.js";
+import { EmptyState, Button } from "impact-ui";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import { FD_STORES } from "../data/stores.js";
@@ -65,10 +67,10 @@ function buildAIScore(skuId) {
 }
 
 function scoreColor(v) {
-  if (v >= 75) return { bg: "#ecfdf5", color: "#059669" };
-  if (v >= 55) return { bg: "#eff6ff", color: "#2563eb" };
-  if (v >= 35) return { bg: "#fffbeb", color: "#d97706" };
-  return { bg: "#fef2f2", color: "#dc2626" };
+  if (v >= 75) return { bg: color.successSoft,  color: color.success };
+  if (v >= 55) return { bg: color.infoSoft,     color: color.info };
+  if (v >= 35) return { bg: color.warningSoft,  color: color.warning };
+  return        { bg: color.errorSoft,           color: color.error };
 }
 
 /* ── Per-store R13 for detail panel ─────────────────────────────────────── */
@@ -98,8 +100,11 @@ function ScoreBar({ label, value, color }) {
 function DetailPanel({ score, onNavigate, onClose }) {
   if (!score) return (
     <div className="ai-detail-empty">
-      <div className="ai-detail-empty-icon">📊</div>
-      <p>Select a SKU to view signal breakdown</p>
+      <EmptyState
+        heading="Select a SKU"
+        description="Click any row in the table to view its signal breakdown and score."
+        iconName="chart"
+      />
     </div>
   );
 
@@ -129,12 +134,12 @@ function DetailPanel({ score, onNavigate, onClose }) {
 
       <div className="ai-section-label">Score breakdown</div>
       <div className="ai-score-breakdown">
-        <ScoreBar label="R13 performance" value={score.r13Score} color="#059669" />
-        <ScoreBar label="Like-item forecast" value={score.forecastScore} color="#2563eb" />
+        <ScoreBar label="R13 performance" value={score.r13Score} color={color.success} />
+        <ScoreBar label="Like-item forecast" value={score.forecastScore} color={color.info} />
         <div className="ai-score-bar">
           <div className="ai-score-bar-head">
             <span className="ai-score-bar-label">Intel modifier</span>
-            <span className="ai-score-bar-val" style={{ color: score.intelDelta >= 0 ? "#059669" : "#dc2626" }}>
+            <span className="ai-score-bar-val" style={{ color: score.intelDelta >= 0 ? color.success : color.error }}>
               {score.intelDelta >= 0 ? "+" : ""}{score.intelDelta} pts
             </span>
           </div>
@@ -166,7 +171,7 @@ function DetailPanel({ score, onNavigate, onClose }) {
                 className="ai-store-bar-fill"
                 style={{
                   width: `${(s.r13 / maxR13) * 100}%`,
-                  background: s.velocity === "A" ? "#059669" : s.velocity === "B" ? "#2563eb" : s.velocity === "C" ? "#d97706" : "#9ca3af",
+                  background: s.velocity === "A" ? color.success : s.velocity === "B" ? color.info : s.velocity === "C" ? color.warning : color.neutral,
                 }}
               />
             </div>
@@ -226,16 +231,16 @@ export default function AssortmentIntelligence({ onNavigate }) {
     { field: "dept", headerName: "Dept", width: 120 },
     {
       field: "r13Score", headerName: "R13", width: 70,
-      cellStyle: { fontWeight: 700, color: "#059669" },
+      cellStyle: { fontWeight: 700, color: color.success },
     },
     {
       field: "forecastScore", headerName: "Forecast", width: 90,
-      cellStyle: { fontWeight: 700, color: "#2563eb" },
+      cellStyle: { fontWeight: 700, color: color.info },
     },
     {
       field: "intelDelta", headerName: "Intel Δ", width: 80,
       cellRenderer: ({ value }) => (
-        <span style={{ fontWeight: 700, color: value >= 0 ? "#059669" : "#dc2626" }}>
+        <span style={{ fontWeight: 700, color: value >= 0 ? color.success : color.error }}>
           {value >= 0 ? "+" : ""}{value}
         </span>
       ),
@@ -267,10 +272,12 @@ export default function AssortmentIntelligence({ onNavigate }) {
       </div>
 
       <div className="ai-filters">
-        <div className="ai-dept-tabs">
+        <div className="ai-dept-tabs" role="tablist" aria-label="Filter by department">
           {DEPT_OPTS.map((d) => (
             <button
               key={d}
+              role="tab"
+              aria-selected={deptFilter === d}
               className={`ai-dept-tab ${deptFilter === d ? "active" : ""}`}
               onClick={() => setDeptFilter(d)}
             >
@@ -278,10 +285,12 @@ export default function AssortmentIntelligence({ onNavigate }) {
             </button>
           ))}
         </div>
-        <div className="ai-signal-tabs">
+        <div className="ai-signal-tabs" role="tablist" aria-label="Filter by signal">
           {SIGNAL_TABS.map((t) => (
             <button
               key={t}
+              role="tab"
+              aria-selected={signalTab === t}
               className={`ai-signal-tab ${signalTab === t ? "active" : ""}`}
               onClick={() => setSignalTab(t)}
             >
@@ -293,7 +302,7 @@ export default function AssortmentIntelligence({ onNavigate }) {
 
       <div className="ai-layout">
         <div className="ai-table-panel">
-          <div className="ag-theme-alpine" style={{ height: 520, width: "100%" }}>
+          <div className="ag-theme-alpine" style={{ height: "calc(100vh - var(--header-h) - 120px)", width: "100%" }}>
             <AgGridReact
               rowData={filtered}
               columnDefs={colDefs}

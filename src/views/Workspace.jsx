@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Card, Badge, Input, Select } from "impact-ui";
+import { Card, Badge, Input, Select, EmptyState, Button } from "impact-ui";
+import StepIndicator from "../components/StepIndicator.jsx";
 import {
   PLANS, PIPE_STAGES, PLAN_STATUS, PLAN_MODE,
   DEPT_OPTIONS, CLUSTERING_SCENARIOS, CONTEXT_CHIPS,
@@ -7,20 +8,22 @@ import {
 import "./Workspace.css";
 
 /* ─── Shared atoms ──────────────────────────────────────────────────────── */
+const STATUS_BADGE_COLOR = {
+  draft: "neutral", "in-progress": "info", review: "warning", approved: "success",
+};
+const MODE_BADGE_COLOR = {
+  gated: "accent", autonomous: "teal",
+};
 function StatusPill({ status }) {
   const s = PLAN_STATUS[status] || PLAN_STATUS.draft;
   return (
-    <span className="ws-status-pill" style={{ color: s.color, background: s.bg }}>
-      {s.label}
-    </span>
+    <Badge variant="subtle" color={STATUS_BADGE_COLOR[status] || "neutral"} label={s.label} />
   );
 }
 function ModePill({ mode }) {
   const m = PLAN_MODE[mode] || PLAN_MODE.gated;
   return (
-    <span className="ws-mode-pill" style={{ color: m.color, background: m.bg }}>
-      {m.label}
-    </span>
+    <Badge variant="subtle" color={MODE_BADGE_COLOR[mode] || "neutral"} label={m.label} />
   );
 }
 
@@ -55,7 +58,11 @@ function KpiChip({ label, value }) {
 function PlanCard({ plan, onOpen, selected, onToggleCompare }) {
   const completedPct = Math.round((plan.stagesCompleted.length / PIPE_STAGES.length) * 100);
   return (
-    <div className={`ws-plan-card ${selected ? "ws-plan-card--selected" : ""}`} onClick={() => onOpen(plan.id)}>
+    <Card
+      className={`ws-plan-card ${selected ? "ws-plan-card--selected" : ""}`}
+      onClick={() => onOpen(plan.id)}
+      sx={{ cursor: "pointer", padding: "var(--sp-4)", transition: "box-shadow 0.15s" }}
+    >
       <div className="ws-plan-card-header">
         <div className="ws-plan-card-title">
           <span className="ws-plan-name">{plan.name}</span>
@@ -91,7 +98,7 @@ function PlanCard({ plan, onOpen, selected, onToggleCompare }) {
           Compare
         </label>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -241,22 +248,14 @@ function CreateWizard({ onClose, onCreate }) {
   };
 
   return (
-    <div className="ws-wizard-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="ws-wizard-overlay" role="dialog" aria-modal="true" aria-labelledby="ws-wizard-title" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="ws-wizard">
         <div className="ws-wizard-header">
-          <h3>Create New Plan</h3>
-          <button className="ws-wizard-close" onClick={onClose}>✕</button>
+          <h3 id="ws-wizard-title">Create New Plan</h3>
+          <button className="ws-wizard-close" onClick={onClose} aria-label="Close create plan wizard">✕</button>
         </div>
 
-        <div className="ws-wizard-steps">
-          {WIZARD_STEPS.map((s, i) => (
-            <div key={s} className={`ws-wizard-step ${i === step ? "active" : i < step ? "done" : ""}`}>
-              <div className="ws-wizard-step-circle">{i < step ? "✓" : i + 1}</div>
-              <span className="ws-wizard-step-label">{s}</span>
-              {i < WIZARD_STEPS.length - 1 && <div className="ws-wizard-step-connector" />}
-            </div>
-          ))}
-        </div>
+        <StepIndicator step={step} labels={WIZARD_STEPS} className="ws-wizard-steps" />
 
         <div className="ws-wizard-body">
           {step === 0 && (
@@ -287,13 +286,15 @@ function CreateWizard({ onClose, onCreate }) {
               <label className="ws-form-label">Pipeline mode</label>
               <div className="ws-mode-cards">
                 {[
-                  { id: "gated", label: "Gated", desc: "Merchant reviews and approves each stage before the agent proceeds. Full control, requires active participation.", icon: "🔒" },
-                  { id: "autonomous", label: "Autonomous", desc: "Agent chains stages automatically using configured confidence threshold. Ideal for speed — review at the end.", icon: "🤖" },
+                  { id: "gated", label: "Gated", desc: "Merchant reviews and approves each stage before the agent proceeds. Full control, requires active participation.", badge: "Recommended" },
+                  { id: "autonomous", label: "Autonomous", desc: "Agent chains stages automatically using configured confidence threshold. Ideal for speed — review at the end.", badge: "Fast" },
                 ].map((m) => (
                   <label key={m.id} className={`ws-mode-card ${draft.mode === m.id ? "selected" : ""}`}>
                     <input type="radio" value={m.id} checked={draft.mode === m.id} onChange={() => set("mode", m.id)} />
-                    <span className="ws-mode-icon">{m.icon}</span>
-                    <strong>{m.label}</strong>
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", marginBottom: "var(--sp-1)" }}>
+                      <strong>{m.label}</strong>
+                      <span className="ws-mode-badge">{m.badge}</span>
+                    </div>
                     <p>{m.desc}</p>
                   </label>
                 ))}
@@ -479,11 +480,11 @@ export default function Workspace({ onNavigate, user }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="ws-empty">
-          <div className="ws-empty-icon">📋</div>
-          <p>No plans match the selected filters.</p>
-          <button className="ws-btn-primary" onClick={() => setShowWizard(true)}>Create a plan</button>
-        </div>
+        <EmptyState
+          heading="No plans match"
+          description="Try adjusting the filters above or create a new plan."
+          action={<Button variant="primary" onClick={() => setShowWizard(true)}>+ New Plan</Button>}
+        />
       ) : (
         <div className="ws-plan-grid">
           {filtered.map((p) => (

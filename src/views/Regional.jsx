@@ -19,23 +19,13 @@ import {
 import { CLUSTER_SLOTS, otbClusterConsumed, fmtCurrency, otbPct } from "../data/otb.js";
 import { CATALOGUE_SKUS } from "../data/catalogue.js";
 import "./Regional.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
 /* Shared ASSORTMENT_PLAN state — written by Regional, read by StoreCuration */
 export const ASSORTMENT_PLAN = {
   clusterDecisions: {},
 };
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 
 const DEPT_OPTIONS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
 const DEPT_BADGE = { Wood: "warning", Tile: "success", "Laminate & Vinyl": "info" };
@@ -296,7 +286,7 @@ function ClusterOverview({ byDept, clusterAdds, onReview, onStore }) {
                     className="rr-otb-slot-fill"
                     style={{
                       width: `${Math.min(100, (addCount / (CLUSTER_SLOTS[cl.id] || 10)) * 100)}%`,
-                      background: addCount > (CLUSTER_SLOTS[cl.id] || 10) ? "#dc2626" : "#2563eb",
+                      background: addCount > (CLUSTER_SLOTS[cl.id] || 10) ? "var(--color-error)" : "var(--color-success)",
                     }}
                   />
                 </div>

@@ -15,18 +15,8 @@ import {
   WATERLINE,
 } from "../data/mpi.js";
 import "./Mpi.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
 
 const DEPT_BADGE = { Wood: "warning", Tile: "success", "Laminate & Vinyl": "info" };

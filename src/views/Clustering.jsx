@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, Button, Badge, Table } from "impact-ui";
 import Text from "../components/Text.jsx";
+import StepIndicator from "../components/StepIndicator.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
 import { color } from "../styles/tokens.js";
@@ -17,14 +18,9 @@ import {
   PREVIEW_CLUSTER_STORES, NETWORK_AVERAGES, VEL_SCORE_LABEL,
 } from "../data/clustering.js";
 import "./Clustering.css";
+import { panelSx } from "../styles/panelSx.js";
 
 /* ── Shared panel style ─────────────────────────────────────────────────── */
-const panelSx = {
-  maxWidth: "none", minHeight: "auto", width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)", borderRadius: "var(--r)",
-  boxShadow: "var(--sh)", background: "var(--color-surface)",
-};
 const sidebarSx = { ...panelSx, padding: 0, width: 264, minWidth: 264, overflow: "hidden" };
 const PREVIEW_COLS = "56px 1fr 92px 46px 50px 48px 60px";
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
@@ -534,7 +530,7 @@ function StoreManagerPanel({ managedClusters, setManagedClusters, availableStore
                     {/* Why this store belongs here */}
                     <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--r2)", padding: "var(--sp-3) var(--sp-4)" }}>
                       <Stack direction="row" align="flex-start" gap={2}>
-                        <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
+                        <span className="cr-insight-icon" aria-hidden="true">↗</span>
                         <Stack direction="column" gap={0.5}>
                           <Text variant="caption" tone="strong" style={{ fontWeight: 700 }}>Why this store is in {cluster.name}</Text>
                           <Text variant="micro" tone="muted">
@@ -662,7 +658,7 @@ function StoreManagerPanel({ managedClusters, setManagedClusters, availableStore
 
         <div className="cr-info-box" style={{ background: "var(--teal-pale)", borderColor: "var(--color-teal)" }}>
           <Stack direction="column" gap={1}>
-            <Text variant="caption" style={{ color: color.teal, fontWeight: 700 }}>💡 Store reassignment</Text>
+            <Text variant="caption" style={{ color: color.teal, fontWeight: 700 }}>Insight: Store reassignment</Text>
             <Text variant="micro" style={{ color: color.teal }}>
               Adding or removing stores re-calculates cluster cohesion at promote time. Changes here are preview only — they take effect when you promote to live.
             </Text>
@@ -798,14 +794,21 @@ function StepInput({ draft, setDraft }) {
           <div className="cr-form-section-body">
             <Stack direction="column" gap={2}>
               {SCOPE_OPTIONS.map((opt) => (
-                <div key={opt.id} className={`cr-radio-card${draft.scope === opt.id ? " is-selected" : ""}`}
-                  onClick={() => update("scope", opt.id)}>
+                <label key={opt.id} className={`cr-radio-card${draft.scope === opt.id ? " is-selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="cluster-scope"
+                    value={opt.id}
+                    checked={draft.scope === opt.id}
+                    onChange={() => update("scope", opt.id)}
+                    style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+                  />
                   <div className="cr-radio-dot" />
                   <Stack direction="column" gap={0.5}>
                     <Text variant="caption" tone="strong" style={{ fontWeight: 600 }}>{opt.label}</Text>
                     <Text variant="micro" tone="subtle">{opt.desc}</Text>
                   </Stack>
-                </div>
+                </label>
               ))}
             </Stack>
           </div>
@@ -819,24 +822,33 @@ function StepInput({ draft, setDraft }) {
           <div className="cr-form-section-body">
             <Stack direction="column" gap={2}>
               {METHOD_OPTIONS.map((opt) => (
-                <div key={opt.id}
+                <label key={opt.id}
                   className={`cr-radio-card${draft.method === opt.id ? " is-selected" : ""}${opt.disabled ? " is-disabled" : ""}`}
-                  onClick={() => !opt.disabled && update("method", opt.id)}>
+                  style={{ cursor: opt.disabled ? "not-allowed" : "pointer" }}>
+                  <input
+                    type="radio"
+                    name="cluster-method"
+                    value={opt.id}
+                    checked={draft.method === opt.id}
+                    disabled={opt.disabled}
+                    onChange={() => !opt.disabled && update("method", opt.id)}
+                    style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+                  />
                   <div className="cr-radio-dot" />
                   <Stack direction="column" gap={0.5} flex="1 1 auto" style={{ minWidth: 0 }}>
                     <Stack direction="row" align="center" gap={2}>
                       <Text variant="caption" tone="strong" style={{ fontWeight: 600 }}>{opt.label}</Text>
                       {opt.badge && (
                         <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 6,
-                          background: opt.id === "kmeans" ? color.primarySoft : "#f3f4f6",
-                          color: opt.id === "kmeans" ? color.primary : "#6b7280" }}>
+                          background: opt.id === "kmeans" ? color.primarySoft : color.surfaceAlt,
+                          color: opt.id === "kmeans" ? color.primary : color.neutral }}>
                           {opt.badge}
                         </span>
                       )}
                     </Stack>
                     <Text variant="micro" tone="subtle">{opt.desc}</Text>
                   </Stack>
-                </div>
+                </label>
               ))}
 
               {showK && (
@@ -885,7 +897,7 @@ function StepInput({ draft, setDraft }) {
         </div>
         <div className="cr-info-box" style={{ background: "var(--teal-pale)", borderColor: "var(--color-teal)" }}>
           <Stack direction="column" gap={1}>
-            <Text variant="caption" style={{ fontWeight: 600, color: color.teal }}>💡 Tip</Text>
+            <Text variant="caption" style={{ fontWeight: 600, color: color.teal }}>Tip</Text>
             <Text variant="micro" style={{ color: color.teal }}>
               Running with the same attributes as CR-018 gives the most comparable cohesion benchmark.
             </Text>
@@ -933,9 +945,14 @@ function StepAttributes({ draft, setDraft }) {
                 {attrs.map((attr) => {
                   const selected = draft.attrs.includes(attr.id);
                   return (
-                    <div key={attr.id} className={`cr-attr-check${selected ? " is-selected" : ""}`}
-                      onClick={() => toggleAttr(attr.id)}>
-                      <div className="cr-attr-checkbox" />
+                    <label key={attr.id} className={`cr-attr-check${selected ? " is-selected" : ""}`}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleAttr(attr.id)}
+                        style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+                      />
+                      <div className="cr-attr-checkbox" aria-hidden="true" />
                       <Stack direction="column" gap={0.5} flex="1 1 auto" style={{ minWidth: 0 }}>
                         <Stack direction="row" align="center" gap={1}>
                           <Text variant="caption" tone="strong" style={{ fontWeight: 600 }}>{attr.name}</Text>
@@ -943,7 +960,7 @@ function StepAttributes({ draft, setDraft }) {
                         </Stack>
                         <Text variant="micro" tone="subtle">{attr.desc}</Text>
                       </Stack>
-                    </div>
+                    </label>
                   );
                 })}
               </Stack>
@@ -1449,19 +1466,7 @@ export default function Clustering({ onNavigate }) {
             </Text>
           </Stack>
 
-          <div className="cr-steps">
-            {STEPS.map((s, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                <div className={`cr-step-item${i === wizardStep ? " is-active" : i < wizardStep ? " is-done" : ""}`}>
-                  <div className="cr-step-circle">{i < wizardStep ? "✓" : i + 1}</div>
-                  <div className="cr-step-label">{s}</div>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`cr-step-connector${i < wizardStep ? " is-done" : ""}`} />
-                )}
-              </div>
-            ))}
-          </div>
+          <StepIndicator step={wizardStep} labels={STEPS} className="cr-steps" />
 
           <Button variant="secondary" size="small" onClick={closeWizard}>Cancel</Button>
         </div>

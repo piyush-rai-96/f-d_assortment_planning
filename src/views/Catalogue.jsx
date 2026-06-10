@@ -6,6 +6,7 @@ import Grid from "../components/Grid.jsx";
 import { color } from "../styles/tokens.js";
 import { FD_STORES } from "../data/stores.js";
 import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
+import { panelSx, softSx } from "../styles/panelSx.js";
 import {
   CATALOGUE_SKUS,
   HARD_LOCKED_COUNT,
@@ -15,17 +16,6 @@ import {
   runCatalogueAgent,
 } from "../data/catalogue.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 
 const DEPT_BADGE = { Wood: "warning", Tile: "success", "Laminate & Vinyl": "info" };
 

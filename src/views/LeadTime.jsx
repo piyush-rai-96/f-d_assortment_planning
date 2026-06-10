@@ -5,17 +5,8 @@ import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
 import { LEAD_TIME_SKUS, STATUS_META, PIPELINE_STAGES } from "../data/leadtime.js";
 import "./LeadTime.css";
+import { panelSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 
 function Banner({ tone, icon, children }) {
   const bg = { warning: "var(--color-warning-soft)", error: "var(--color-error-soft)" }[tone] || "var(--color-surface-alt)";

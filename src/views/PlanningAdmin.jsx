@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Card, Button, Badge, Table, Tabs, Checkbox, Input } from "impact-ui";
 import Text from "../components/Text.jsx";
+import StepIndicator from "../components/StepIndicator.jsx";
 import Stack from "../components/Stack.jsx";
 import { color, deptColor } from "../styles/tokens.js";
 import {
@@ -14,17 +15,8 @@ import {
   PRODUCTS_BY_DEPT,
 } from "../data/admin.js";
 import "./PlanningAdmin.css";
+import { panelSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 
 const STATUS_COLOR = { Active: color.success, Discontinued: color.error, Pending: color.warning };
 const VEL_COLOR = { A: color.success, B: color.info, C: color.warning, D: color.error, E: color.error };
@@ -245,11 +237,17 @@ export default function PlanningAdmin() {
             if (visibleValues.length === 0) return null;
             return (
               <Stack key={g.key} direction="column" gap={2}>
-                <Stack className="pa-group" direction="row" align="center" gap={2} onClick={() => toggleGroup(`ag_${g.key}`)}>
+                <button
+                  type="button"
+                  className="pa-group"
+                  aria-expanded={!!open}
+                  onClick={() => toggleGroup(`ag_${g.key}`)}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "4px 0", font: "inherit" }}
+                >
                   <Text variant="caption" tone="subtle">{open ? "▾" : "▸"}</Text>
                   <Text variant="caption" tone="strong">{g.label}</Text>
                   {groupChecked > 0 ? <Badge variant="subtle" size="small" color="error" label={String(groupChecked)} /> : null}
-                </Stack>
+                </button>
                 {open || exSearch.trim() ? (
                   <div className="pa-matrix">
                     <StoreHead />
@@ -292,11 +290,17 @@ export default function PlanningAdmin() {
             const deptChecked = prods.reduce((sum, p) => sum + LOCATIONS.filter((l) => itemStore[`${p.sku}|${l.id}`]).length, 0);
             return (
               <Stack key={dept} direction="column" gap={2}>
-                <Stack className="pa-group" direction="row" align="center" gap={2} onClick={() => toggleGroup(`dept_${dept}`)}>
+                <button
+                  type="button"
+                  className="pa-group"
+                  aria-expanded={!!open}
+                  onClick={() => toggleGroup(`dept_${dept}`)}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "4px 0", font: "inherit" }}
+                >
                   <Text variant="caption" tone="subtle">{open ? "▾" : "▸"}</Text>
                   <Text variant="caption" tone="strong">{dept}</Text>
                   {deptChecked > 0 ? <Badge variant="subtle" size="small" color="info" label={String(deptChecked)} /> : null}
-                </Stack>
+                </button>
                 {open || exSearch.trim() ? (
                   <div className="pa-matrix">
                     <StoreHead />
@@ -333,10 +337,10 @@ export default function PlanningAdmin() {
   );
 
   const TAB_NAMES = [
-    { value: 0, label: "📦 Products" },
-    { value: 1, label: "📍 Location Attributes" },
-    { value: 2, label: "🚫 Global Exceptions" },
-    { value: 3, label: "🗓 Calendar Mapping" },
+    { value: 0, label: "Products" },
+    { value: 1, label: "Location Attributes" },
+    { value: 2, label: "Global Exceptions" },
+    { value: 3, label: "Calendar Mapping" },
   ];
 
   // V3: Scope wizard gate
@@ -357,9 +361,9 @@ export default function PlanningAdmin() {
 
   // Calendar Mapping tab content
   const FY_CARDS = [
-    { year: "FY2025", status: "complete", color: "#059669", periods: 52, season: "FW 2025 · SS 2025" },
-    { year: "FY2026", status: "current",  color: "#2563eb", periods: 52, season: "FW 2026 · SS 2026 (active)" },
-    { year: "FY2027", status: "future",   color: "#9ca3af", periods: 52, season: "FW 2027 · SS 2027" },
+    { year: "FY2025", status: "complete", color: color.success,   periods: 52, season: "FW 2025 · SS 2025" },
+    { year: "FY2026", status: "current",  color: color.info,      periods: 52, season: "FW 2026 · SS 2026 (active)" },
+    { year: "FY2027", status: "future",   color: color.neutral,   periods: 52, season: "FW 2027 · SS 2027" },
   ];
   const SS_PERIODS = [
     { period: "SS26-W01", start: "Jan 26, 2026", end: "Feb 1, 2026",  status: "complete" },
@@ -418,15 +422,7 @@ export default function PlanningAdmin() {
 
         <Card sx={panelSx}>
           {/* Step indicator */}
-          <div className="pa-scope-steps">
-            {SCOPE_STEPS.map((s, i) => (
-              <div key={s} className={`pa-scope-step ${i === scopeStep ? "active" : i < scopeStep ? "done" : ""}`}>
-                <div className="pa-scope-step-circle">{i < scopeStep ? "✓" : i + 1}</div>
-                <span>{s}</span>
-                {i < SCOPE_STEPS.length - 1 && <div className="pa-scope-connector" />}
-              </div>
-            ))}
-          </div>
+          <StepIndicator step={scopeStep} labels={SCOPE_STEPS} className="pa-scope-steps" />
 
           <div className="pa-scope-body">
             {scopeStep === 0 && (

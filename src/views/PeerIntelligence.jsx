@@ -17,17 +17,8 @@ import {
   heatColor,
 } from "../data/peer.js";
 import "./PeerIntelligence.css";
+import { panelSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 
 function ConfidenceBar({ score, width = 64 }) {
   const role = score >= 75 ? "success" : score >= 50 ? "warning" : "error";

@@ -14,17 +14,8 @@ import {
   seedPlrItems,
 } from "../data/plr.js";
 import "./PlrCalendar.css";
+import { panelSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 
 const GRID_COLS = "2.4fr 1.2fr 90px 130px 130px 110px 56px";
 const DEPT_FILTERS = ["All", ...PLR_DEPTS];

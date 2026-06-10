@@ -10,6 +10,11 @@
 .nat-rec-row:last-child {
   border-bottom: none;
 }
+.nat-rec-row:hover { background: var(--color-surface); }
+.nat-rec-row:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
 .nat-rec-row.is-approved {
   border-left-color: var(--color-success);
 }
@@ -18,26 +23,30 @@
 }
 
 /* ── OTB budget grid ─────────────────────────────────────────────────────── */
-.nat-otb-grid { display: flex; flex-direction: column; gap: 14px; }
-.nat-otb-dept { display: flex; flex-direction: column; gap: 5px; }
+.nat-otb-grid { display: flex; flex-direction: column; gap: var(--sp-3); }
+.nat-otb-dept { display: flex; flex-direction: column; gap: var(--sp-1); }
 .nat-otb-dept-header { display: flex; justify-content: space-between; align-items: center; }
-.nat-otb-dept-name { font-size: 13px; font-weight: 700; color: var(--color-text-primary, #0a1a0a); }
-.nat-otb-dept-val { font-size: 12px; font-weight: 700; color: var(--color-text-muted, #456845); }
-.nat-otb-dept-val.over { color: #dc2626; }
-.nat-otb-bar-track { height: 8px; background: var(--color-border, #c8dcbc); border-radius: 4px; overflow: hidden; }
-.nat-otb-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-.nat-otb-dept-pct { font-size: 11px; color: var(--color-text-subtle, #7a9a7a); }
-.nat-otb-over { color: #dc2626; font-weight: 700; }
+.nat-otb-dept-name { font-size: var(--fs-body); font-weight: var(--fw-bold); color: var(--color-text); }
+.nat-otb-dept-val { font-size: var(--fs-caption); font-weight: var(--fw-bold); color: var(--color-text-muted); }
+.nat-otb-dept-val.over { color: var(--color-error); }
+/* Shared OTB bar spec: 6px / var(--r2) — matches Regional and StoreCuration */
+.nat-otb-bar-track { height: 6px; background: var(--color-border); border-radius: var(--r2); overflow: hidden; }
+.nat-otb-bar-fill { height: 100%; border-radius: var(--r2); transition: width 0.3s; }
+.nat-otb-dept-pct { font-size: var(--fs-micro); color: var(--color-text-subtle); }
+.nat-otb-over { color: var(--color-error); font-weight: var(--fw-bold); }
 
 /* ── Intel delta badges ──────────────────────────────────────────────────── */
 .nat-intel-badge {
-  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: var(--r2); font-size: var(--fs-micro); font-weight: var(--fw-bold);
 }
-.nat-intel-badge.pos { background: #ecfdf5; color: #059669; }
-.nat-intel-badge.neg { background: #fef2f2; color: #dc2626; }
+.nat-intel-badge.pos { background: var(--color-success-soft); color: var(--color-success); }
+.nat-intel-badge.neg { background: var(--color-error-soft); color: var(--color-error); }
 
 .nat-flag-badge {
-  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: var(--r2); font-size: var(--fs-micro); font-weight: var(--fw-semibold);
 }
-.nat-flag--supply { background: #fef2f2; color: #dc2626; }
-.nat-flag--quality { background: #fffbeb; color: #d97706; }
+.nat-flag--supply { background: var(--color-error-soft); color: var(--color-error); }
+.nat-flag--quality { background: var(--color-warning-soft); color: var(--color-warning); }
+
+/* ── SKU description truncation ─────────────────────────────────────────── */
+.nat-rec-row .ia-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

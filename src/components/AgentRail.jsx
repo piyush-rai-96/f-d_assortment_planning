@@ -64,7 +64,7 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
           onClick={() => setCollapsed(false)}
           title="Expand Agent Rail"
         >
-          🤖 <span>Agent</span>
+          <span className="fd-agent-expand-icon" aria-hidden="true" /> <span>Agent</span>
         </button>
       </aside>
     );

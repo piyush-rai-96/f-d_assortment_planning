@@ -125,6 +125,27 @@
   --rail-w: 64px;
   --header-h: 56px;
   --agent-rail-w: 300px;
+
+  /* ── Spacing gap (fills the jump from --sp-6 to --sp-8) ────────────────── */
+  --sp-7: 28px;
+
+  /* ── Z-index scale ─────────────────────────────────────────────────────── */
+  --z-header: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+
+  /* ── Additional semantic aliases (for legacy token names used in views) ── */
+  --text1: var(--color-text);
+  --color-text-primary: var(--color-text);
+  --surface-alt: var(--color-surface-alt);
+
+  /* ── Extended semantic tokens ──────────────────────────────────────────── */
+  --color-info-border: #bfdbfe;
+  --color-error-border: #fca5a5;
+  --color-warning-border: #fcd34d;
+  --color-success-border: #6ee7b7;
+  --color-neutral: #9ca3af;
+  --color-accent-dark: #4c1d95;
 }
 
 * {
@@ -153,6 +174,16 @@ input,
 textarea,
 select {
   font-family: inherit;
+}
+
+/* Accessible focus ring — visible only for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Suppress outline for mouse/touch interactions only */
+:focus:not(:focus-visible) {
   outline: none;
 }
 
@@ -167,4 +198,13 @@ select {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong);
+}
+
+/* ── Utility: truncate long text in flex/grid context ───────────────────── */
+.fd-truncate {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }

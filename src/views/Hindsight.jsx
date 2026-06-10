@@ -9,19 +9,10 @@ import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import "./Hindsight.css";
+import { panelSx } from "../styles/panelSx.js";
 
 /* Card style — neutralizes Impact UI's default minHeight/maxWidth so panels
    size to content with consistent token-driven padding. */
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 
 const DEPT_OPTIONS = ["All", "Wood", "Tile", "Laminate & Vinyl"].map((d) => ({ value: d, label: d }));
 const STORE_OPTIONS = FD_STORES.map((s) => ({ value: s.id, label: s.name }));

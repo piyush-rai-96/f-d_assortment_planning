@@ -11,19 +11,9 @@ import { FD_SKUS } from "../data/skus.js";
 import { isMandatory, clusterLockedIds, newPlrSkus, storeUniqueRows } from "../data/curation.js";
 import { storeLocationBudget, otbStoreConsumed, fmtCurrency } from "../data/otb.js";
 import "./StoreCuration.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 
 const DEPT_FILTERS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
 const DEPT_OPTIONS = DEPT_FILTERS.map((d) => ({ value: d, label: d }));
@@ -301,7 +291,7 @@ export default function StoreCuration({ onNavigate, user }) {
             <span className="sc-otb-label">Location OTB Budget ({store.velocity}-band)</span>
             <div className="sc-otb-bar-wrap">
               <div className="sc-otb-bar-track">
-                <div className="sc-otb-bar-fill" style={{ width: `${Math.min(100, otb.pct)}%`, background: over ? "#dc2626" : "#059669" }} />
+                <div className="sc-otb-bar-fill" style={{ width: `${Math.min(100, otb.pct)}%`, background: over ? "var(--color-error)" : "var(--color-success)" }} />
               </div>
             </div>
             <span className="sc-otb-stats">

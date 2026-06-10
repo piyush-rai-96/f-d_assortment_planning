@@ -12,18 +12,8 @@ import { INTEL_SEED } from "../data/intel.js";
 import { FD_OTB_DEPTS, otbNationalConsumed, otbPct, fmtCurrency } from "../data/otb.js";
 import { CATALOGUE_SKUS } from "../data/catalogue.js";
 import "./National.css";
+import { panelSx, softSx } from "../styles/panelSx.js";
 
-const panelSx = {
-  maxWidth: "none",
-  minHeight: "auto",
-  width: "100%",
-  padding: "var(--sp-4)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
-  background: "var(--color-surface)",
-};
-const softSx = { ...panelSx, background: "var(--color-surface-alt)", boxShadow: "none" };
 
 /* Agent reason tag → label + Impact UI Badge color (functional signal). */
 const REASON_BADGE = {
@@ -219,7 +209,7 @@ export default function National({ onNavigate }) {
                       </span>
                     </div>
                     <div className="nat-otb-bar-track">
-                      <div className="nat-otb-bar-fill" style={{ width: `${Math.min(100, pct)}%`, background: over ? "#dc2626" : "#059669" }} />
+                      <div className="nat-otb-bar-fill" style={{ width: `${Math.min(100, pct)}%`, background: over ? color.error : color.success }} />
                     </div>
                     <div className="nat-otb-dept-pct">
                       {over
