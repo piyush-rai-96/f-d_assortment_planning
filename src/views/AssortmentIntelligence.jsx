@@ -4,93 +4,63 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { CATALOGUE_SKUS, nationalStats, runCatalogueAgent } from "../data/catalogue.js";
 import { color } from "../styles/tokens.js";
-import { EmptyState, Button } from "impact-ui";
+import { panelSx } from "../styles/panelSx.js";
+import { INTEL_SEED } from "../data/intel.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import { FD_STORES } from "../data/stores.js";
-import { INTEL_SEED } from "../data/intel.js";
 import "./AssortmentIntelligence.css";
 
 /* ── Score builder ───────────────────────────────────────────────────────── */
-const INTEL_DELTAS = {
-  competitive: -15,
-  supply: -20,
-  product: -12,
-  market: +10,
-  trend: +8,
-  customer: +5,
-};
+const INTEL_DELTAS = { competitive: -15, supply: -20, product: -12, market: +10, trend: +8, customer: +5 };
 
 function buildAIScore(skuId) {
   const sku = FD_SKUS.find((s) => String(s.sku) === skuId);
   if (!sku) return null;
   const stats = nationalStats(sku);
   const r13Base = Math.min(100, Math.round(stats.carryPct + stats.avgSqft / 3));
-
-  // Forecast component (mock: BG/Core tagged = higher)
   const forecastScore = sku.tag === "Core" ? 85 : sku.tag === "BG" ? 78 : 55 + Math.round(Math.random() * 20);
-
-  // Intel modifier
   const actioned = INTEL_SEED.filter(
-    (i) =>
-      i.feedsModel &&
-      (i.status === "actioned" || i.status === "reviewed") &&
-      i.skus?.includes(String(sku.sku))
+    (i) => i.feedsModel && (i.status === "actioned" || i.status === "reviewed") && i.skus?.includes(String(sku.sku))
   );
   let intelDelta = 0;
   const flags = [];
   actioned.forEach((sig) => {
-    const d = INTEL_DELTAS[sig.type] || 0;
-    intelDelta += d;
+    intelDelta += INTEL_DELTAS[sig.type] || 0;
     if (sig.type === "supply") flags.push("supply-constrained");
     if (sig.type === "product") flags.push("quality-hold");
   });
   intelDelta = Math.max(-30, Math.min(30, intelDelta));
   const composite = Math.max(0, Math.min(100, Math.round(r13Base * 0.45 + forecastScore * 0.35 + (50 + intelDelta) * 0.2)));
-
-  return {
-    skuId,
-    desc: sku.desc,
-    dept: sku.dept,
-    subDept: sku.subDept,
-    price: sku.price,
-    tag: sku.tag,
-    r13Score: r13Base,
-    forecastScore,
-    intelDelta,
-    composite,
-    flags,
-    signals: actioned,
-    carryPct: Math.round(stats.carryPct),
-    avgSqft: Math.round(stats.avgSqft),
-  };
+  return { skuId, desc: sku.desc, dept: sku.dept, subDept: sku.subDept, price: sku.price, tag: sku.tag,
+    r13Score: r13Base, forecastScore, intelDelta, composite, flags, signals: actioned,
+    carryPct: Math.round(stats.carryPct), avgSqft: Math.round(stats.avgSqft) };
 }
 
 function scoreColor(v) {
-  if (v >= 75) return { bg: color.successSoft,  color: color.success };
-  if (v >= 55) return { bg: color.infoSoft,     color: color.info };
-  if (v >= 35) return { bg: color.warningSoft,  color: color.warning };
-  return        { bg: color.errorSoft,           color: color.error };
+  if (v >= 75) return { bg: color.successSoft, fg: color.success };
+  if (v >= 55) return { bg: color.infoSoft,    fg: color.info };
+  if (v >= 35) return { bg: color.warningSoft,  fg: color.warning };
+  return        { bg: color.errorSoft,           fg: color.error };
 }
 
-/* ── Per-store R13 for detail panel ─────────────────────────────────────── */
 function storeR13(skuId) {
   return FD_STORES.map((st) => {
     const row = FD_ASSORTMENT.find((r) => r.storeId === st.id && String(r.sku) === skuId);
     return { store: st.name, velocity: st.velocity, r13: row?.r13Sqft || 0 };
-  }).sort((a, b) => b.r13 - a.r13).slice(0, 12);
+  }).sort((a, b) => b.r13 - a.r13).slice(0, 10);
 }
 
 /* ── Score bar ───────────────────────────────────────────────────────────── */
-function ScoreBar({ label, value, color }) {
+function ScoreBar({ label, value, fg }) {
   return (
     <div className="ai-score-bar">
       <div className="ai-score-bar-head">
         <span className="ai-score-bar-label">{label}</span>
-        <span className="ai-score-bar-val" style={{ color }}>{value}</span>
+        <span className="ai-score-bar-val" style={{ color: fg }}>{value}</span>
       </div>
       <div className="ai-score-bar-track">
-        <div className="ai-score-bar-fill" style={{ width: `${value}%`, background: color }} />
+        <div className="ai-score-bar-fill" style={{ width: `${value}%`, background: fg }} />
       </div>
     </div>
   );
@@ -98,57 +68,61 @@ function ScoreBar({ label, value, color }) {
 
 /* ── Detail panel ────────────────────────────────────────────────────────── */
 function DetailPanel({ score, onNavigate, onClose }) {
-  if (!score) return (
-    <div className="ai-detail-empty">
-      <EmptyState
-        heading="Select a SKU"
-        description="Click any row in the table to view its signal breakdown and score."
-        iconName="chart"
-      />
-    </div>
-  );
+  if (!score) return null;
 
   const sc = scoreColor(score.composite);
   const stores = storeR13(score.skuId);
   const maxR13 = Math.max(...stores.map((s) => s.r13), 1);
+  const velColor = (v) => v === "A" ? color.success : v === "B" ? color.info : v === "C" ? color.warning : color.neutral;
 
   return (
     <div className="ai-detail">
+      {/* Header */}
       <div className="ai-detail-header">
-        <div className="ai-detail-title">
-          <span className="ai-detail-sku-id">{score.skuId}</span>
-          <span className="ai-detail-sku-name">{score.desc}</span>
-        </div>
+        <button className="ai-detail-close" onClick={onClose} aria-label="Close detail panel">✕</button>
+        <div className="ai-detail-sku-id">{score.skuId}</div>
+        <div className="ai-detail-sku-name">{score.desc}</div>
         <div className="ai-detail-tags">
-          <span className="ai-dept-badge">{score.dept}</span>
-          {score.tag && <span className="ai-tag-badge">{score.tag}</span>}
+          <span className="ai-tag ai-tag--dept">{score.dept}</span>
+          {score.tag && <span className="ai-tag ai-tag--label">{score.tag}</span>}
           {score.flags.map((f) => (
-            <span key={f} className={`ai-flag-badge ai-flag-badge--${f}`}>{f}</span>
+            <span key={f} className={`ai-tag ai-tag--flag-${f}`}>{f.replace("-", " ")}</span>
           ))}
-        </div>
-        <div className="ai-composite-score" style={{ background: sc.bg, color: sc.color }}>
-          <span className="ai-comp-val">{score.composite}</span>
-          <span className="ai-comp-lbl">Composite score</span>
         </div>
       </div>
 
-      <div className="ai-section-label">Score breakdown</div>
-      <div className="ai-score-breakdown">
-        <ScoreBar label="R13 performance" value={score.r13Score} color={color.success} />
-        <ScoreBar label="Like-item forecast" value={score.forecastScore} color={color.info} />
-        <div className="ai-score-bar">
-          <div className="ai-score-bar-head">
-            <span className="ai-score-bar-label">Intel modifier</span>
-            <span className="ai-score-bar-val" style={{ color: score.intelDelta >= 0 ? color.success : color.error }}>
-              {score.intelDelta >= 0 ? "+" : ""}{score.intelDelta} pts
-            </span>
+      {/* Composite score */}
+      <div className="ai-composite" style={{ background: sc.bg }}>
+        <span className="ai-composite-val" style={{ color: sc.fg }}>{score.composite}</span>
+        <div className="ai-composite-info">
+          <span className="ai-composite-lbl">Composite Score</span>
+          <span className="ai-composite-sub" style={{ color: sc.fg }}>
+            {score.composite >= 75 ? "Strong performer" : score.composite >= 55 ? "Moderate" : "Needs attention"}
+          </span>
+        </div>
+      </div>
+
+      {/* Score breakdown */}
+      <div className="ai-section">
+        <div className="ai-section-label">Score breakdown</div>
+        <div className="ai-score-breakdown">
+          <ScoreBar label="R13 performance" value={score.r13Score} fg={color.success} />
+          <ScoreBar label="Like-item forecast" value={score.forecastScore} fg={color.info} />
+          <div className="ai-score-bar">
+            <div className="ai-score-bar-head">
+              <span className="ai-score-bar-label">Intel modifier</span>
+              <span className="ai-score-bar-val" style={{ color: score.intelDelta >= 0 ? color.success : color.error }}>
+                {score.intelDelta >= 0 ? "+" : ""}{score.intelDelta} pts
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Contributing signals */}
       {score.signals.length > 0 && (
-        <>
-          <div className="ai-section-label" style={{ marginTop: 16 }}>Contributing signals</div>
+        <div className="ai-section">
+          <div className="ai-section-label">Contributing signals</div>
           {score.signals.map((sig) => (
             <div key={sig.id} className="ai-signal-row">
               <span className="ai-signal-type">{sig.type}</span>
@@ -158,28 +132,26 @@ function DetailPanel({ score, onNavigate, onClose }) {
               </span>
             </div>
           ))}
-        </>
+        </div>
       )}
 
-      <div className="ai-section-label" style={{ marginTop: 16 }}>R13 by store (top 12)</div>
-      <div className="ai-store-bars">
-        {stores.map((s) => (
-          <div key={s.store} className="ai-store-bar-row">
-            <span className="ai-store-bar-name">{s.store.replace("Floor & Decor ", "")}</span>
-            <div className="ai-store-bar-track">
-              <div
-                className="ai-store-bar-fill"
-                style={{
-                  width: `${(s.r13 / maxR13) * 100}%`,
-                  background: s.velocity === "A" ? color.success : s.velocity === "B" ? color.info : s.velocity === "C" ? color.warning : color.neutral,
-                }}
-              />
+      {/* R13 by store */}
+      <div className="ai-section">
+        <div className="ai-section-label">R13 by store (top 10)</div>
+        <div className="ai-store-bars">
+          {stores.map((s) => (
+            <div key={s.store} className="ai-store-bar-row">
+              <span className="ai-store-bar-name">{s.store.replace("Floor & Decor ", "")}</span>
+              <div className="ai-store-bar-track">
+                <div className="ai-store-bar-fill" style={{ width: `${(s.r13 / maxR13) * 100}%`, background: velColor(s.velocity) }} />
+              </div>
+              <span className="ai-store-bar-val">{s.r13 > 0 ? `$${s.r13}` : "—"}</span>
             </div>
-            <span className="ai-store-bar-val">{s.r13 > 0 ? `$${s.r13}` : "—"}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
+      {/* Actions */}
       <div className="ai-detail-actions">
         <button className="ai-action-btn" onClick={() => onNavigate("catalogue")}>Open in Catalogue →</button>
         <button className="ai-action-btn ai-action-btn--ghost" onClick={() => onNavigate("forecast")}>View Forecast →</button>
@@ -193,133 +165,143 @@ const DEPT_OPTS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
 const SIGNAL_TABS = ["All", "Forecast signals", "Intel signals", "R13 only"];
 
 export default function AssortmentIntelligence({ onNavigate }) {
-  const [deptFilter, setDeptFilter]     = useState("All");
-  const [signalTab, setSignalTab]       = useState("All");
+  const [deptFilter, setDeptFilter]       = useState("All");
+  const [signalTab, setSignalTab]         = useState("All");
   const [selectedSkuId, setSelectedSkuId] = useState(null);
 
-  const scores = useMemo(() => {
-    return CATALOGUE_SKUS.map((c) => buildAIScore(c.id)).filter(Boolean);
-  }, []);
+  const scores = useMemo(() => CATALOGUE_SKUS.map((c) => buildAIScore(c.id)).filter(Boolean), []);
 
-  const filtered = useMemo(() => {
-    return scores.filter((s) => {
-      const deptOk = deptFilter === "All" || s.dept === deptFilter;
-      const sigOk =
-        signalTab === "All" ||
-        (signalTab === "Intel signals" && s.signals.length > 0) ||
-        (signalTab === "Forecast signals" && s.forecastScore > 65) ||
-        (signalTab === "R13 only" && s.signals.length === 0);
-      return deptOk && sigOk;
-    });
-  }, [scores, deptFilter, signalTab]);
+  const filtered = useMemo(() => scores.filter((s) => {
+    const deptOk = deptFilter === "All" || s.dept === deptFilter;
+    const sigOk =
+      signalTab === "All" ||
+      (signalTab === "Intel signals"    && s.signals.length > 0) ||
+      (signalTab === "Forecast signals" && s.forecastScore > 65) ||
+      (signalTab === "R13 only"         && s.signals.length === 0);
+    return deptOk && sigOk;
+  }), [scores, deptFilter, signalTab]);
 
   const selectedScore = scores.find((s) => s.skuId === selectedSkuId) || null;
+  const intelCount    = scores.filter((s) => s.signals.length > 0).length;
+  const panelOpen     = !!selectedScore;
 
   const colDefs = useMemo(() => [
     {
-      field: "skuId", headerName: "SKU", width: 110,
-      cellRenderer: ({ value, data }) => (
-        <div className="ai-sku-cell">
-          <div className="ai-sku-swatch" style={{
-            background: data.dept === "Wood" ? "#c8a26e" : data.dept === "Tile" ? "#6e9ab4" : "#8fbc72",
-          }} />
-          <span>{value}</span>
-        </div>
-      ),
+      field: "skuId", headerName: "SKU", width: 120, pinned: "left",
+      cellRenderer: ({ value, data }) => {
+        const bg = data.dept === "Wood" ? color.wood : data.dept === "Tile" ? color.teal : color.primary;
+        return (
+          <div className="ai-sku-cell">
+            <div className="ai-sku-swatch" style={{ background: bg }} />
+            <span className="ai-sku-id">{value}</span>
+          </div>
+        );
+      },
     },
-    { field: "desc", headerName: "Description", flex: 1, minWidth: 160 },
-    { field: "dept", headerName: "Dept", width: 120 },
-    {
-      field: "r13Score", headerName: "R13", width: 70,
-      cellStyle: { fontWeight: 700, color: color.success },
-    },
-    {
-      field: "forecastScore", headerName: "Forecast", width: 90,
-      cellStyle: { fontWeight: 700, color: color.info },
-    },
-    {
-      field: "intelDelta", headerName: "Intel Δ", width: 80,
+    { field: "desc",  headerName: "Description", flex: 1, minWidth: 180,
+      cellStyle: { fontWeight: 500 } },
+    { field: "dept",  headerName: "Dept", width: 130,
+      cellRenderer: ({ value }) => <span className="ai-dept-chip">{value}</span> },
+    { field: "r13Score", headerName: "R13",      width: 72,
+      cellStyle: { fontWeight: 800, color: color.success, textAlign: "right" },
+      headerClass: "ag-right-aligned-header" },
+    { field: "forecastScore", headerName: "Forecast", width: 90,
+      cellStyle: { fontWeight: 700, color: color.info, textAlign: "right" },
+      headerClass: "ag-right-aligned-header" },
+    { field: "intelDelta", headerName: "Intel Δ", width: 85,
       cellRenderer: ({ value }) => (
         <span style={{ fontWeight: 700, color: value >= 0 ? color.success : color.error }}>
           {value >= 0 ? "+" : ""}{value}
         </span>
       ),
-    },
-    {
-      field: "composite", headerName: "Score", width: 80,
+      cellStyle: { textAlign: "right" },
+      headerClass: "ag-right-aligned-header" },
+    { field: "composite", headerName: "Score", width: 80,
+      sort: "desc",
       cellRenderer: ({ value }) => {
         const sc = scoreColor(value);
-        return (
-          <span className="ai-comp-pill" style={{ background: sc.bg, color: sc.color }}>
-            {value}
-          </span>
-        );
+        return <span className="ai-comp-pill" style={{ background: sc.bg, color: sc.fg }}>{value}</span>;
       },
-      sort: "desc",
-    },
+      cellStyle: { textAlign: "center" },
+      headerClass: "ag-center-aligned-header" },
   ], []);
 
   return (
     <div className="ai-root">
+      {/* Header */}
       <div className="ai-header">
         <div className="ai-header-left">
           <h1 className="ai-title">Assortment Intelligence</h1>
           <span className="ai-season-badge">SS 2026 · {scores.length} SKUs</span>
         </div>
         <div className="ai-header-right">
-          <span className="ai-signal-count">{scores.filter((s) => s.signals.length > 0).length} SKUs with intel signals</span>
+          {intelCount > 0 && (
+            <span className="ai-intel-count">
+              <span className="ai-intel-dot" />
+              {intelCount} SKUs with intel signals
+            </span>
+          )}
         </div>
       </div>
 
+      {/* Filters */}
       <div className="ai-filters">
-        <div className="ai-dept-tabs" role="tablist" aria-label="Filter by department">
+        <div className="ai-filter-group" role="tablist" aria-label="Filter by department">
           {DEPT_OPTS.map((d) => (
-            <button
-              key={d}
-              role="tab"
-              aria-selected={deptFilter === d}
-              className={`ai-dept-tab ${deptFilter === d ? "active" : ""}`}
-              onClick={() => setDeptFilter(d)}
-            >
+            <button key={d} role="tab" aria-selected={deptFilter === d}
+              className={`ai-filter-tab ${deptFilter === d ? "active" : ""}`}
+              onClick={() => setDeptFilter(d)}>
               {d}
             </button>
           ))}
         </div>
-        <div className="ai-signal-tabs" role="tablist" aria-label="Filter by signal">
+        <div className="ai-filter-divider" />
+        <div className="ai-filter-group" role="tablist" aria-label="Filter by signal">
           {SIGNAL_TABS.map((t) => (
-            <button
-              key={t}
-              role="tab"
-              aria-selected={signalTab === t}
-              className={`ai-signal-tab ${signalTab === t ? "active" : ""}`}
-              onClick={() => setSignalTab(t)}
-            >
+            <button key={t} role="tab" aria-selected={signalTab === t}
+              className={`ai-filter-tab ai-filter-tab--outline ${signalTab === t ? "active" : ""}`}
+              onClick={() => setSignalTab(t)}>
               {t}
             </button>
           ))}
         </div>
+        <span className="ai-result-count">{filtered.length} SKUs</span>
       </div>
 
-      <div className="ai-layout">
+      {/* Two-panel layout — detail panel only renders when a row is selected */}
+      <div className={`ai-layout ${panelOpen ? "ai-layout--panel-open" : ""}`}>
         <div className="ai-table-panel">
-          <div className="ag-theme-alpine" style={{ height: "calc(100vh - var(--header-h) - 120px)", width: "100%" }}>
+          <div className="ag-theme-alpine ai-grid-wrap">
             <AgGridReact
               rowData={filtered}
               columnDefs={colDefs}
-              defaultColDef={{ sortable: true, filter: true, resizable: true, floatingFilter: true }}
+              defaultColDef={{ sortable: true, resizable: true, suppressMovable: false }}
               rowSelection="single"
               onRowClicked={({ data }) => setSelectedSkuId(data.skuId)}
               getRowStyle={({ data }) => ({
-                background: data.skuId === selectedSkuId ? "#edfaed" : undefined,
+                background: data.skuId === selectedSkuId ? color.primarySoft : undefined,
                 cursor: "pointer",
               })}
               animateRows
+              suppressCellFocus
             />
           </div>
+          {!panelOpen && (
+            <div className="ai-click-hint">
+              Click any row to view the score breakdown and store-level performance
+            </div>
+          )}
         </div>
-        <div className="ai-detail-panel">
-          <DetailPanel score={selectedScore} onNavigate={onNavigate} />
-        </div>
+
+        {panelOpen && (
+          <div className="ai-detail-panel">
+            <DetailPanel
+              score={selectedScore}
+              onNavigate={onNavigate}
+              onClose={() => setSelectedSkuId(null)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
