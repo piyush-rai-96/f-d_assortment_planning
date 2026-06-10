@@ -8,7 +8,6 @@ import {
   filterRoutesByAccess,
 } from "../config/navigation.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import AgentRail from "../components/AgentRail.jsx";
 import AgentChatBot from "../components/AgentChatBot.jsx";
 import "./MainLayout.css";
 
@@ -28,11 +27,11 @@ import "./MainLayout.css";
  */
 export default function MainLayout({
   children,
-  showAgentRail = true,
   onModuleChange,
-  // Legacy prop accepted for backward compat but IGNORED — user comes from context.
+  // Legacy props accepted for backward compat but IGNORED — user comes from context.
   user: _ignored,
   onLogout: _ignoredLogout,
+  showAgentRail: _ignoredRail,
 }) {
   const { user, logout, hasAccess } = useAuth();
 
@@ -256,9 +255,6 @@ export default function MainLayout({
               : children}
           </div>
         </main>
-        {showAgentRail && (
-          <AgentRail onOpenChat={openChatBot} onNavigate={navigate} />
-        )}
       </div>
 
       {/* Impact UI ChatBot — renders as a fixed overlay on the right */}

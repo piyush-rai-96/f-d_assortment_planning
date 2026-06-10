@@ -24,6 +24,14 @@
   overflow-y: auto;
 }
 
+/* Override Impact UI's hardcoded min-width:240px on native inputs so they
+   respect their fixed-width column containers in the exit-pricing table.
+   Need !important to beat Impact UI's (0,3,1) specificity rule:
+   .impact_inputbox_container .MuiInputBase-root input.MuiInputBase-input */
+.mpi-row .MuiInputBase-input {
+  min-width: 0 !important;
+}
+
 /* Inline markdown / exit-pricing editor strip. */
 .mpi-edit {
   background: var(--color-warning-soft);

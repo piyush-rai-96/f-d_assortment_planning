@@ -263,11 +263,13 @@ function ClusterFingerprint({ cluster, allClusters }) {
 
   return (
     <div className="cr-analytics-two-col">
-      {/* Left: radar */}
+      {/* Left: radar + deviation bars */}
       <div className="cr-form-section">
+        {/* Colored accent bar at top */}
+        <div className="cr-fingerprint-accent" style={{ background: cluster.color }} />
         <div className="cr-form-section-header">
           <Stack direction="row" align="center" gap={2}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: cluster.color, flexShrink: 0 }} />
+            <div style={{ width: 12, height: 12, borderRadius: "50%", background: cluster.color, flexShrink: 0, boxShadow: `0 0 0 3px ${cluster.color}22` }} />
             <Text variant="body-strong" tone="strong">{cluster.name} — attribute fingerprint</Text>
           </Stack>
         </div>
@@ -279,21 +281,23 @@ function ClusterFingerprint({ cluster, allClusters }) {
               clusterColor={cluster.color}
               size={230}
             />
-            <Stack direction="column" gap={4}>
-              <div className="cr-radar-legend">
-                <div className="cr-radar-legend-item">
-                  <div className="cr-radar-legend-dot" style={{ background: cluster.color }} />
-                  <Text variant="micro" tone="strong" style={{ fontWeight: 600 }}>{cluster.name}</Text>
+            <Stack direction="column" gap={4} style={{ flex: 1, minWidth: 0 }}>
+              {/* Legend */}
+              <Stack direction="column" gap={2}>
+                <div className="cr-radar-legend-item-v2">
+                  <div style={{ width: 12, height: 12, borderRadius: 3, background: cluster.color, flexShrink: 0 }} />
+                  <Text variant="micro" tone="strong" style={{ fontWeight: 700 }}>{cluster.name}</Text>
                 </div>
-                <div className="cr-radar-legend-item">
-                  <div className="cr-radar-legend-dot" style={{ background: "var(--ice2)", border: "1px dashed var(--border2)" }} />
+                <div className="cr-radar-legend-item-v2">
+                  <div style={{ width: 12, height: 12, borderRadius: 3, background: "var(--ice2)", border: "1.5px dashed var(--color-border-strong)", flexShrink: 0 }} />
                   <Text variant="micro" tone="subtle">Network average</Text>
                 </div>
-              </div>
-              <Stack direction="column" gap={2}>
-                <Text variant="micro" tone="subtle" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>vs Network avg</Text>
+              </Stack>
+              {/* Deviation bars */}
+              <Stack direction="column" gap={3}>
+                <Text variant="micro" tone="subtle" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em" }}>vs Network avg</Text>
                 {attrRows.map((r) => (
-                  <Stack key={r.label} direction="column" gap={0.5}>
+                  <Stack key={r.label} direction="column" gap={1}>
                     <Text variant="micro" tone="muted" style={{ fontWeight: 600 }}>{r.label}</Text>
                     <DeviationBar storeVal={r.storeVal} avgVal={r.avg} maxVal={r.max} unit={r.unit} positive={r.positive} />
                   </Stack>
@@ -304,43 +308,76 @@ function ClusterFingerprint({ cluster, allClusters }) {
         </div>
       </div>
 
-      {/* Right: cluster insights */}
+      {/* Right: cluster insights + key drivers */}
       <Stack direction="column" gap={3}>
-        <div className="cr-info-box">
-          <Stack direction="column" gap={3}>
-            <Text variant="body-strong" tone="strong">Cluster insights</Text>
-            <Stack direction="column" gap={2}>
-              {[
-                { icon: "🎯", text: `${stats.proSplit}% Pro mix — ${stats.proSplit > NETWORK_AVERAGES.proSplit ? "above" : "below"} network avg by ${Math.abs(Math.round(stats.proSplit - NETWORK_AVERAGES.proSplit))}pp` },
-                { icon: "📐", text: `Avg store size ${stats.sqftK}k sqft — ${stats.sqftK > NETWORK_AVERAGES.sqftK ? "larger" : "smaller"} than typical network store` },
-                { icon: "⚡", text: `Velocity ${VEL_SCORE_LABEL[Math.round(stats.velScore)] || "B"} — ${stats.velScore < NETWORK_AVERAGES.velScore ? "faster" : "slower"} than network median` },
-                { icon: "🔷", text: `${stats.catTile}% tile sales share — ${stats.catTile > NETWORK_AVERAGES.catTile ? "tile-heavy" : "LVP-heavy"} assortment profile` },
-              ].map((r, i) => (
-                <Stack key={i} direction="row" align="flex-start" gap={2}>
-                  <span style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }}>{r.icon}</span>
-                  <Text variant="micro" tone="muted">{r.text}</Text>
-                </Stack>
-              ))}
-            </Stack>
-          </Stack>
+
+        {/* Cluster insights card */}
+        <div className="cr-insight-card">
+          <div className="cr-insight-card-header">
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: cluster.color, boxShadow: `0 0 0 3px ${cluster.color}22` }} />
+            <Text variant="caption" tone="strong" style={{ fontWeight: 700 }}>Cluster insights</Text>
+          </div>
+          <div className="cr-insight-card-body">
+            {[
+              {
+                bg: "#e8f5e9", color: "#2e7d32",
+                icon: <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="#2e7d32" opacity=".18"/><path d="M4 7.5l2 2 4-4" stroke="#2e7d32" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+                text: `${stats.proSplit}% Pro mix — ${stats.proSplit > NETWORK_AVERAGES.proSplit ? "above" : "below"} network avg by ${Math.abs(Math.round(stats.proSplit - NETWORK_AVERAGES.proSplit))}pp`,
+              },
+              {
+                bg: "#e3f2fd", color: "#1565c0",
+                icon: <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="3" fill="#1565c0" opacity=".18"/><rect x="4" y="6" width="6" height="1.5" rx=".75" fill="#1565c0"/><rect x="4" y="8.5" width="4" height="1.5" rx=".75" fill="#1565c0"/></svg>,
+                text: `Avg store size ${stats.sqftK}k sqft — ${stats.sqftK > NETWORK_AVERAGES.sqftK ? "larger" : "smaller"} than typical network store`,
+              },
+              {
+                bg: "#fff8e1", color: "#f57f17",
+                icon: <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><polygon points="7,2 9,6 13,6.5 10,9.5 10.5,13 7,11 3.5,13 4,9.5 1,6.5 5,6" fill="#f57f17" opacity=".25"/><polygon points="7,3.5 8.5,6.5 12,7 9.5,9.5 10,12.5 7,11 4,12.5 4.5,9.5 2,7 5.5,6.5" fill="#f57f17"/></svg>,
+                text: `Velocity ${VEL_SCORE_LABEL[Math.round(stats.velScore)] || "B"} — ${stats.velScore < NETWORK_AVERAGES.velScore ? "faster" : "slower"} than network median`,
+              },
+              {
+                bg: "#f3e5f5", color: "#6a1b9a",
+                icon: <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2l1.5 3.5H12l-2.8 2 1 3.5L7 9.5 3.8 11l1-3.5L2 5.5h3.5L7 2z" fill="#6a1b9a" opacity=".25"/><path d="M7 3.5l1.1 2.6H11l-2.2 1.6.8 2.6L7 8.5l-2.6 1.8.8-2.6L3 6.1h2.9L7 3.5z" fill="#6a1b9a"/></svg>,
+                text: `${stats.catTile}% tile sales share — ${stats.catTile > NETWORK_AVERAGES.catTile ? "tile-heavy" : "LVP-heavy"} assortment profile`,
+              },
+            ].map((r, i) => (
+              <div key={i} className="cr-insight-item">
+                <div className="cr-insight-icon" style={{ background: r.bg }}>
+                  {r.icon}
+                </div>
+                <Text variant="micro" tone="muted" style={{ lineHeight: 1.5 }}>{r.text}</Text>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="cr-info-box">
-          <Stack direction="column" gap={2}>
+        {/* Key drivers card */}
+        <div className="cr-insight-card">
+          <div className="cr-insight-card-header">
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: cluster.color }} />
             <Text variant="caption" tone="strong" style={{ fontWeight: 700 }}>Key drivers of inclusion</Text>
-            <Text variant="micro" tone="subtle">Stores are assigned to this cluster primarily based on:</Text>
-            {["Pro / DIY revenue split", "Sales velocity tier", "Category mix index", "Climate zone"].slice(0, 3).map((d, i) => (
-              <Stack key={i} direction="row" align="center" gap={2}>
-                <div style={{ width: 4, height: 4, borderRadius: "50%", background: cluster.color, flexShrink: 0 }} />
-                <Text variant="micro" tone="muted" style={{ fontWeight: 600 }}>{d}</Text>
-                <div style={{ flex: 1, height: 4, background: "var(--ice2)", borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ width: `${[78, 65, 52][i]}%`, height: "100%", background: cluster.color, borderRadius: 3 }} />
+          </div>
+          <div className="cr-insight-card-body">
+            <Text variant="micro" tone="subtle" style={{ marginTop: -4, marginBottom: 4 }}>Stores are assigned to this cluster primarily based on:</Text>
+            {["Pro / DIY revenue split", "Sales velocity tier", "Category mix index"].map((d, i) => {
+              const pct = [78, 65, 52][i];
+              return (
+                <div key={i} className="cr-driver-row">
+                  <div className="cr-driver-label-row">
+                    <Stack direction="row" align="center" gap={2}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: cluster.color, flexShrink: 0 }} />
+                      <Text variant="micro" tone="muted" style={{ fontWeight: 600 }}>{d}</Text>
+                    </Stack>
+                    <span className="cr-driver-pct" style={{ color: cluster.color }}>{pct}%</span>
+                  </div>
+                  <div className="cr-driver-bar-track">
+                    <div className="cr-driver-bar-fill" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${cluster.color}aa, ${cluster.color})` }} />
+                  </div>
                 </div>
-                <Text variant="micro" tone="subtle">{[78, 65, 52][i]}%</Text>
-              </Stack>
-            ))}
-          </Stack>
+              );
+            })}
+          </div>
         </div>
+
       </Stack>
     </div>
   );
@@ -683,12 +720,31 @@ function ClusterAnalyticsPanel({ managedClusters, setManagedClusters, availableS
 
   return (
     <div className="cr-analytics-outer">
-      <Stack direction="row" align="center" justify="space-between" gap={4} wrap style={{ marginBottom: "var(--sp-4)" }}>
-        <Stack direction="column" gap={0.5}>
-          <Text variant="heading" tone="strong">Cluster analytics</Text>
-          <Text variant="caption" tone="muted">Post-run analysis and store management for CR-019</Text>
+      {/* Premium header banner */}
+      <div className="cr-analytics-header">
+        <Stack direction="column" gap={1}>
+          <Stack direction="row" align="center" gap={2}>
+            <Text variant="heading" tone="strong">Cluster analytics</Text>
+            <span className="cr-analytics-header-badge">CR-019 · Live</span>
+          </Stack>
+          <Text variant="caption" tone="muted">Post-run analysis and store management</Text>
         </Stack>
-      </Stack>
+        <Stack direction="row" gap={2} align="center" wrap>
+          <Stack direction="column" gap={0.5} style={{ textAlign: "center" }}>
+            <Text variant="caption" tone="strong" style={{ fontWeight: 800 }}>{managedClusters.length}</Text>
+            <Text variant="micro" tone="subtle" style={{ textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700 }}>clusters</Text>
+          </Stack>
+          <div style={{ width: 1, height: 28, background: "var(--color-border)" }} />
+          <Stack direction="column" gap={0.5} style={{ textAlign: "center" }}>
+            <Text variant="caption" tone="strong" style={{ fontWeight: 800 }}>
+              {managedClusters.reduce((s, c) => s + (c.storeList?.length ?? c.stores ?? 0), 0)}
+            </Text>
+            <Text variant="micro" tone="subtle" style={{ textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700 }}>stores</Text>
+          </Stack>
+          <div style={{ width: 1, height: 28, background: "var(--color-border)" }} />
+          <NetworkDistBar clusters={managedClusters} />
+        </Stack>
+      </div>
 
       <div className="cr-analytics-tabs">
         {TABS.map((t) => (
@@ -712,16 +768,24 @@ function ClusterAnalyticsPanel({ managedClusters, setManagedClusters, availableS
       {/* Fingerprint */}
       {tab === "fingerprint" && (
         <Stack direction="column" gap={4}>
-          {/* Cluster selector */}
+          {/* Cluster selector pills — color-aware */}
           <div className="cr-cluster-tabs">
-            {managedClusters.map((c) => (
-              <button key={c.id}
-                className={`cr-cluster-tab${c.id === fpClusterId ? " is-active" : ""}`}
-                onClick={() => setFpClusterId(c.id)}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
-                {c.name}
-              </button>
-            ))}
+            {managedClusters.map((c) => {
+              const isActive = c.id === fpClusterId;
+              // derive a soft 15%-alpha tint from the cluster hex color
+              const hex = c.color.replace("#", "");
+              const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+              const bg = `rgba(${r},${g},${b},0.12)`;
+              return (
+                <button key={c.id}
+                  className={`cr-cluster-tab${isActive ? " is-active" : ""}`}
+                  style={{ "--cr-cluster-color": c.color, "--cr-cluster-bg": bg }}
+                  onClick={() => setFpClusterId(c.id)}>
+                  <div className="cr-cluster-tab-dot" style={{ background: c.color }} />
+                  {c.name}
+                </button>
+              );
+            })}
           </div>
           {fpCluster && (
             <ClusterFingerprint cluster={fpCluster} allClusters={managedClusters} />

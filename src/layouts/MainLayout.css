@@ -46,160 +46,6 @@
   font-weight: 700;
 }
 
-/* ── Agent activity rail (right) ──────────────────────────────────────────── */
-.fd-agent-rail {
-  width: var(--agent-rail-w);
-  min-width: var(--agent-rail-w);
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: width 0.25s ease, min-width 0.25s ease;
-}
-.fd-agent-rail--collapsed {
-  width: 32px !important;
-  min-width: 32px !important;
-  overflow: visible;
-  position: relative;
-}
-.fd-agent-head {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.fd-agent-collapse-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text3);
-  padding: 0 4px;
-  line-height: 1;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.fd-agent-collapse-btn:hover { color: var(--text1); }
-.fd-agent-expand-tab {
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  transform: translateY(-50%);
-  writing-mode: vertical-lr;
-  text-orientation: mixed;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  padding: 12px 6px;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--teal);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  box-shadow: -2px 0 8px rgba(0,0,0,.08);
-  transition: background .1s;
-}
-.fd-agent-expand-tab:hover { background: var(--surface-alt, #f2f6ee); }
-.fd-agent-expand-tab span { font-size: 10px; }
-.fd-agent-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text2);
-}
-.fd-agent-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 6px var(--teal);
-  animation: fd-pulse 2s infinite;
-}
-.fd-agent-period {
-  margin-left: auto;
-  font-size: 10px;
-  color: var(--text4);
-  font-weight: 600;
-}
-.fd-agent-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.fd-agent-tab {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 10px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text3);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
-}
-.fd-agent-tab.active {
-  color: var(--green);
-  border-bottom-color: var(--green);
-}
-.fd-agent-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.fd-agent-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 12px;
-}
-.fd-agent-card .ac-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.fd-agent-card .ac-sub {
-  font-size: 10px;
-  color: var(--text3);
-  line-height: 1.5;
-}
-.fd-agent-placeholder {
-  margin-top: 4px;
-  font-size: 10px;
-  color: var(--text4);
-  font-style: italic;
-}
-
-@keyframes fd-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
-}
-
-/* Hide the agent rail on narrower viewports to keep content breathable */
-@media (max-width: 1180px) {
-  .fd-agent-rail {
-    display: none;
-  }
-}
 @media (max-width: 760px) {
   .fd-content-inner {
     padding: 16px 16px 32px;
@@ -210,7 +56,7 @@
 .override-topnav-btn {
   position: fixed;
   top: 12px;
-  right: calc(var(--agent-rail-w) + var(--sp-4));
+  right: var(--sp-4);
   z-index: var(--z-overlay);
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r2);
@@ -224,9 +70,6 @@
 }
 .override-topnav-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
 .override-topnav-btn.active { background: var(--color-accent); color: white; border-color: var(--color-accent); }
-@media (max-width: 1180px) {
-  .override-topnav-btn { right: var(--sp-4); }
-}
 
 .override-bar {
   position: fixed;

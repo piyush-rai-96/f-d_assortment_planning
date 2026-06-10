@@ -660,24 +660,64 @@
 .cr-input::placeholder { color: var(--color-text-subtle); }
 
 /* ════════════════════════════════════════════════════════════════════
-   CLUSTER ANALYTICS PANEL
+   CLUSTER ANALYTICS PANEL — Premium redesign
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── Analytics section outer container ──────────────────────────── */
 .cr-analytics-outer {
-  border-top: 2px solid var(--color-border);
-  padding-top: var(--sp-6);
+  padding-top: var(--sp-2);
 }
 
-/* ── Analytics tabs (Overview / Fingerprint / Manage Stores) ──────── */
+/* ── Analytics header banner ─────────────────────────────────────── */
+.cr-analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r) var(--r) 0 0;
+  border-bottom: none;
+  box-shadow: var(--sh);
+  flex-wrap: wrap;
+}
+.cr-analytics-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 20px;
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: .02em;
+}
+.cr-analytics-header-badge::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* ── Analytics tabs — segmented control style ──────────────────────── */
 .cr-analytics-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 2px solid var(--color-border);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  padding: 4px;
   margin-bottom: var(--sp-5);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.04);
 }
 .cr-analytics-tab {
-  padding: var(--sp-2) var(--sp-5);
+  flex: 1;
+  padding: 7px var(--sp-4);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -685,15 +725,19 @@
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--color-text-muted);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.12s, border-color 0.12s;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
   white-space: nowrap;
+  text-align: center;
 }
-.cr-analytics-tab:hover    { color: var(--color-text); }
+.cr-analytics-tab:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
 .cr-analytics-tab.is-active {
+  background: var(--color-surface);
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,.10), 0 0 0 1px var(--color-border);
 }
 
 /* ── Cross-cluster metric comparison grid ─────────────────────────── */
@@ -774,28 +818,29 @@
 .cr-deviation-track {
   position: relative;
   flex: 1;
-  height: 8px;
-  background: var(--ice2);
-  border-radius: 4px;
+  height: 10px;
+  background: var(--color-surface-sunken);
+  border-radius: 6px;
   overflow: visible;
   min-width: 60px;
+  border: 1px solid var(--color-border);
 }
 .cr-deviation-fill {
   position: absolute;
   top: 0; bottom: 0;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  border-radius: 5px;
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
 }
 .cr-deviation-midline {
   position: absolute;
-  top: -2px; bottom: -2px;
+  top: -3px; bottom: -3px;
   width: 2px;
   background: var(--color-text-subtle);
   border-radius: 2px;
 }
 .cr-deviation-label {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   min-width: 42px;
   text-align: right;
 }
@@ -810,25 +855,36 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
+  padding: 7px var(--sp-4);
   border: 2px solid var(--color-border);
-  border-radius: var(--r2);
+  border-radius: 20px;
   cursor: pointer;
   background: var(--color-surface);
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s;
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--color-text-muted);
 }
 .cr-cluster-tab:hover {
-  border-color: var(--color-border-strong);
+  border-color: var(--cr-cluster-color, var(--color-border-strong));
   background: var(--color-surface-alt);
+  color: var(--color-text);
 }
 .cr-cluster-tab.is-active {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  background: var(--cr-cluster-bg, var(--color-primary-soft));
+  border-color: var(--cr-cluster-color, var(--color-primary));
+  color: var(--cr-cluster-color, var(--color-primary));
+  box-shadow: 0 0 0 3px var(--cr-cluster-bg, var(--color-primary-soft));
+}
+.cr-cluster-tab-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.cr-cluster-tab.is-active .cr-cluster-tab-dot {
+  transform: scale(1.4);
 }
 
 /* ── Store table within manager ─────────────────────────────────── */
@@ -940,5 +996,98 @@
 }
 @media (max-width: 960px) {
   .cr-manager-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Fingerprint section: colored top accent bar ─────────────────── */
+.cr-fingerprint-accent {
+  height: 4px;
+  border-radius: var(--r) var(--r) 0 0;
+}
+
+/* ── Premium insight card ────────────────────────────────────────── */
+.cr-insight-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
+.cr-insight-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+}
+.cr-insight-card-body {
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* ── Insight row ─────────────────────────────────────────────────── */
+.cr-insight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r2);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+.cr-insight-icon {
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Key driver bar — premium ────────────────────────────────────── */
+.cr-driver-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cr-driver-bar-track {
+  height: 8px;
+  background: var(--color-surface-sunken);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+.cr-driver-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s cubic-bezier(.4,0,.2,1);
+}
+.cr-driver-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.cr-driver-pct {
+  font-size: var(--fs-micro);
+  font-weight: 800;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ── Radar legend item — upgraded ────────────────────────────────── */
+.cr-radar-legend-item-v2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--r2);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  font-size: var(--fs-micro);
+  font-weight: 600;
 }
 

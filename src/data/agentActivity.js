@@ -13,12 +13,12 @@ export const AGENT_KPIS = {
 };
 
 export const AGENT_SIGNALS = [
-  { id: 1,  severity: "error",   icon: "🚨", title: "8 stores not started",         body: "Gulf cluster stores have not submitted curation. Window auto-closes Sep 20.",      time: "2h ago",   action: "Review stores",     mod: "store-curation" },
-  { id: 2,  severity: "warning", icon: "⚠️", title: "Agent not run yet",             body: "Run the agent in Catalogue step to unlock velocity tiers and SKU recommendations.", time: "Today",    action: "Go to Catalogue",   mod: "catalogue"      },
-  { id: 3,  severity: "warning", icon: "⏰", title: "Curation window closes in 9d",  body: "52 stores pending submission. Cluster review requires all stores before lock.",     time: "Today",    action: "Open curation",     mod: "store-curation" },
-  { id: 4,  severity: "success", icon: "✅", title: "Regional review open",          body: "6 of 8 clusters have submitted. Awaiting Mid-Atlantic and Pacific South.",          time: "1h ago",   action: "View regional",     mod: "regional"       },
-  { id: 5,  severity: "info",    icon: "📊", title: "7 intel signals available",     body: "2 competitor threats and 1 expansion opportunity detected in your trade areas.",     time: "3h ago",   action: "View intel",        mod: "intel"          },
-  { id: 6,  severity: "violet",  icon: "🤖", title: "Agent flagged SOL-SEASHELL",    body: "Expansion opportunity: +12 stores show high demand signal based on LY comps.",     time: "5h ago",   action: "Review SKU",        mod: "catalogue"      },
+  { id: 1, severity: "error",   icon: "🚨", title: "8 stores not started",        body: "Gulf cluster stores have not submitted curation. Window auto-closes Sep 20.",       time: "2h ago",  action: "Review stores",   mod: "store-curation", ask: "Which Gulf stores have not submitted curation?"              },
+  { id: 2, severity: "warning", icon: "⚠️", title: "Agent not run yet",            body: "Run the agent in Catalogue step to unlock velocity tiers and SKU recommendations.", time: "Today",   action: "Go to Catalogue", mod: "catalogue",      ask: "What is blocking the pipeline from progressing?"             },
+  { id: 3, severity: "warning", icon: "⏰", title: "Curation window closes in 9d", body: "52 stores pending submission. Cluster review requires all stores before lock.",      time: "Today",   action: "Open curation",   mod: "store-curation", ask: "What happens to stores that miss the Sep 20 deadline?"       },
+  { id: 4, severity: "success", icon: "✅", title: "Regional review open",         body: "6 of 8 clusters have submitted. Awaiting Mid-Atlantic and Pacific South.",           time: "1h ago",  action: "View regional",   mod: "regional",       ask: "Which regions are behind on regional review?"                },
+  { id: 5, severity: "info",    icon: "📊", title: "7 intel signals available",    body: "2 competitor threats and 1 expansion opportunity detected in your trade areas.",      time: "3h ago",  action: "View intel",      mod: "intel",          ask: "Show me the latest market intel signals"                     },
+  { id: 6, severity: "violet",  icon: "🤖", title: "Agent flagged SOL-SEASHELL",   body: "Expansion opportunity: +12 stores show high demand signal based on LY comps.",      time: "5h ago",  action: "Review SKU",      mod: "catalogue",      ask: "Why is SOL-SEASHELL flagged for expansion?"                  },
 ];
 
 export const PIPELINE_STEPS = [
@@ -49,8 +49,8 @@ export const SUGGESTED_QUESTIONS = [
     icon: "🗂",
     questions: [
       "What is the current active cluster set?",
-      "Which cluster has the highest cohesion?",
-      "How many stores are in each cluster?",
+      "Show me cohesion scores for all clusters",
+      "How are stores split across clusters?",
     ],
   },
   {
@@ -58,8 +58,8 @@ export const SUGGESTED_QUESTIONS = [
     icon: "🏪",
     questions: [
       "Which stores haven't submitted curation yet?",
-      "What is the curation window deadline?",
-      "Show me the Gulf cluster stores",
+      "Which Gulf stores have not submitted curation?",
+      "What happens to stores that miss the Sep 20 deadline?",
     ],
   },
   {
@@ -67,17 +67,17 @@ export const SUGGESTED_QUESTIONS = [
     icon: "📦",
     questions: [
       "Which SKUs are flagged for expansion?",
-      "What is the current forecast confidence?",
-      "Show me the Core SKU list",
+      "Why is SOL-SEASHELL flagged for expansion?",
+      "Show me the full Core SKU list",
     ],
   },
   {
     category: "Performance",
     icon: "📊",
     questions: [
-      "What is the pipeline completion percentage?",
-      "Which regions are behind on review?",
-      "Show market intel signals",
+      "Show the FW 2025 pipeline status",
+      "Which regions are behind on regional review?",
+      "Show me the latest market intel signals",
     ],
   },
 ];
@@ -154,7 +154,7 @@ The 5 Core SKUs have been approved and the National Core lock is active. Regiona
 • **Pending:** Mid-Atlantic (GA) and Pacific South (CA)
 • **Status:** Review open · lock date TBD
 
-Pro-Heavy South and DIY-Heavy clusters have submitted. Awaiting C2 (DIY-Heavy West) and C4 (Mixed Urban East) leads to finalize their regional recommendations.`,
+Pro-Heavy South, DIY-Heavy West, DIY-Heavy South, Pro-Heavy Midwest, Gulf Coast, and Northeast Urban have all submitted. Awaiting Mid-Atlantic and Pacific South leads to finalise their regional recommendations before the lock date is set.`,
 
   intel: `Market intelligence — 7 signals active:
 
