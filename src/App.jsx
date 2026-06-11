@@ -40,7 +40,7 @@ const VIEWS = {
   workspace: ({ navigate, user }) => <Workspace onNavigate={navigate} user={user} />,
   hindsight: ({ user }) => <Hindsight user={user} />,
   "store-hub": () => <StoreHub />,
-  portfolio: () => <PortfolioBuild />,
+  portfolio: ({ navigate }) => <PortfolioBuild onNavigate={navigate} />,
   forecast: () => <LikeItemForecast />,
   "assortment-intelligence": ({ navigate }) => <AssortmentIntelligence onNavigate={navigate} />,
   catalogue: ({ navigate }) => <Catalogue onNavigate={navigate} />,

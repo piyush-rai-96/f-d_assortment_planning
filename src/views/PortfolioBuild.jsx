@@ -23,6 +23,7 @@ import {
   STATUS_BADGE,
 } from "../data/portfolioSeed.js";
 import { INTEL_SEED } from "../data/intel.js";
+import { setIntelHighlight } from "../data/intelStore.js";
 import "./PortfolioBuild.css";
 import { panelSx } from "../styles/panelSx.js";
 
@@ -378,18 +379,31 @@ export default function PortfolioBuild({ onNavigate }) {
       cellStyle: () => ({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }),
     },
     {
-      /* "Added By" — author name + Impact UI Badge for intel-sourced rows */
+      /* "Added By" — author name + clickable Intel chip for market-intel-sourced rows */
       headerName: "Added By",
       field: "addedBy",
       width: 190,
       filter: "agTextColumnFilter",
       cellRenderer: (p) => {
         const isIntel = p.data.source === "intel" || p.data.source === "market-intel";
+        const handleIntelClick = (e) => {
+          e.stopPropagation(); // don't also open the gap summary panel
+          if (p.data.intelId && onNavigate) {
+            setIntelHighlight(p.data.intelId);
+            onNavigate("intel");
+          }
+        };
         return (
           <div className="pf-inline-cell">
             <span className="pf-inline-cell__name">{p.data.addedBy}</span>
             {isIntel && (
-              <span className="pf-intel-chip pf-intel-chip--amber">⚡ Intel</span>
+              <span
+                className="pf-intel-chip pf-intel-chip--amber pf-intel-chip--link"
+                title="View in Market Intelligence"
+                onClick={handleIntelClick}
+              >
+                ⚡ Intel ↗
+              </span>
             )}
           </div>
         );

@@ -191,6 +191,17 @@
 }
 .pf-intel-chip:hover { opacity: 0.8; }
 
+/* Clickable variant — shows pointer and a subtle lift */
+.pf-intel-chip--link {
+  cursor: pointer;
+  text-decoration: none;
+}
+.pf-intel-chip--link:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+}
+
 /* amber — Line Gaps "Added By" */
 .pf-intel-chip--amber {
   background: linear-gradient(135deg, #fff8e7 0%, #fde68a 100%);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Card, Button, Badge, Input, TextArea, EmptyState } from "impact-ui";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
@@ -19,6 +19,7 @@ import {
   URGENCY_BADGE,
   STATUS_BADGE,
 } from "../data/intel.js";
+import { popIntelHighlight } from "../data/intelStore.js";
 import "./MarketIntel.css";
 import { panelSx, softSx } from "../styles/panelSx.js";
 
@@ -79,6 +80,31 @@ export default function MarketIntel() {
   const [selectedId, setSelectedId] = useState(INTEL_SEED[0]?.id ?? null);
   const [noteDraft, setNoteDraft] = useState("");
   const [log, setLog] = useState(EMPTY_LOG);
+  const [fromPortfolio, setFromPortfolio] = useState(null); // id that arrived via Portfolio Build chip
+  const highlightedRowRef = useRef(null);
+
+  /* On mount: check if we were navigated here from Portfolio Build with a
+     specific intel item to highlight. popIntelHighlight() clears the store
+     after reading so the highlight is one-shot only. */
+  useEffect(() => {
+    const id = popIntelHighlight();
+    if (id) {
+      setSelectedId(id);
+      setFromPortfolio(id);
+      setStatusTab("all");      // clear any active filter so the item is visible
+      setDirFilter(null);
+      setTypeFilter(null);
+      const it = INTEL_SEED.find((i) => i.id === id);
+      if (it) setNoteDraft(it.merchantNote || "");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Scroll the highlighted row into view once it's rendered */
+  useEffect(() => {
+    if (fromPortfolio && highlightedRowRef.current) {
+      highlightedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [fromPortfolio]);
 
   const selected = useMemo(() => intel.find((i) => i.id === selectedId) || null, [intel, selectedId]);
 
@@ -172,7 +198,13 @@ export default function MarketIntel() {
             <Stack direction="column" gap={1}>
               <Text variant="micro" tone="subtle" style={{ padding: "0 4px" }}>{filtered.length} signal{filtered.length !== 1 ? "s" : ""}</Text>
               {filtered.map((i) => (
-                <Stack key={i.id} className={`mi-list-row${selectedId === i.id ? " is-active" : ""}`} direction="row" gap={2} align="flex-start" paddingX={2} paddingY={2} onClick={() => selectIntel(i.id)}>
+                <Stack
+                  key={i.id}
+                  ref={i.id === fromPortfolio ? highlightedRowRef : undefined}
+                  className={`mi-list-row${selectedId === i.id ? " is-active" : ""}${i.id === fromPortfolio ? " is-from-portfolio" : ""}`}
+                  direction="row" gap={2} align="flex-start" paddingX={2} paddingY={2}
+                  onClick={() => selectIntel(i.id)}
+                >
                   <span className={`mi-dir-dot is-${i.direction}`} aria-hidden>{i.direction === "threat" ? "↓" : "↑"}</span>
                   <Stack direction="column" gap={1} style={{ minWidth: 0, flex: 1 }}>
                     <Text variant="caption" tone="default" className="mi-clamp-2" style={{ lineHeight: 1.35 }}>{i.title}</Text>
@@ -233,6 +265,9 @@ export default function MarketIntel() {
                 {i.urgency !== "watch" ? <span className="mi-tag mi-tag--gap" style={i.urgency === "immediate" ? { background: "var(--color-error-soft)", color: "var(--color-error)" } : undefined}>{i.urgency}</span> : null}
                 {i.feedsModel ? <span className="mi-tag mi-tag--model">🤖 feeds model</span> : null}
                 {i.catalogueGap ? <span className="mi-tag mi-tag--gap">catalogue gap</span> : null}
+                {i.id === fromPortfolio && (
+                  <span className="mi-tag mi-tag--portfolio">📋 via Portfolio Build</span>
+                )}
               </Stack>
             </Stack>
             <Badge variant="subtle" size="small" color={STATUS_BADGE[i.status]} label={i.status} />
