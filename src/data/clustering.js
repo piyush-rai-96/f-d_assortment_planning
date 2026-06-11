@@ -52,6 +52,21 @@ export const FD_CLUST_SCENARIOS = {
   },
 };
 
+/*
+ * CLUSTER_ACCEPTANCE — tracks which scenario (A/B/C) has been accepted as the
+ * active cluster model. Set acceptedScenario to null to simulate the "no model
+ * yet" state shown on the Today dashboard. Mirrors CLUST_S.acceptedScenario /
+ * CLUST_S.acceptedScope in the legacy HTML prototype.
+ */
+export const CLUSTER_ACCEPTANCE = {
+  acceptedScenario: "B",   // key into FD_CLUST_SCENARIOS, or null if not yet accepted
+  acceptedScope: {
+    dept: "All",
+    channel: "All Stores",
+    season: "FW 2025",
+  },
+};
+
 export const FD_OUTLIER_STORES = [
   { id: 341, name: "341 Bremerton", reason: "Velocity D — low trading volume, only 2 seasons of full data", severity: "warn" },
   { id: 152, name: "152 Savannah", reason: "Velocity D — candidate for format review or cluster reassignment", severity: "warn" },

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Card, Input, Button, Alert } from "impact-ui";
 import { useAuth } from "../context/AuthContext.jsx";
 import { USERS } from "../config/users.js";
+import iaLogo from "../assets/impact-analytics-logo.png";
 import "./Login.css";
 
 /*
@@ -64,7 +65,7 @@ export default function Login() {
           </div>
           <div className="login-brand-sub">Fall / Winter 2025</div>
           <div className="login-brand-pills">
-            <span className="login-pill">300 stores</span>
+            <span className="login-pill">21 stores</span>
             <span className="login-pill">1,507 SKUs</span>
             <span className="login-pill">84% agent confidence</span>
           </div>
@@ -102,6 +103,11 @@ export default function Login() {
       {/* ── Right form panel ── */}
       <div className="login-form-panel">
         <div className="login-form-wrap">
+          <div className="login-ia-hero">
+            <img src={iaLogo} alt="Impact Analytics" className="login-ia-hero-logo" />
+            <span className="login-ia-hero-rule" aria-hidden="true" />
+          </div>
+
           <div className="login-welcome">
             <h1 className="login-title">Welcome back</h1>
             <p className="login-subtitle">Sign in to your assortment workspace</p>

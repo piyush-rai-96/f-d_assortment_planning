@@ -188,3 +188,21 @@ export const AssortIntelIcon = () => (
     <path d="m9 3 1 4M15 3l-1 4M21 9l-4 1M21 15l-4-1M15 21l-1-4M9 21l1-4M3 15l4-1M3 9l4 1" />
   </Icon>
 );
+
+/* Range Build — stacked rectangles (range of products) */
+export const RangeBuildIcon = () => (
+  <Icon>
+    <rect x="3" y="14" width="18" height="5" rx="1" />
+    <rect x="3" y="7"  width="18" height="5" rx="1" />
+    <path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
+  </Icon>
+);
+
+/* Others — horizontal ellipsis */
+export const OthersIcon = () => (
+  <Icon>
+    <circle cx="5"  cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+  </Icon>
+);

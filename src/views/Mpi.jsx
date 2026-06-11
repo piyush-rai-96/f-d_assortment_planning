@@ -4,6 +4,7 @@ import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { color } from "../styles/tokens.js";
 import {
   MPI_DROPS,
@@ -22,6 +23,15 @@ const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
 const DEPT_BADGE = { Wood: "warning", Tile: "success", "Laminate & Vinyl": "info" };
 const VEL_COLOR = { A: color.success, B: color.info, C: color.warning, D: color.error };
 const VEL_BADGE = { A: "success", B: "info", C: "warning", D: "error" };
+const VEL_PILL = {
+  A: { bg: color.successSoft, fg: color.success },
+  B: { bg: color.infoSoft, fg: color.info },
+  C: { bg: color.warningSoft, fg: color.warning },
+  D: { bg: color.errorSoft, fg: color.error },
+};
+
+/* Scale NPI% mini-bars against the network's worst store so the leader fills the track. */
+const MAX_NPI_PCT = Math.max(...MPI_STORE_STATS.map((s) => s.npiPct), 1);
 
 const REGION_OPTIONS = [{ value: "all", label: "All regions" }, ...MPI_REGIONS.map((r) => ({ value: r, label: r }))];
 const DEPT_OPTIONS = [{ value: "all", label: "All departments" }, ...MPI_DEPTS.map((d) => ({ value: d, label: d }))];
@@ -80,20 +90,64 @@ export default function Mpi() {
   /* ════════════ TAB 1 — STORE NPI ════════════ */
   const storeColumns = useMemo(
     () => [
-      { field: "storeName", headerName: "Store", minWidth: 180, flex: 1, filter: "agTextColumnFilter" },
-      { field: "region", headerName: "Region", minWidth: 140, flex: 1, filter: "agSetColumnFilter" },
-      { field: "totalOH", headerName: "Total OH $", width: 120, filter: "agNumberColumnFilter", valueFormatter: (p) => k$(p.value) },
-      { field: "npiOH", headerName: "NPI $", width: 110, filter: "agNumberColumnFilter", valueFormatter: (p) => k$(p.value), cellStyle: () => ({ color: color.error }) },
+      {
+        field: "storeName",
+        headerName: "Store",
+        minWidth: 180,
+        flex: 1,
+        filter: "agTextColumnFilter",
+        cellRenderer: (p) => <span className="mpi-store-name">{p.value}</span>,
+      },
+      { field: "region", headerName: "Region", minWidth: 140, flex: 1, filter: "agSetColumnFilter", cellStyle: () => ({ color: color.textMuted }) },
+      {
+        field: "totalOH",
+        headerName: "Total OH $",
+        width: 120,
+        filter: "agNumberColumnFilter",
+        valueFormatter: (p) => k$(p.value),
+        cellStyle: () => ({ textAlign: "right", fontVariantNumeric: "tabular-nums", color: color.textMuted }),
+        headerClass: "ag-right-aligned-header",
+      },
+      {
+        field: "npiOH",
+        headerName: "NPI $",
+        width: 110,
+        filter: "agNumberColumnFilter",
+        valueFormatter: (p) => k$(p.value),
+        cellStyle: () => ({ color: color.error, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" }),
+        headerClass: "ag-right-aligned-header",
+      },
       {
         field: "npiPct",
         headerName: "NPI %",
-        width: 110,
+        width: 168,
         filter: "agNumberColumnFilter",
-        valueFormatter: (p) => `${p.value}%`,
-        cellStyle: (p) => ({ color: p.value >= NPI_THRESHOLD ? color.error : color.text, fontWeight: p.value >= NPI_THRESHOLD ? 700 : 400 }),
+        cellRenderer: (p) => {
+          const flagged = p.value >= NPI_THRESHOLD;
+          const pct = Math.min(100, (p.value / MAX_NPI_PCT) * 100);
+          return (
+            <div className={`mpi-npi-cell${flagged ? " is-flagged" : ""}`}>
+              <span className="mpi-npi-track">
+                <span className="mpi-npi-fill" style={{ width: `${pct}%`, background: flagged ? color.error : color.primary }} />
+              </span>
+              <span className="mpi-npi-val">{p.value}%</span>
+            </div>
+          );
+        },
       },
-      { field: "drops", headerName: "Drops", width: 90, filter: "agNumberColumnFilter" },
-      { field: "velocity", headerName: "Velocity", width: 100, filter: "agSetColumnFilter", cellStyle: (p) => ({ color: VEL_COLOR[p.value] || color.text, fontWeight: 700 }) },
+      { field: "drops", headerName: "Drops", width: 90, filter: "agNumberColumnFilter", cellStyle: () => ({ textAlign: "center", color: color.textMuted, fontVariantNumeric: "tabular-nums" }), headerClass: "ag-center-aligned-header" },
+      {
+        field: "velocity",
+        headerName: "Velocity",
+        width: 110,
+        filter: "agSetColumnFilter",
+        cellRenderer: (p) => {
+          const c = VEL_PILL[p.value] || { bg: color.surfaceAlt, fg: color.textMuted };
+          return <span className="mpi-vel-pill" style={{ background: c.bg, color: c.fg }}>{p.value}</span>;
+        },
+        cellStyle: () => ({ textAlign: "center" }),
+        headerClass: "ag-center-aligned-header",
+      },
     ],
     []
   );
@@ -141,10 +195,13 @@ export default function Mpi() {
             return (
               <div key={s.sku}>
                 <Stack className={`mpi-row${retire ? " is-retire" : dropPct > 0.5 ? " is-warn" : ""}`} direction="row" align="center" gap={3} wrap paddingX={4} paddingY={2}>
-                  <Stack direction="column" gap={1} flex="1 1 240px" style={{ minWidth: 0 }}>
-                    <Text variant="caption" tone="strong">{s.desc}</Text>
-                    <Text variant="micro" tone="subtle" mono>{s.sku} · {s.subDept}</Text>
-                    {retire ? <Text variant="micro" tone="error">⚑ Consider network retirement — only {s.storesAfter} stores remaining</Text> : null}
+                  <Stack direction="row" align="center" gap={2} flex="1 1 240px" style={{ minWidth: 0 }}>
+                    <SkuSwatch sku={{ desc: s.desc, dept: s.dept, subDept: s.subDept }} size={30} />
+                    <Stack direction="column" gap={1} style={{ minWidth: 0 }}>
+                      <Text variant="caption" tone="strong">{s.desc}</Text>
+                      <Text variant="micro" tone="subtle" mono>{s.sku} · {s.subDept}</Text>
+                      {retire ? <Text variant="micro" tone="error">⚑ Consider network retirement — only {s.storesAfter} stores remaining</Text> : null}
+                    </Stack>
                   </Stack>
                   <Badge variant="subtle" size="small" color={s.status === "Discontinued" ? "error" : "success"} label={s.status} />
                   <Stack direction="column" align="center" style={{ width: 64, flexShrink: 0 }}>
@@ -197,6 +254,8 @@ export default function Mpi() {
   const dropRow = (d) => ({
     desc: d.desc,
     sku: String(d.sku),
+    dept: d.dept,
+    subDept: d.subDept,
     storeName: d.storeName,
     region: d.region,
     r13: d.r13Sqft,
@@ -206,7 +265,19 @@ export default function Mpi() {
   });
   const droppedColumns = useMemo(
     () => [
-      { field: "desc", headerName: "SKU", minWidth: 200, flex: 1, filter: "agTextColumnFilter" },
+      {
+        field: "desc",
+        headerName: "SKU",
+        minWidth: 220,
+        flex: 1,
+        filter: "agTextColumnFilter",
+        cellRenderer: (p) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
+            <SkuSwatch sku={{ desc: p.data.desc, dept: p.data.dept, subDept: p.data.subDept }} size={22} />
+            <span>{p.value}</span>
+          </div>
+        ),
+      },
       { field: "sku", headerName: "SKU #", width: 120, filter: "agTextColumnFilter", cellStyle: () => ({ fontFamily: "var(--font-mono)", color: color.textMuted }) },
       { field: "storeName", headerName: "Store", minWidth: 150, flex: 1, filter: "agTextColumnFilter" },
       { field: "region", headerName: "Region", width: 130, filter: "agSetColumnFilter" },

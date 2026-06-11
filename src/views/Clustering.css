@@ -85,7 +85,7 @@
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--color-text-muted);
   transition: background 0.12s, color 0.12s;
   white-space: nowrap;
@@ -112,14 +112,14 @@
 }
 .cr-kpi-value {
   font-size: 30px;
-  font-weight: 800;
+  font-weight: var(--fw-extrabold);
   line-height: 1;
   letter-spacing: -0.5px;
   color: var(--color-text-strong);
 }
 .cr-kpi-label {
   font-size: var(--fs-caption);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
@@ -152,7 +152,7 @@
 }
 .cr-cohesion-val {
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   min-width: 28px;
   text-align: right;
 }
@@ -197,7 +197,7 @@
   padding: 2px 8px;
   border-radius: 10px;
   font-size: var(--fs-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   background: var(--color-surface-sunken);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
@@ -213,7 +213,7 @@
   padding: 8px 12px;
   text-align: left;
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-subtle);
@@ -234,7 +234,7 @@
 .cr-run-id {
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--color-teal);
 }
 .cr-status-live {
@@ -244,7 +244,7 @@
   padding: 2px 8px;
   border-radius: 10px;
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   background: var(--color-success-soft);
   color: var(--color-success);
 }
@@ -261,7 +261,7 @@
   padding: 2px 8px;
   border-radius: 10px;
   font-size: var(--fs-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   background: var(--color-surface-sunken);
   color: var(--color-text-subtle);
 }
@@ -321,7 +321,7 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   background: var(--color-surface-sunken);
   color: var(--color-text-subtle);
   border: 2px solid var(--color-border);
@@ -330,7 +330,7 @@
 }
 .cr-step-item.is-active .cr-step-circle {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-surface);
   border-color: var(--color-primary);
   box-shadow: 0 0 0 4px var(--color-primary-soft);
 }
@@ -341,7 +341,7 @@
 }
 .cr-step-label {
   font-size: var(--fs-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--color-text-subtle);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
@@ -444,7 +444,7 @@
   content: '';
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: white;
+  background: var(--color-surface);
 }
 
 /* ── k slider ─────────────────────────────────────────────────────── */
@@ -478,8 +478,8 @@
   border-radius: 50%;
   background: var(--color-primary-soft);
   color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -497,7 +497,7 @@
 .cr-attr-group { display: flex; flex-direction: column; gap: var(--sp-2); }
 .cr-attr-group-label {
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   color: var(--color-text-subtle);
@@ -530,7 +530,7 @@
   justify-content: center;
   margin-top: 1px;
   transition: all 0.1s;
-  background: white;
+  background: var(--color-surface);
 }
 .cr-attr-check.is-selected .cr-attr-checkbox {
   background: var(--color-primary);
@@ -538,9 +538,9 @@
 }
 .cr-attr-check.is-selected .cr-attr-checkbox::after {
   content: '✓';
-  color: white;
+  color: var(--color-surface);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: var(--fw-extrabold);
   line-height: 1;
 }
 .cr-recommended-badge {
@@ -549,7 +549,7 @@
   padding: 1px 6px;
   border-radius: 6px;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   background: var(--color-teal-soft);
   color: var(--color-teal);
   margin-left: 4px;
@@ -608,7 +608,7 @@
 /* ── Results delta badge ─────────────────────────────────────────── */
 .cr-delta-pos {
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--color-success);
   background: var(--color-success-soft);
   padding: 2px 6px;
@@ -616,7 +616,7 @@
 }
 .cr-delta-neg {
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--color-error);
   background: var(--color-error-soft);
   padding: 2px 6px;
@@ -624,7 +624,7 @@
 }
 .cr-delta-neutral {
   font-size: var(--fs-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--color-text-subtle);
 }
 
@@ -691,7 +691,7 @@
   background: var(--color-primary-soft);
   border: 1px solid var(--color-primary);
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   color: var(--color-primary);
   letter-spacing: .02em;
 }
@@ -723,7 +723,7 @@
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--color-text-muted);
   border-radius: 6px;
   transition: background 0.12s, color 0.12s, box-shadow 0.12s;
@@ -839,8 +839,8 @@
   border-radius: 2px;
 }
 .cr-deviation-label {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-extrabold);
   min-width: 42px;
   text-align: right;
 }
@@ -863,7 +863,7 @@
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s;
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--color-text-muted);
 }
 .cr-cluster-tab:hover {
@@ -918,7 +918,7 @@
   padding: 2px 8px;
   border-radius: 10px;
   font-size: var(--fs-micro);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 .cr-fit-high   { background: var(--color-success-soft);  color: var(--color-success); }
 .cr-fit-medium { background: var(--color-warning-soft);  color: var(--color-warning); }
@@ -942,7 +942,7 @@
 .cr-impact-metric:last-child { border-bottom: none; }
 .cr-impact-arrow {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   min-width: 16px;
   text-align: center;
 }
@@ -1073,7 +1073,7 @@
 }
 .cr-driver-pct {
   font-size: var(--fs-micro);
-  font-weight: 800;
+  font-weight: var(--fw-extrabold);
   min-width: 28px;
   text-align: right;
 }
@@ -1088,6 +1088,6 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface-alt);
   font-size: var(--fs-micro);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 

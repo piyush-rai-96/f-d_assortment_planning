@@ -15,7 +15,7 @@ const KPIS = [
 const CHECKLIST = [
   { done: true, l: "Catalogue locked (1,507 SKUs)" },
   { done: true, l: "National core published (842 SKUs)" },
-  { done: true, l: "Location clusters finalised (8 clusters)" },
+  { done: true, l: "Location clusters finalized (8 clusters)" },
   { done: true, l: "Agent recommendations generated — feedback from SS 2025 integrated" },
   { done: false, l: "Regional review complete (6/8 submitted)" },
   { done: false, l: "All store curations submitted (252/300)" },
@@ -84,7 +84,7 @@ export default function Approval() {
                   style={{
                     width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 10, color: "#fff",
+                    fontSize: 10, color: "var(--color-surface)",
                     background: item.done ? "var(--color-success)" : "var(--color-surface-sunken)",
                   }}
                 >

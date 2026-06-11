@@ -9,7 +9,7 @@
  * structured cards, tables, action buttons, and follow-up chips.
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ChatBotComponent } from "impact-ui";
+import { ChatBotComponent, Button } from "impact-ui";
 import {
   AGENT_SIGNALS, SUGGESTED_QUESTIONS, AGENT_KPIS,
 } from "../data/agentActivity.js";
@@ -17,22 +17,24 @@ import { ACTIVE_CLUSTER_SET } from "../data/clustering.js";
 
 /* ─── Design tokens — aligned with Impact UI ChatBot aesthetic ─────────────
    The ChatBotComponent uses a white/lavender/orange-purple palette.
-   We match it here so our customScreenJsx feels native to the component. */
+   We match it here so our customScreenJsx feels native to the component.
+   All hex values are defined as CSS variables in global.css under the
+   --cb-* namespace; semantic colors map to --color-* tokens. */
 const C = {
   /* Chatbot brand gradient colours */
-  gradStart: "#ec7550", gradEnd: "#a0508f",
+  gradStart: "var(--cb-grad-start)", gradEnd: "var(--cb-grad-end)",
   /* Blues / lavender (match chatbot left panel) */
-  blue:      "#6366f1", blueSoft:  "#eef2ff", blueLight: "#b3bdf8",
-  /* Semantic colours */
-  amber:  "#d97706", amberSoft: "#fffbeb",
-  red:    "#dc2626", redSoft:   "#fef2f2",
-  mint:   "#059669", mintSoft:  "#ecfdf5",
-  violet: "#7c3aed", violetSoft:"#f5f3ff",
-  teal:   "#0891b2", tealSoft:  "#e0f2fe",
+  blue: "var(--cb-blue)", blueSoft: "var(--cb-blue-soft)", blueLight: "var(--cb-blue-light)",
+  /* Semantic colours — mapped to Impact UI design tokens */
+  amber: "var(--color-warning)", amberSoft: "var(--color-warning-soft)",
+  red:   "var(--color-error)",   redSoft:   "var(--color-error-soft)",
+  mint:  "var(--color-success)", mintSoft:  "var(--color-success-soft)",
+  violet: "var(--cb-violet)",    violetSoft: "var(--cb-violet-soft)",
+  teal:  "var(--cb-teal)",       tealSoft:  "var(--cb-teal-soft)",
   /* Neutral backgrounds (match chatbot white theme) */
-  bg:        "#f8f8ff", bgSunken: "#f1f1fb",
-  border:    "#e5e7eb", borderSoft: "#ede9fe",
-  text:      "#111827", textMuted: "#4b5563", textSubtle: "#9ca3af",
+  bg: "var(--cb-bg)", bgSunken: "var(--cb-bg-sunken)",
+  border: "var(--cb-border)", borderSoft: "var(--cb-border-soft)",
+  text: "var(--cb-text)", textMuted: "var(--cb-text-muted)", textSubtle: "var(--cb-text-subtle)",
 };
 
 const SEV = {
@@ -85,14 +87,14 @@ const MetricRow = ({ label, value, color }) => (
   </div>
 );
 const ActionChip = ({ label, onClick }) => (
-  <button onClick={onClick} style={{ padding: "4px 12px", borderRadius: 14, fontSize: 11, fontWeight: 700, cursor: "pointer", border: `1px solid ${C.border}`, background: C.bg, color: C.textMuted, whiteSpace: "nowrap" }}>
+  <Button variant="ghost" onClick={onClick} style={{ padding: "4px 12px", borderRadius: 14, fontSize: 11, fontWeight: 700, border: `1px solid ${C.border}`, background: C.bg, color: C.textMuted, whiteSpace: "nowrap" }}>
     {label}
-  </button>
+  </Button>
 );
 const PrimaryAction = ({ label, onClick }) => (
-  <button onClick={onClick} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "none", background: C.blue, color: "white" }}>
+  <Button variant="primary" onClick={onClick} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: C.blue }}>
     {label}
-  </button>
+  </Button>
 );
 const CohesionBar = ({ value }) => {
   const clr = value >= 0.8 ? C.mint : value >= 0.7 ? C.amber : C.red;
@@ -225,7 +227,7 @@ function buildSkuJsx(onAsk) {
       </div>
       <div style={{ background: C.redSoft, borderLeft: `3px solid ${C.red}`, borderRadius: 6, padding: "8px 12px", marginBottom: 8 }}>
         <div style={{ fontWeight: 700, fontSize: 12, color: C.red }}>⚠️ POR-TRAVERT — Lead time extended to 20 wk</div>
-        <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Sourcing risk for Q2 replenishment. Consider back-up supplier or reducing forward buy quantity.</div>
+        <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>Sourcing risk for Q2 replenishment. Consider backup supplier or reducing forward buy quantity.</div>
       </div>
 
       <SectionLabel>National Core — 5 locked SKUs</SectionLabel>

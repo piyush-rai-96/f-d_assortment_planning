@@ -1,27 +1,134 @@
 /* ──────────────────────────────────────────────────────────────────────────
    Portfolio Build — view-specific accents only.
-   Layout (Stack/Grid), typography (Text), interactive + tabular chrome all come
-   from the shared token primitives and Impact UI components. This file holds the
+   Layout (Stack/Grid), typography (Text), interactive chrome all come from
+   shared token primitives and Impact UI components. This file holds the
    scrollable master list and its selection accent (no component equivalent).
    ────────────────────────────────────────────────────────────────────────── */
 
-/* Scrollable master list inside the split-panel tabs */
+/* Scrollable master list inside split-panel tabs */
 .pf-list {
-  max-height: 600px;
+  max-height: 620px;
   overflow-y: auto;
 }
 
-/* Selectable list row — left accent marks the active selection */
+/* Selectable list row — left accent marks the active selection.
+   --pf-accent is set per-row in JSX (priority color for gaps, teal for
+   wishlists, accent for vendor SKUs) so the highlight is semantically tied
+   to the row's state rather than generic blue. */
 .pf-list-row {
   border-bottom: 1px solid var(--color-border);
   border-left: 3px solid transparent;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-left-color 0.12s;
 }
 .pf-list-row:hover {
   background: var(--color-surface-alt);
 }
 .pf-list-row.is-active {
   background: var(--color-surface-alt);
-  border-left-color: var(--color-primary);
+  border-left-color: var(--pf-accent, var(--color-primary));
+}
+
+/* ── Inline approve / decline buttons — summary vendor SKUs table ────────── */
+.pf-action-approve,
+.pf-action-decline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.12s;
+  line-height: 1;
+}
+.pf-action-approve:hover,
+.pf-action-decline:hover {
+  transform: scale(1.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.16);
+}
+.pf-action-approve:active,
+.pf-action-decline:active {
+  transform: scale(0.95);
+}
+
+.pf-action-approve {
+  background: var(--color-success);
+  border: none;
+  color: #fff;
+}
+
+.pf-action-decline {
+  background: transparent;
+  border: 1.5px solid var(--color-error);
+  color: var(--color-error);
+}
+.pf-action-decline:hover {
+  background: var(--color-error);
+  color: #fff;
+}
+
+/* AG-Grid: cells that hold custom cellRenderers — let the renderer control its own layout */
+.ag-cell .ag-react-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── Two-line cell pattern (Added by · Date  /  Evidence · Date) ─────────── */
+.pf-two-line-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  gap: 2px;
+  overflow: hidden;
+}
+.pf-two-line-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+.pf-two-line-main {
+  font-size: var(--fs-micro);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pf-two-line-main--strong { font-weight: var(--fw-semibold); }
+.pf-two-line-sub {
+  font-size: var(--fs-xs);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+/* Inline Intel source tags */
+.pf-intel-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.pf-intel-tag--amber {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+.pf-intel-tag--teal {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  border-color: var(--color-info);
 }

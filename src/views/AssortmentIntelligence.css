@@ -94,7 +94,7 @@
 .ai-filter-tab:hover { background: var(--color-surface-alt); color: var(--color-text); }
 .ai-filter-tab.active {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-surface);
   font-weight: var(--fw-bold);
 }
 .ai-filter-tab--outline { border: 1px solid transparent; }
@@ -267,7 +267,7 @@
   border-bottom: 1px solid var(--color-border);
 }
 .ai-composite-val {
-  font-size: 40px; font-weight: 900; line-height: 1; flex-shrink: 0;
+  font-size: 40px; font-weight: var(--fw-black); line-height: 1; flex-shrink: 0;
 }
 .ai-composite-info { display: flex; flex-direction: column; gap: 2px; }
 .ai-composite-lbl {
@@ -334,7 +334,7 @@
 }
 .ai-action-btn {
   padding: 7px 14px; border-radius: var(--r2); border: none;
-  background: var(--color-primary); color: white;
+  background: var(--color-primary); color: var(--color-surface);
   font-size: var(--fs-caption); font-weight: var(--fw-bold); cursor: pointer;
   transition: opacity .12s; font-family: inherit;
 }

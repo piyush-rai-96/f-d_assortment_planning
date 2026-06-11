@@ -1,47 +1,73 @@
 import React, { useMemo } from "react";
-import { Card, Button, Badge, ProgressBar, Chart } from "impact-ui";
+import { Card, Badge, Button } from "impact-ui";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
-import { color } from "../styles/tokens.js";
-import { FD_STORES } from "../data/stores.js";
+import { FD_CLUST_SCENARIOS, CLUSTER_ACCEPTANCE } from "../data/clustering.js";
+import { FD_PLR_CALENDAR } from "../data/plr.js";
+import { PLANS, PIPE_STAGES, PLAN_STATUS } from "../data/workspace.js";
+import { INTEL_SEED } from "../data/intel.js";
+import { MPI_DROPS } from "../data/mpi.js";
+import { TODAY_SEED } from "../data/todaySeed.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import {
-  TODAY_SEED,
-  VELOCITY_NETWORK_PCT,
-  PIPELINE_PHASES,
-  NEEDS_ATTENTION,
-  RECENT_ACTIVITY,
-  QUICK_ACTIONS,
-  PRIORITY_ACTIONS,
-} from "../data/todaySeed.js";
-import "./Today.css";
 import { panelSx } from "../styles/panelSx.js";
+import "./Today.css";
 
-const clickableSx = {
+/* ── View-local constants ─────────────────────────────────────────────────── */
+
+const QUICK_ACCESS = [
+  { icon: "📋", label: "Store Curation", mod: "store-curation", bg: "var(--color-warning-soft)",  iconColor: "var(--color-warning)" },
+  { icon: "🔍", label: "Market Intel",   mod: "intel",          bg: "var(--color-error-soft)",    iconColor: "var(--color-error)"   },
+  { icon: "🏠", label: "National Core",  mod: "national",       bg: "var(--color-success-soft)",  iconColor: "var(--color-success)" },
+  { icon: "📈", label: "Forecast",       mod: "forecast",       bg: "var(--color-info-soft)",     iconColor: "var(--color-info)"    },
+  { icon: "📊", label: "Hindsight",      mod: "hindsight",      bg: "var(--color-accent-soft)",   iconColor: "var(--color-accent)"  },
+  { icon: "📁", label: "PLR Status",     mod: "approval",       bg: "var(--color-teal-soft)",     iconColor: "var(--color-teal)"    },
+];
+
+const URGENCY_COLOR = {
+  immediate: "var(--color-error)",
+  season:    "var(--color-warning)",
+  next:      "var(--color-accent)",
+  watch:     "var(--color-success)",
+};
+
+const SCENARIO_NAMES = {
+  B: "Behavioural",
+  A: "Performance + Demographics",
+  C: "Product Attributes",
+};
+const SCENARIO_ICONS = { B: "🧠", A: "📈", C: "🏷️" };
+const TIER_COLOR     = { high: "success", mid: "warning", low: "error" };
+const STATUS_COLOR   = { "in-progress": "info", review: "warning", draft: undefined, approved: "success" };
+
+/* Card sx helpers */
+const cardClickSx = {
   ...panelSx,
+  padding: "var(--sp-4)",
   cursor: "pointer",
-  transition: "border-color .15s, box-shadow .15s, transform .15s",
+  transition: "border-color 0.15s, box-shadow 0.15s, transform 0.15s",
 };
-
-const VELOCITY_BADGE = { A: "success", B: "info", C: "warning", D: "error" };
-const SEVERITY_TAG = {
-  error:   { label: "Urgent",    color: "error"   },
-  warning: { label: "Soon",      color: "warning" },
-  success: { label: "On track",  color: "success" },
-  info:    { label: "Signal",    color: "info"    },
+const clusterCardSx = {
+  ...panelSx,
+  padding: "var(--sp-3)",
+  cursor: "pointer",
+  transition: "box-shadow 0.15s, transform 0.15s",
 };
-
-function phaseStatusClass(pct) {
-  if (pct === 100) return "done";
-  if (pct > 0) return "active";
-  return "pending";
-}
-function phaseColor(pct) {
-  if (pct === 100) return color.success;
-  if (pct > 0) return color.info;
-  return color.neutral;
-}
+const intelCardSx = {
+  ...panelSx,
+  padding: "var(--sp-3) var(--sp-4)",
+  cursor: "pointer",
+  marginBottom: "var(--sp-2)",
+  transition: "box-shadow 0.12s",
+};
+const plrCardSx = {
+  ...panelSx,
+  padding: "var(--sp-3) var(--sp-4)",
+  cursor: "pointer",
+  marginBottom: "var(--sp-2)",
+  transition: "border-color 0.12s, box-shadow 0.12s",
+  borderLeft: "3px solid var(--color-teal)",
+};
 
 function greetingFor(hour) {
   if (hour < 12) return "Good morning";
@@ -49,281 +75,350 @@ function greetingFor(hour) {
   return "Good evening";
 }
 
-/* Determine priority action from pipeline state */
-function getPriorityAction(seed) {
-  if (!seed.agentRan) return PRIORITY_ACTIONS.find((a) => a.condition === "agentNotRun");
-  if (seed.natLocked === 0) return PRIORITY_ACTIONS.find((a) => a.condition === "natCorePending");
-  if (seed.submittedRatio < 0.3) return PRIORITY_ACTIONS.find((a) => a.condition === "storesIncomplete");
-  return PRIORITY_ACTIONS.find((a) => a.condition === "default");
+function formatDate(d) {
+  const days   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export default function Today({ onNavigate, user: userProp }) {
+/* ── Main component ───────────────────────────────────────────────────────── */
+
+export default function Today({ onNavigate }) {
   const go = (mod) => onNavigate?.(mod);
-  const { user: authUser } = useAuth();
-  const user = userProp || authUser;
+  const { user } = useAuth();
 
   const model = useMemo(() => {
-    const { coreCount, natLocked, agentRan, fcstReceived, submittedRatio, catalogueSkuCount, activePlans = 2, unreadIntel = 4 } = TODAY_SEED;
+    const now        = new Date();
+    const greeting   = greetingFor(now.getHours());
+    const firstName  = (user?.name || "there").split(" ")[0];
+    const dateStr    = formatDate(now);
 
-    const totalStores = FD_STORES.length;
-    const submitted = Math.round(totalStores * submittedRatio);
-    const pending = totalStores - submitted;
-    const submittedPct = Math.round((submitted / totalStores) * 100);
-    const totalCore = coreCount + natLocked;
+    const openPlans    = PLANS.filter((p) => p.status === "in-progress").length;
+    const openIntel    = INTEL_SEED.filter((s) => s.status === "new").length;
+    const openPLRs     = FD_PLR_CALENDAR.filter((p) => p.status === "Open").length;
+    const openDrops    = MPI_DROPS.length;
+    const awaitingAppr = PLANS.filter((p) => p.status === "review").length;
+    const openNotifs   = TODAY_SEED.openNotifications ?? 0;
 
-    const phases = PIPELINE_PHASES.map((p) => {
-      let pct = p.pct ?? 0;
-      // Runtime override based on flags
-      if (p.mod === "forecast") pct = fcstReceived > 0 ? 100 : 100;
-      if (p.mod === "catalogue") pct = agentRan ? 100 : 45;
-      if (p.mod === "store-curation") pct = submittedPct;
-      return { ...p, pct };
-    });
-    const overallPct = Math.round(phases.reduce((a, p) => a + p.pct, 0) / phases.length);
+    const activePlans   = PLANS.filter((p) =>
+      p.status === "in-progress" || p.status === "review"
+    ).slice(0, 4);
+    const openPLRList   = FD_PLR_CALENDAR.filter((p) => p.status === "Open").slice(0, 3);
+    const recentSignals = INTEL_SEED.slice(0, 4);
 
-    const priorityAction = getPriorityAction(TODAY_SEED);
-
-    const greeting = greetingFor(new Date().getHours());
-    const firstName = (user?.name || "there").split(" ")[0];
-
-  const kpis = [
-      { value: totalStores, label: "Total Stores",    sub: `${submitted} submitted (${submittedPct}%)`, mod: "store-curation", accent: "var(--color-primary)"  },
-      { value: totalCore,   label: "National Core",   sub: `${coreCount} hard + ${natLocked} agent`,    mod: "national",       accent: "var(--color-teal)"     },
-      { value: catalogueSkuCount, label: "Catalogue SKUs", sub: "SS 2026 active",                      mod: "catalogue",      accent: "var(--color-accent)"   },
-      { value: pending,     label: "Pending Stores",  sub: "Deadline Sep 20",                           mod: "store-curation", accent: "var(--color-error)"    },
-      { value: unreadIntel, label: "Intel Signals",   sub: "2 threats · 1 opportunity",                 mod: "intel",          accent: "var(--color-warning)"  },
+    const statStrip = [
+      { icon: "🤖", label: "Plans active",      val: openPlans,    color: "var(--color-info)",    bg: "var(--color-info-soft)",    mod: "workspace" },
+      { icon: "🔍", label: "New intel signals",  val: openIntel,    color: "var(--color-warning)", bg: "var(--color-warning-soft)", mod: "intel"     },
+      { icon: "📋", label: "Open PLRs",          val: openPLRs,     color: "var(--color-teal)",    bg: "var(--color-teal-soft)",    mod: "plr-calendar" },
+      { icon: "📉", label: "NPI drop items",     val: openDrops,    color: "var(--color-error)",   bg: "var(--color-error-soft)",   mod: "mpi"       },
+      { icon: "✅", label: "Awaiting approval",  val: awaitingAppr, color: "var(--color-success)", bg: "var(--color-success-soft)", mod: "approval"  },
     ];
 
-    const fill = (s) => s.replace("{pending}", pending);
-    const attention = NEEDS_ATTENTION
-      .filter((a) => !(a.hideWhenAgentRan && agentRan))
-      .slice(0, 4)
-      .map((a) => ({ ...a, title: fill(a.title) }));
-    const quick = QUICK_ACTIONS.map((q) => ({ ...q, sub: fill(q.sub) }));
-
     return {
-      greeting, firstName, pending, phases, overallPct, kpis, attention, quick,
-      priorityAction, activePlans, unreadIntel, submittedPct, totalStores, submitted,
+      greeting, firstName, dateStr, openNotifs,
+      statStrip, activePlans, openPLRList, recentSignals,
     };
   }, [user]);
 
-  const prioritySeverityColor = {
-    error: color.error, warning: color.warning, info: color.info, success: color.success,
-  };
-  const prioritySeverityBg = {
-    error: color.errorSoft, warning: color.warningSoft, info: color.infoSoft, success: color.successSoft,
-  };
+  /* Cluster panel state */
+  const { acceptedScenario, acceptedScope } = CLUSTER_ACCEPTANCE;
+  const activeScenario = acceptedScenario ? FD_CLUST_SCENARIOS[acceptedScenario] : null;
 
   return (
-    <Stack direction="column" gap={5} className="today">
+    <div className="today-shell">
 
-      {/* ── Header: greeting + header pills ──────────────────────────────── */}
-      <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
-        <Stack direction="column" gap={1}>
-          <Text variant="display">
-            {model.greeting}, {model.firstName}
-          </Text>
-          <Text variant="caption" tone="muted">
-            Floor &amp; Decor · {user?.role || "Assortment Planning"} · SS 2026
-          </Text>
-        </Stack>
-        <Stack direction="row" align="center" gap={2} wrap>
-          <button type="button" className="today-header-pill today-header-pill--intel" onClick={() => go("intel")}>
-            <span className="today-pill-dot" />
-            {model.unreadIntel} Intel Signals
-          </button>
-          <button type="button" className="today-header-pill today-header-pill--plans" onClick={() => go("workspace")}>
-            <span className="today-pill-dot" />
-            {model.activePlans} Active Plans
-          </button>
-          <Badge variant="subtle" color="warning" label="Sep 20 deadline" />
-        </Stack>
-      </Stack>
-
-      {/* ── Persona context banner ────────────────────────────────────────── */}
-      {user?.greeting && (
-        <div className="today-persona-banner">
-          <div className="today-persona-avatar" style={{ background: user.color || color.primary }}>
-            {user.avatar}
+      {/* ── 1. Hero banner ─────────────────────────────────────────────────── */}
+      <div className="today-hero">
+        <div className="today-hero-left">
+          <div className="today-hero-date">
+            {model.dateStr}&nbsp;·&nbsp;FW 2025 curation window open
           </div>
-          <div className="today-persona-content">
-            <p className="today-persona-greeting">{user.greeting}</p>
-            {user.focusModules && (
-              <div className="today-persona-chips">
-                {user.focusModules.slice(0, 4).map((mod) => (
-                  <button key={mod} className="today-persona-chip" onClick={() => go(mod)}>
-                    {mod.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="today-hero-greeting">
+            {model.greeting}, {model.firstName} 👋
           </div>
+          {user?.greeting && (
+            <div className="today-hero-sub">{user.greeting}</div>
+          )}
         </div>
-      )}
+        <div className="today-hero-notifs" onClick={() => go("workspace")}>
+          <div className="today-hero-notifs-count">{model.openNotifs}</div>
+          <div className="today-hero-notifs-label">open notifications</div>
+        </div>
+      </div>
 
-      {/* ── Priority action card ──────────────────────────────────────────── */}
-      {model.priorityAction && (
-        <div
-          className="today-priority-card"
-          style={{
-            background: prioritySeverityBg[model.priorityAction.severity],
-            borderColor: prioritySeverityColor[model.priorityAction.severity],
-          }}
-          onClick={() => go(model.priorityAction.mod)}
-        >
-          <div className="today-priority-urgency" style={{ background: prioritySeverityColor[model.priorityAction.severity] }}>
-            {model.priorityAction.severity === "error" ? "Urgent" : model.priorityAction.severity === "warning" ? "Action needed" : "Next step"}
-          </div>
-          <div className="today-priority-body">
-            <p className="today-priority-title">{model.priorityAction.title}</p>
-            <p className="today-priority-sub">{model.priorityAction.sub}</p>
-          </div>
-          <button
-            className="today-priority-cta"
-            style={{ background: prioritySeverityColor[model.priorityAction.severity] }}
-            onClick={(e) => { e.stopPropagation(); go(model.priorityAction.mod); }}
+      {/* ── 2. Quick-stat strip ────────────────────────────────────────────── */}
+      <div className="today-stat-strip">
+        {model.statStrip.map((stat) => (
+          <div
+            key={stat.mod}
+            className="today-stat-cell"
+            style={{ "--stat-color": stat.color, "--stat-bg": stat.bg }}
+            onClick={() => go(stat.mod)}
           >
-            {model.priorityAction.cta} →
-          </button>
-        </div>
-      )}
+            <div className="today-stat-icon-wrap" style={{ background: stat.bg }}>
+              {stat.icon}
+            </div>
+            <div className="today-stat-val" style={{ color: stat.color }}>{stat.val}</div>
+            <div className="today-stat-label">{stat.label}</div>
+          </div>
+        ))}
+      </div>
 
-      {/* ── Pipeline status table ─────────────────────────────────────────── */}
-      <Card sx={panelSx}>
-        <Stack direction="row" justify="space-between" align="center" style={{ marginBottom: "var(--sp-3)" }}>
-          <Text variant="subheading" as="h3">SS 2026 Pipeline</Text>
-          <Badge variant="subtle" color="info" label={`${model.overallPct}% overall`} />
-        </Stack>
-        <div className="today-pipeline-table">
-          {model.phases.map((p, i) => (
-            <button type="button" key={p.mod} className="today-pipeline-row" onClick={() => go(p.mod)}>
-              <span className="today-pipeline-num">{i + 1}</span>
-              <span className="today-pipeline-phase">{p.label}</span>
-              <div className="today-pipeline-bar-wrap">
-                <div className="today-pipeline-bar-track">
-                  <div className="today-pipeline-bar-fill" style={{ width: `${p.pct}%`, background: phaseColor(p.pct) }} />
-                </div>
-              </div>
-              <span className="today-pipeline-pct" style={{ color: phaseColor(p.pct) }}>{p.pct}%</span>
-              <span className={`today-pipeline-status today-pipeline-status--${phaseStatusClass(p.pct)}`} />
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      {/* ── KPI row ──────────────────────────────────────────────────────── */}
-      <Grid min={160} gap={3}>
-        {model.kpis.map((k) => (
-          <Card key={k.label} sx={{ ...clickableSx, overflow: "hidden", paddingTop: 0 }} onClick={() => go(k.mod)}>
-            <div className="today-kpi-accent" style={{ background: k.accent }} />
-            <Stack direction="column" gap={1} style={{ padding: "var(--sp-4)" }}>
-              <Text variant="kpi" tone="strong">{k.value}</Text>
-              <Text variant="body-strong">{k.label}</Text>
-              <Text variant="caption" tone="subtle">{k.sub}</Text>
+      {/* ── 3. Active cluster model panel ──────────────────────────────────── */}
+      <div className="today-cluster-panel">
+        {!activeScenario ? (
+          /* No model accepted yet */
+          <Card sx={{ ...panelSx, padding: "var(--sp-4)" }}>
+            <Stack direction="row" align="center" gap={3}>
+              <span className="today-cluster-empty-icon">◆</span>
+              <Stack direction="column" gap={0} style={{ flex: 1 }}>
+                <Text variant="body-strong">No active cluster model</Text>
+                <Text variant="caption" tone="subtle">
+                  Build and accept a scenario in Location Clustering before creating a plan
+                </Text>
+              </Stack>
+              <Button variant="primary" size="small" onClick={() => go("clustering")}>
+                Set up clusters →
+              </Button>
             </Stack>
           </Card>
-        ))}
-      </Grid>
-
-      {/* ── Middle row: overall ring + what needs attention ──────────────── */}
-      <Grid min={300} gap={4} align="stretch">
-        {/* SS 2026 overall donut */}
-        <Card sx={panelSx}>
-          <Text variant="subheading" as="h3">SS 2026 Overall</Text>
-          <Stack direction="column" align="center" justify="center">
-            <Chart
-              graphType="pie"
-              showHeader={false}
-              cardContainer={false}
-              showDownloadButton={false}
-              showExpandButton={false}
-              showSubTitle
-              subtitleText={`${model.overallPct}%`}
-              height={190}
-              chartMarginBottom={8}
-              legendOptions={{ enabled: false }}
-              tooltipOptions={{ enabled: false }}
-              seriesData={[
-                {
-                  name: "SS 2026",
-                  type: "pie",
-                  innerSize: "72%",
-                  data: [
-                    { name: "Complete",  y: model.overallPct,        color: color.primary },
-                    { name: "Remaining", y: 100 - model.overallPct,  color: color.track   },
-                  ],
-                },
-              ]}
-              plotOptionsOptions={{
-                pie: {
-                  innerSize: "72%",
-                  borderWidth: 0,
-                  dataLabels: { enabled: false },
-                  enableMouseTracking: false,
-                  states: { hover: { halo: { size: 0 } } },
-                },
-              }}
-            />
-            <Text variant="caption" tone="subtle">Average completion across 8 phases</Text>
-          </Stack>
-        </Card>
-
-        {/* What needs attention (state-derived, max 4) */}
-        <Card sx={panelSx}>
-          <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>What needs attention</Text>
-          <Stack direction="column" gap={3}>
-            {model.attention.map((a, i) => (
-              <Card key={i} sx={{ ...clickableSx, padding: "var(--sp-3)" }} onClick={() => go(a.mod)}>
-                <Stack direction="row" align="center" gap={3}>
-                  <Badge variant="subtle" size="small" color={SEVERITY_TAG[a.severity].color} label={SEVERITY_TAG[a.severity].label} />
-                  <Stack direction="column" flex="1" style={{ minWidth: 0 }}>
-                    <Text variant="body-strong" truncate>{a.title}</Text>
-                    <Text variant="caption" tone="subtle">{a.sub}</Text>
-                  </Stack>
-                  <Text variant="heading" tone="subtle">›</Text>
+        ) : (
+          /* Model accepted */
+          <Card sx={{ ...panelSx, padding: "var(--sp-4) var(--sp-5)" }}>
+            {/* Header */}
+            <Stack direction="row" align="center" justify="space-between" style={{ marginBottom: "var(--sp-4)" }}>
+              <Stack direction="row" align="center" gap={2}>
+                <div className="today-cluster-model-icon">
+                  {SCENARIO_ICONS[acceptedScenario] || "🧠"}
+                </div>
+                <Stack direction="column" gap={0}>
+                  <Text variant="body-strong">
+                    Active Cluster Model&nbsp;·&nbsp;{SCENARIO_NAMES[acceptedScenario] || acceptedScenario}
+                  </Text>
+                  <Text variant="caption" tone="subtle">
+                    {activeScenario.clusters.length} clusters&nbsp;·&nbsp;
+                    {acceptedScope.dept}&nbsp;·&nbsp;
+                    {acceptedScope.channel}&nbsp;·&nbsp;
+                    {acceptedScope.season}
+                  </Text>
                 </Stack>
-              </Card>
-            ))}
-          </Stack>
-        </Card>
-
-        {/* Quick actions */}
-        <Card sx={panelSx}>
-          <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>Quick actions</Text>
-          <Grid columns={2} gap={3}>
-            {model.quick.map((q) => (
-              <Card key={q.label} sx={{ ...clickableSx, padding: "var(--sp-3)" }} onClick={() => go(q.mod)}>
-                <Stack direction="column" gap={1}>
-                  <span className="today-quick-icon">{q.icon}</span>
-                  <Text variant="subheading">{q.label}</Text>
-                  <Text variant="caption" tone="subtle">{q.sub}</Text>
-                </Stack>
-              </Card>
-            ))}
-          </Grid>
-        </Card>
-      </Grid>
-
-      {/* ── Recent activity ──────────────────────────────────────────────── */}
-      <Card sx={panelSx}>
-        <Text variant="subheading" as="h3" style={{ marginBottom: "var(--sp-3)" }}>Recent activity</Text>
-        <Stack direction="column" gap={1}>
-          {RECENT_ACTIVITY.map((a, i) => (
-            <Stack
-              key={i}
-              direction="row" align="center" gap={3}
-              className="today-feed-row" paddingX={3} paddingY={3}
-              style={{ cursor: a.mod ? "pointer" : "default" }}
-              onClick={() => a.mod && go(a.mod)}
-            >
-              <span className="today-feed-icon">{a.icon}</span>
-              <Text variant="caption" tone="muted" flex="1" as="span" style={{ flex: 1 }}>{a.text}</Text>
-              <Text variant="micro" tone="subtle" style={{ whiteSpace: "nowrap" }}>{a.time}</Text>
+              </Stack>
+              <Button variant="ghost" size="small" onClick={() => go("clustering")}>
+                Manage →
+              </Button>
             </Stack>
-          ))}
-        </Stack>
-      </Card>
 
-    </Stack>
+            {/* Cluster cards grid */}
+            <div
+              className="today-cluster-cards"
+              style={{ gridTemplateColumns: `repeat(${Math.min(activeScenario.clusters.length, 4)}, 1fr)` }}
+            >
+              {activeScenario.clusters.map((cl) => (
+                <Card
+                  key={cl.id}
+                  className="today-cluster-card"
+                  sx={{
+                    ...clusterCardSx,
+                    borderLeft: `3px solid ${cl.color}`,
+                    background: "var(--color-surface-alt)",
+                    boxShadow: "none",
+                  }}
+                  onClick={() => go("clustering")}
+                >
+                  <Stack direction="row" align="center" gap={1} style={{ marginBottom: "var(--sp-2)" }}>
+                    <div className="today-cluster-dot" style={{ background: cl.color }} />
+                    <span className="today-cluster-label">{cl.label}</span>
+                  </Stack>
+                  <div className="today-cluster-meta">
+                    {cl.stores.length} stores&nbsp;·&nbsp;${cl.revSqft}/sqft&nbsp;·&nbsp;{cl.st}% ST
+                  </div>
+                  <div style={{ marginTop: "var(--sp-2)" }}>
+                    <Badge
+                      variant="subtle"
+                      color={TIER_COLOR[cl.tier] || "info"}
+                      label={`${(cl.tier || "").charAt(0).toUpperCase()}${(cl.tier || "").slice(1)} tier`}
+                    />
+                  </div>
+                  {cl.signals?.[0] && (
+                    <div className="today-cluster-signal">{cl.signals[0]}</div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* ── 4. Two-column body ─────────────────────────────────────────────── */}
+      <div className="today-body">
+
+        {/* Left: My focus today */}
+        <div className="today-focus-col">
+          <div className="today-section-label">
+            <span className="today-section-label-icon">🎯</span>
+            <span>My focus today</span>
+          </div>
+
+          {/* Active plan cards */}
+          {model.activePlans.length ? (
+            model.activePlans.map((plan) => {
+              const st   = PLAN_STATUS[plan.status] || { label: plan.status };
+              const done = plan.stagesCompleted.length;
+              return (
+                <Card
+                  key={plan.id}
+                  sx={cardClickSx}
+                  onClick={() => go("workspace")}
+                  className="today-plan-card"
+                >
+                  <Stack direction="row" justify="space-between" align="center" style={{ marginBottom: "var(--sp-3)" }}>
+                    <Text variant="subheading">{plan.name}</Text>
+                    <Badge
+                      variant="subtle"
+                      color={STATUS_COLOR[plan.status]}
+                      label={st.label}
+                    />
+                  </Stack>
+
+                  {/* Segmented pipeline progress bar */}
+                  <div className="today-plan-pipe">
+                    {PIPE_STAGES.map((s) => (
+                      <div
+                        key={s.id}
+                        className="today-plan-pipe-seg"
+                        title={s.label}
+                        style={{
+                          background: plan.stagesCompleted.includes(s.id)
+                            ? "var(--color-success)"
+                            : s.id === plan.activeStage
+                            ? "color-mix(in srgb, var(--color-info) 60%, transparent)"
+                            : "var(--color-border)",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <Text variant="caption" tone="subtle">
+                    {done}/{PIPE_STAGES.length} stages&nbsp;·&nbsp;{plan.createdBy}&nbsp;·&nbsp;{plan.updatedAt}
+                  </Text>
+                </Card>
+              );
+            })
+          ) : (
+            <Card sx={{ ...panelSx, padding: "var(--sp-6)", textAlign: "center" }}>
+              <Stack direction="column" align="center" gap={2}>
+                <span style={{ fontSize: "var(--fs-title)" }}>📋</span>
+                <Text variant="body-strong" tone="muted">No active plans</Text>
+                <Button variant="primary" size="small" onClick={() => go("workspace")}>
+                  + Create Plan
+                </Button>
+              </Stack>
+            </Card>
+          )}
+
+          {/* Open PLR windows */}
+          {model.openPLRList.length > 0 && (
+            <>
+              <div className="today-section-label" style={{ marginTop: "var(--sp-5)" }}>
+                <span className="today-section-label-icon">📅</span>
+                <span>Open PLR windows</span>
+              </div>
+              {model.openPLRList.map((plr) => (
+                <Card
+                  key={plr.id}
+                  className="today-plr-card"
+                  sx={plrCardSx}
+                  onClick={() => go("plr-calendar")}
+                >
+                  <Stack direction="row" align="center" justify="space-between" gap={3}>
+                    <Stack direction="column" gap={0} style={{ flex: 1, minWidth: 0 }}>
+                      <Text variant="caption" tone="strong" style={{ marginBottom: 2 }}>{plr.name}</Text>
+                      <Text variant="micro" tone="subtle">
+                        Pres: {plr.presDate}&nbsp;·&nbsp;Due: {plr.dueDate}
+                      </Text>
+                    </Stack>
+                    <Badge variant="subtle" color="success" label="Open" />
+                  </Stack>
+                </Card>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Right: Quick access + Recent signals */}
+        <div className="today-right-col">
+
+          <div className="today-section-label">
+            <span className="today-section-label-icon">⚡</span>
+            <span>Quick access</span>
+          </div>
+
+          <div className="today-quick-grid">
+            {QUICK_ACCESS.map((btn) => (
+              <Card
+                key={btn.mod}
+                sx={{
+                  ...panelSx,
+                  padding: "var(--sp-3) var(--sp-3)",
+                  cursor: "pointer",
+                  background: btn.bg,
+                  boxShadow: "none",
+                  border: "1px solid transparent",
+                  transition: "transform 0.12s, box-shadow 0.12s, border-color 0.12s",
+                }}
+                onClick={() => go(btn.mod)}
+                className="today-quick-card"
+              >
+                <Stack direction="row" align="center" gap={2}>
+                  <span className="today-quick-icon">{btn.icon}</span>
+                  <Text variant="caption" tone="strong">{btn.label}</Text>
+                </Stack>
+              </Card>
+            ))}
+          </div>
+
+          {model.recentSignals.length > 0 && (
+            <>
+              <div className="today-section-label" style={{ marginTop: "var(--sp-5)" }}>
+                <span className="today-section-label-icon">🔍</span>
+                <span>Recent signals</span>
+              </div>
+              {model.recentSignals.map((sig) => (
+                <Card
+                  key={sig.id}
+                  className="today-intel-card"
+                  sx={{
+                    ...intelCardSx,
+                    borderLeft: `3px solid ${URGENCY_COLOR[sig.urgency] || "var(--color-border-strong)"}`,
+                  }}
+                  onClick={() => go("intel")}
+                >
+                  <Text
+                    variant="caption"
+                    tone="strong"
+                    style={{
+                      display: "block",
+                      marginBottom: 3,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {sig.title}
+                  </Text>
+                  <Text variant="micro" tone="subtle">
+                    {sig.author}&nbsp;·&nbsp;{sig.date}
+                  </Text>
+                </Card>
+              ))}
+              <button type="button" className="today-intel-all" onClick={() => go("intel")}>
+                View all signals →
+              </button>
+            </>
+          )}
+        </div>
+
+      </div>
+    </div>
   );
 }

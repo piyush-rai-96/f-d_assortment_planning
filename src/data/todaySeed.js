@@ -23,6 +23,7 @@ export const TODAY_SEED = {
   submittedRatio: 0.26,   // 18/70 stores submitted
   activePlans: 2,
   unreadIntel: 4,
+  openNotifications: 3,
 };
 
 // Per-velocity "% of network" labels (display only)

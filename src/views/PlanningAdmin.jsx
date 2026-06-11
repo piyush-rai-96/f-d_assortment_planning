@@ -3,6 +3,7 @@ import { Card, Button, Badge, Table, Tabs, Checkbox, Input } from "impact-ui";
 import Text from "../components/Text.jsx";
 import StepIndicator from "../components/StepIndicator.jsx";
 import Stack from "../components/Stack.jsx";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { color, deptColor } from "../styles/tokens.js";
 import {
   PRODUCTS,
@@ -61,7 +62,15 @@ export default function PlanningAdmin() {
 
   const productColumns = useMemo(
     () => [
-      { field: "sku", headerName: "SKU", width: 124, pinned: "left", filter: "agTextColumnFilter", cellStyle: (p) => ({ fontFamily: "var(--font-mono)", color: color.teal, fontWeight: 700, borderLeft: `3px solid ${p.data._ov ? color.teal : "transparent"}` }) },
+      { field: "sku", headerName: "SKU", width: 156, pinned: "left", filter: "agTextColumnFilter",
+        cellStyle: (p) => ({ fontFamily: "var(--font-mono)", color: color.teal, fontWeight: 700, borderLeft: `3px solid ${p.data._ov ? color.teal : "transparent"}` }),
+        cellRenderer: (p) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
+            <SkuSwatch sku={p.data} size={20} />
+            <span>{p.value}</span>
+          </div>
+        ),
+      },
       { field: "vsn", headerName: "VSN", width: 120, filter: "agTextColumnFilter" },
       { field: "dept", headerName: "Department", width: 140, filter: "agSetColumnFilter", cellStyle: (p) => ({ color: deptColor[p.value] || color.accent, fontWeight: 600 }) },
       { field: "subDept", headerName: "Sub-Department", width: 170, filter: "agSetColumnFilter" },
@@ -237,17 +246,17 @@ export default function PlanningAdmin() {
             if (visibleValues.length === 0) return null;
             return (
               <Stack key={g.key} direction="column" gap={2}>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   className="pa-group"
                   aria-expanded={!!open}
                   onClick={() => toggleGroup(`ag_${g.key}`)}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "4px 0", font: "inherit" }}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", width: "100%", padding: "4px 0", font: "inherit" }}
                 >
                   <Text variant="caption" tone="subtle">{open ? "▾" : "▸"}</Text>
                   <Text variant="caption" tone="strong">{g.label}</Text>
                   {groupChecked > 0 ? <Badge variant="subtle" size="small" color="error" label={String(groupChecked)} /> : null}
-                </button>
+                </Button>
                 {open || exSearch.trim() ? (
                   <div className="pa-matrix">
                     <StoreHead />
@@ -290,26 +299,29 @@ export default function PlanningAdmin() {
             const deptChecked = prods.reduce((sum, p) => sum + LOCATIONS.filter((l) => itemStore[`${p.sku}|${l.id}`]).length, 0);
             return (
               <Stack key={dept} direction="column" gap={2}>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   className="pa-group"
                   aria-expanded={!!open}
                   onClick={() => toggleGroup(`dept_${dept}`)}
-                  style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "4px 0", font: "inherit" }}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", width: "100%", padding: "4px 0", font: "inherit" }}
                 >
                   <Text variant="caption" tone="subtle">{open ? "▾" : "▸"}</Text>
                   <Text variant="caption" tone="strong">{dept}</Text>
                   {deptChecked > 0 ? <Badge variant="subtle" size="small" color="info" label={String(deptChecked)} /> : null}
-                </button>
+                </Button>
                 {open || exSearch.trim() ? (
                   <div className="pa-matrix">
                     <StoreHead />
                     {visibleProds.map((p) => (
                       <div key={p.sku} className="pa-matrix-row">
                         <div className="pa-cell-label">
-                          <Stack direction="column" gap={0} style={{ minWidth: 0 }}>
-                            <Text variant="micro" tone="default" truncate style={{ maxWidth: 176 }}>{p.desc}</Text>
-                            <Text variant="micro" tone="subtle" mono>{p.sku}</Text>
+                          <Stack direction="row" align="center" gap={2} style={{ minWidth: 0 }}>
+                            <SkuSwatch sku={p} size={22} />
+                            <Stack direction="column" gap={0} style={{ minWidth: 0 }}>
+                              <Text variant="micro" tone="default" truncate style={{ maxWidth: 176 }}>{p.desc}</Text>
+                              <Text variant="micro" tone="subtle" mono>{p.sku}</Text>
+                            </Stack>
                           </Stack>
                         </div>
                         {LOCATIONS.map((l) => {

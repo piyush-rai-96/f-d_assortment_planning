@@ -5,6 +5,7 @@ import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
 import { color } from "../styles/tokens.js";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
@@ -332,7 +333,7 @@ export default function Hindsight({ user }) {
             {[
               { label: "This store", value: db.store, color: color.primary },
               { label: "Cluster avg",   value: db.cluster, color: color.teal },
-              { label: "Network avg",  value: db.network, color: "#9ca3af" },
+              { label: "Network avg",  value: db.network, color: "var(--color-text-subtle)" },
             ].map((row) => (
               <Stack key={row.label} direction="row" align="center" gap={2} style={{ marginBottom: 8 }}>
                 <Text variant="micro" tone="muted" style={{ width: 90, flexShrink: 0 }}>{row.label}</Text>
@@ -411,7 +412,10 @@ export default function Hindsight({ user }) {
               return (
                 <Stack key={e.sku.sku} direction="column" gap={2}>
                   <Stack direction="row" justify="space-between" align="center" gap={3}>
-                    <Text variant={i === 0 ? "body-strong" : "caption"} tone={i === 0 ? "strong" : "default"} truncate>{e.sku.desc}</Text>
+                    <Stack direction="row" align="center" gap={2} style={{ minWidth: 0 }}>
+                      <SkuSwatch sku={e.sku} size={i === 0 ? 28 : 22} />
+                      <Text variant={i === 0 ? "body-strong" : "caption"} tone={i === 0 ? "strong" : "default"} truncate>{e.sku.desc}</Text>
+                    </Stack>
                     <Text variant="caption" mono tone="strong" style={{ whiteSpace: "nowrap" }}>{Math.round(e.sqft)} sqft</Text>
                   </Stack>
                   <Stack direction="row" align="center" gap={3}>

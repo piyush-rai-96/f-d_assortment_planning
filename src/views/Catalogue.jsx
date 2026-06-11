@@ -1,226 +1,288 @@
-import React, { useMemo, useState } from "react";
-import { Card, Button, Badge, Table } from "impact-ui";
+/*
+ * Catalogue screen — read-only reference fence of the locked FW 2025 superset.
+ *
+ * Per fd-assortment-v6.html this view is intentionally lean:
+ *   • Active PLR Review banner (links to National Core / PLR Status)
+ *   • "→ My Workspace" CTA in the header to kick off the agent run
+ *   • Tier-strip: Core · Cluster · Store pick counts at a glance
+ *   • Full SKU table with swatch, SKU ID, Market Intel signal badges,
+ *     dept badge, tier pill, and a left-border accent coloured by tier
+ *
+ * The assortment plan (tier assignments) is driven by the agent that runs
+ * in My Workspace and committed to agentStore.js.  Catalogue reads it on
+ * every mount so it always shows the freshest plan without prop-drilling.
+ */
+import React, { useMemo } from "react";
+import { Card, Badge, Table, Button } from "impact-ui";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
-import Grid from "../components/Grid.jsx";
-import { color } from "../styles/tokens.js";
-import { FD_STORES } from "../data/stores.js";
-import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
-import { panelSx, softSx } from "../styles/panelSx.js";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import {
-  CATALOGUE_SKUS,
-  HARD_LOCKED_COUNT,
-  STORE_PICK_COUNT,
-  isNatLocked,
-  isClusterAdd,
-  runCatalogueAgent,
+  CATALOGUE_SKUS, HARD_LOCKED_COUNT, STORE_PICK_COUNT,
+  isNatLocked, isClusterAdd,
 } from "../data/catalogue.js";
+import { INTEL_SEED } from "../data/intel.js";
+import { getAgentPlan } from "../data/agentStore.js";
+import { panelSx } from "../styles/panelSx.js";
+import "./Catalogue.css";
 
-
-const DEPT_BADGE = { Wood: "warning", Tile: "success", "Laminate & Vinyl": "info" };
-
-/* Tier → label + token color (functional tier indicator). */
+/* ── Constants ──────────────────────────────────────────────────────────── */
 const TIER_META = {
-  core: { label: "🔒 Core", color: color.success },
-  cluster: { label: "🗂 Cluster", color: color.teal },
-  store: { label: "📍 Store pick", color: color.accent },
+  core:    { label: "🔒 Core",        badge: "success", border: "var(--color-success)" },
+  cluster: { label: "🗂 Cluster",     badge: "info",    border: "var(--color-teal)" },
+  store:   { label: "📍 Store pick",  badge: "accent",  border: "transparent" },
 };
 
-const AGENT_TIERS = [
-  { icon: "🔒", tier: "National Core", desc: "SKUs with ≥80% carry + high avg sqft → mandatory all stores", tone: "success" },
-  { icon: "🗂", tier: "Cluster Level", desc: "SKUs with ≥70% carry within a cluster → mandatory for that cluster", tone: "teal" },
-  { icon: "📍", tier: "Store Picks", desc: "Remaining catalogue SKUs available for individual store selection", tone: "accent" },
-];
+const DEPT_BADGE = {
+  "Wood":              "warning",
+  "Tile":              "success",
+  "Laminate & Vinyl":  "info",
+};
 
+/* Map intel signals to the dept + subDept categories they cover */
+function buildIntelMap() {
+  const map = {};
+  INTEL_SEED.forEach((sig) => {
+    (sig.categories || []).forEach((cat) => {
+      if (!map[cat]) map[cat] = [];
+      map[cat].push({ title: sig.title, direction: sig.direction });
+    });
+  });
+  return map;
+}
+const INTEL_BY_CAT = buildIntelMap();
+
+function getSkuSignals(sku) {
+  const key = `${sku.dept}${sku.subDept ? " \u2013 " + sku.subDept : ""}`;
+  return (INTEL_BY_CAT[key] || []).slice(0, 2);
+}
+
+/* Active PLR plan mock — in production this would come from Workspace state */
+const ACTIVE_PLR = {
+  name: "FW 2025 — Tile (Agent Draft)",
+  dept: "Tile",
+  season: "FW 2025",
+  updated: "Jun 10",
+};
+
+/* ── Catalogue ──────────────────────────────────────────────────────────── */
 export default function Catalogue({ onNavigate }) {
-  const [agentRun, setAgentRun] = useState(false);
-  const [plan, setPlan] = useState({ natDecisions: {}, clusterDecisions: {}, agentRunAt: null });
+  const plan = getAgentPlan(); // read latest plan from shared store
+  const hasAgentRun = !!plan.agentRunAt;
 
-  const scClusters = FD_CLUST_SCENARIOS.B.clusters;
-
-  const runAgent = () => {
-    setPlan(runCatalogueAgent());
-    setAgentRun(true);
-  };
-  const reRun = () => {
-    setPlan({ natDecisions: {}, clusterDecisions: {}, agentRunAt: null });
-    setAgentRun(false);
-  };
-
-  const natCount = HARD_LOCKED_COUNT + Object.values(plan.natDecisions).filter((v) => v === "core").length;
-  const clCount = Object.values(plan.clusterDecisions).filter((v) => v === "add").length;
-
-  // ── Catalogue rows with live tier (recomputed from plan decisions) ─────────
+  /* Augment every SKU row with live tier + intel signals */
   const rows = useMemo(
     () =>
       CATALOGUE_SKUS.map((sku) => {
         const id = parseInt(sku.id, 10);
-        const tier = isNatLocked(id, plan.natDecisions) ? "core" : isClusterAdd(sku.id, plan.clusterDecisions) ? "cluster" : "store";
-        return {
-          name: sku.name,
-          sku: sku.id,
-          dept: sku.dept,
-          subDept: sku.subDept || "—",
-          price: sku.price,
-          status: sku.status,
-          tier,
-        };
+        const tier = isNatLocked(id, plan.natDecisions)
+          ? "core"
+          : isClusterAdd(sku.id, plan.clusterDecisions)
+          ? "cluster"
+          : sku.tier || "store";
+        return { ...sku, tier, intel: getSkuSignals(sku) };
       }),
-    [plan]
-  );
-
-  const columns = useMemo(
-    () => [
-      { field: "name", headerName: "Description", minWidth: 240, flex: 1, filter: "agTextColumnFilter" },
-      { field: "sku", headerName: "SKU", width: 130, filter: "agTextColumnFilter", cellStyle: () => ({ fontFamily: "var(--font-mono)", color: color.textMuted }) },
-      { field: "dept", headerName: "Dept", width: 150, filter: "agSetColumnFilter" },
-      { field: "subDept", headerName: "Sub-Dept", minWidth: 160, flex: 1, filter: "agSetColumnFilter" },
-      { field: "price", headerName: "Price", width: 100, filter: "agNumberColumnFilter", valueFormatter: (p) => `$${Number(p.value).toFixed(2)}` },
-      { field: "status", headerName: "Status", width: 110, filter: "agSetColumnFilter" },
-      {
-        field: "tier",
-        headerName: "Tier",
-        width: 130,
-        valueFormatter: (p) => (TIER_META[p.value] ?? TIER_META.store).label,
-        cellStyle: (p) => ({ color: (TIER_META[p.value] ?? TIER_META.store).color, fontWeight: 700 }),
-      },
-    ],
+    // plan is a module-level object; re-compute only on mount (plan ref stable per session)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  // ── Tier-cascade segment widths ────────────────────────────────────────────
-  const total = CATALOGUE_SKUS.length;
-  const t1w = Math.round((natCount / total) * 100);
-  const t2w = Math.round((clCount / total) * 100);
-  const t3w = Math.max(0, 100 - t1w - t2w);
-  const cascade = [
-    { tone: "success", barColor: color.success, w: t1w, label: "🔒 National Core", n: natCount, note: "Locked · all stores" },
-    { tone: "teal", barColor: color.teal, w: t2w, label: "🗂 Cluster Adds", n: clCount, note: "Locked per cluster" },
-    { tone: "accent", barColor: color.accent, w: t3w, label: "📍 Store Picks", n: STORE_PICK_COUNT, note: "Store-level choice" },
-  ];
+  const coreCount    = rows.filter((r) => r.tier === "core").length;
+  const clusterCount = rows.filter((r) => r.tier === "cluster").length;
+  const storeCount   = rows.filter((r) => r.tier === "store").length;
 
-  const summaryCards = [
-    { l: "National Core", v: natCount, sub: `Locked in all ${FD_STORES.length} stores`, tone: "success", mod: "national" },
-    { l: "Cluster Adds", v: clCount, sub: `Across ${scClusters.length} behavioral clusters`, tone: "teal", mod: "regional" },
-    { l: "Store Picks", v: STORE_PICK_COUNT, sub: "Available for store curation", tone: "accent", mod: "store-curation" },
-  ];
+  /* Column definitions */
+  const columns = useMemo(() => [
+    {
+      headerName: "SKU / Description",
+      minWidth: 300,
+      flex: 2,
+      filter: "agTextColumnFilter",
+      valueGetter: (p) => p.data.name,
+      autoHeight: true,
+      cellRenderer: (p) => {
+        const signals = p.data.intel || [];
+        return (
+          <div className="cat-sku-cell">
+            <div className="cat-sku-swatch">
+              <SkuSwatch
+                sku={{ desc: p.data.name, dept: p.data.dept, subDept: p.data.subDept, cls: p.data.cls }}
+                size={28}
+              />
+            </div>
+            <div className="cat-sku-info">
+              <span className="cat-sku-name">{p.data.name}</span>
+              <span className="cat-sku-id">{p.data.id}</span>
+              {signals.length > 0 && (
+                <div className="cat-sku-signals">
+                  {signals.map((sig, i) => (
+                    <span
+                      key={i}
+                      className={`cat-signal cat-signal--${sig.direction}`}
+                      title={sig.title}
+                    >
+                      {sig.direction === "opportunity" ? "↑" : "⚠"}{" "}
+                      {sig.title.length > 32 ? sig.title.slice(0, 32) + "…" : sig.title}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      field: "dept",
+      headerName: "Dept",
+      width: 140,
+      filter: "agSetColumnFilter",
+      cellRenderer: (p) => (
+        <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
+          <Badge variant="subtle" size="small" color={DEPT_BADGE[p.value] || "neutral"} label={p.value} />
+        </div>
+      ),
+    },
+    {
+      field: "subDept",
+      headerName: "Sub-Dept",
+      minWidth: 150,
+      flex: 1,
+      filter: "agSetColumnFilter",
+      cellStyle: () => ({
+        fontSize: "var(--fs-micro)",
+        color: "var(--color-text-muted)",
+        display: "flex",
+        alignItems: "center",
+      }),
+    },
+    {
+      field: "price",
+      headerName: "Price",
+      width: 90,
+      filter: "agNumberColumnFilter",
+      cellRenderer: (p) => (
+        <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
+          <span style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: "var(--fs-micro)",
+            fontWeight: "var(--fw-semibold)",
+            color: "var(--color-text)",
+          }}>
+            ${Number(p.value).toFixed(2)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 100,
+      filter: "agSetColumnFilter",
+      cellStyle: (p) => ({
+        fontSize: "var(--fs-micro)",
+        fontWeight: "var(--fw-semibold)",
+        color: p.value === "Active" ? "var(--color-success)" : "var(--color-text-subtle)",
+        display: "flex",
+        alignItems: "center",
+      }),
+    },
+    {
+      field: "tier",
+      headerName: "Tier",
+      width: 130,
+      filter: "agSetColumnFilter",
+      cellRenderer: (p) => {
+        const meta = TIER_META[p.value] || TIER_META.store;
+        return (
+          <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Badge variant="subtle" size="small" color={meta.badge} label={meta.label} />
+          </div>
+        );
+      },
+    },
+  ], []);
+
+  /* Left-border per tier, matching HTML v6 row accent */
+  const getRowStyle = (p) => {
+    const border = TIER_META[p.data?.tier]?.border;
+    return border && border !== "transparent"
+      ? { borderLeft: `3px solid ${border}` }
+      : { borderLeft: "3px solid transparent" };
+  };
 
   return (
     <Stack direction="column" gap={4}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <Card sx={panelSx}>
-        <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
+        <Stack direction="row" justify="space-between" align="center" gap={3} wrap>
           <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
             <Text variant="title">Catalogue</Text>
             <Text variant="caption" tone="muted">
-              FW 2025 locked · {CATALOGUE_SKUS.length} SKUs · 3-tier assortment plan driven by agent recommendations
+              FW 2025 locked · {CATALOGUE_SKUS.length} SKUs · Full product superset across all locations ·
+              Submit scope in My Workspace to generate curation recommendations
             </Text>
           </Stack>
-          {agentRun ? (
-            <Stack direction="row" gap={2} align="center" wrap justify="flex-end">
-              <Badge variant="subtle" size="small" color="success" label={`Agent applied · ${plan.agentRunAt}`} />
-              <Button variant="secondary" size="small" onClick={reRun}>Re-run</Button>
-            </Stack>
-          ) : null}
+          <Stack direction="row" gap={2} align="center" wrap justify="flex-end">
+            {hasAgentRun && (
+              <Badge variant="subtle" color="success" size="small" label={`Agent applied · ${plan.agentRunAt}`} />
+            )}
+            <Button variant="primary" size="small" onClick={() => onNavigate?.("workspace")}>
+              → My Workspace
+            </Button>
+          </Stack>
         </Stack>
       </Card>
 
-      {/* ── Agent CTA (pre-run) OR tier summary (post-run) ─────────────────── */}
-      {!agentRun ? (
-        <Card sx={panelSx}>
-          <Stack direction="row" gap={3} align="flex-start" wrap>
-            <Stack className="cat-agent-dot" align="center" justify="center" style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--color-primary-soft)", flexShrink: 0 }}>
-              <Text variant="subheading">🤖</Text>
-            </Stack>
-            <Stack direction="column" gap={3} flex="1 1 auto" style={{ minWidth: 0 }}>
-              <Stack direction="column" gap={1}>
-                <Text variant="subheading" tone="primary">Agent Assortment Recommendation</Text>
-                <Text variant="caption" tone="muted">
-                  The agent analyses R13 sell-through, carry rates, cluster performance, and any received forecasts across all
-                  {" "}{FD_STORES.length} stores to recommend a 3-tier assortment plan — National Core, Cluster-level adds, and
-                  Store picks. You review and adjust in each downstream step.
-                </Text>
-              </Stack>
-              <Grid min={200} gap={3}>
-                {AGENT_TIERS.map((t) => (
-                  <Card key={t.tier} sx={softSx}>
-                    <Stack direction="column" gap={1}>
-                      <Text variant="subheading">{t.icon}</Text>
-                      <Text variant="body-strong" tone={t.tone}>{t.tier}</Text>
-                      <Text variant="micro" tone="muted">{t.desc}</Text>
-                    </Stack>
-                  </Card>
-                ))}
-              </Grid>
-              <Stack direction="row" gap={3} align="center" wrap>
-                <Button variant="primary" size="medium" onClick={runAgent}>🤖 Run agent recommendation</Button>
-                <Text variant="micro" tone="subtle">
-                  Recommendations are applied as defaults. You review and override in National Core → Regional Review → Store Curation.
-                </Text>
-              </Stack>
-            </Stack>
-          </Stack>
-        </Card>
-      ) : (
-        <Stack direction="column" gap={4}>
-          {/* Tier summary cards */}
-          <Grid min={200} gap={3}>
-            {summaryCards.map((m) => (
-              <Card
-                key={m.l}
-                sx={{ ...panelSx, cursor: onNavigate ? "pointer" : "default" }}
-                onClick={onNavigate ? () => onNavigate(m.mod) : undefined}
-              >
-                <Stack direction="column" gap={1}>
-                  <Text variant="overline" tone="muted">{m.l}</Text>
-                  <Text variant="kpi" tone={m.tone}>{m.v}</Text>
-                  <Text variant="caption" tone="subtle">{m.sub}</Text>
-                  <Text variant="caption" tone={m.tone}>Review &amp; adjust →</Text>
-                </Stack>
-              </Card>
-            ))}
-          </Grid>
+      {/* ── Active PLR Review banner ────────────────────────────────────────── */}
+      <div className="cat-plr-banner">
+        <div className="cat-plr-banner__left">
+          <span className="cat-plr-banner__label">Active PLR Review</span>
+          <span className="cat-plr-banner__name">{ACTIVE_PLR.name}</span>
+          <span className="cat-plr-banner__meta">
+            {ACTIVE_PLR.dept} · {ACTIVE_PLR.season} · Updated: {ACTIVE_PLR.updated}
+          </span>
+        </div>
+        <div className="cat-plr-banner__actions">
+          <Button variant="primary" size="small" onClick={() => onNavigate?.("national")}>
+            National Core →
+          </Button>
+          <Button variant="secondary" size="small" onClick={() => onNavigate?.("approval")}>
+            PLR Status →
+          </Button>
+        </div>
+      </div>
 
-          {/* Tier cascade */}
-          <Card sx={panelSx}>
-            <Text variant="body-strong" tone="strong" style={{ marginBottom: "var(--sp-3)" }}>Assortment Tier Cascade</Text>
-            <Stack direction="row" gap={3} align="stretch" wrap>
-              {cascade.map((t) => (
-                <Stack
-                  key={t.label}
-                  direction="column"
-                  gap={1}
-                  flex={`${Math.max(t.w, 8)} 1 0`}
-                  paddingX={3}
-                  paddingY={3}
-                  style={{ background: "var(--color-surface-alt)", borderTop: `3px solid ${t.barColor}`, borderRadius: "var(--r2)", minWidth: 0 }}
-                >
-                  <Text variant="caption" tone={t.tone}>{t.label}</Text>
-                  <Text variant="title" tone={t.tone}>{t.n}</Text>
-                  <Text variant="micro" tone="muted">{t.note}</Text>
-                </Stack>
-              ))}
-            </Stack>
-          </Card>
-        </Stack>
-      )}
+      {/* ── Tier strip ─────────────────────────────────────────────────────── */}
+      <div className="cat-tier-strip">
+        {[
+          { label: "National Core", n: coreCount,              icon: "🔒", color: "var(--color-success)" },
+          { label: "Cluster Adds",  n: clusterCount,           icon: "🗂", color: "var(--color-teal)" },
+          { label: "Store Picks",   n: storeCount,             icon: "📍", color: "var(--color-accent)" },
+          { label: "Total SKUs",    n: CATALOGUE_SKUS.length,  icon: "📦", color: "var(--color-text-muted)" },
+        ].map((t) => (
+          <div key={t.label} className="cat-tier-chip" style={{ "--tc": t.color }}>
+            <span className="cat-tier-icon">{t.icon}</span>
+            <span className="cat-tier-n">{t.n}</span>
+            <span className="cat-tier-lbl">{t.label}</span>
+          </div>
+        ))}
+      </div>
 
-      {/* ── Catalogue SKU table (always shown) ─────────────────────────────── */}
-      <Stack direction="column" gap={3}>
-        <Text variant="body-strong" tone="strong">All {CATALOGUE_SKUS.length} Catalogue SKUs</Text>
-        <Table
-      defaultColDef={{ floatingFilter: true }}
-          cardContainer
-          rowHeight="compact"
-          tableHeader="FW 2025 catalogue"
-          columnDefs={columns}
-          rowData={rows}
-          domLayout="autoHeight"
-          hideTableSetting
-          hideTableActions
-          pagination={false}
-        />
-      </Stack>
+      {/* ── SKU Table ──────────────────────────────────────────────────────── */}
+      <Table
+        cardContainer
+        rowHeight={56}
+        tableHeader={`All ${CATALOGUE_SKUS.length} Catalogue SKUs`}
+        columnDefs={columns}
+        rowData={rows}
+        domLayout="autoHeight"
+        defaultColDef={{ floatingFilter: true }}
+        hideTableSetting
+        hideTableActions
+        pagination={false}
+        getRowStyle={getRowStyle}
+      />
     </Stack>
   );
 }

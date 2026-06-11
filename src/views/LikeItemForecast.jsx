@@ -5,6 +5,7 @@ import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
 import { color } from "../styles/tokens.js";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
@@ -206,7 +207,10 @@ export default function LikeItemForecast({ onNavigate }) {
                 paddingY={2}
                 onClick={() => setActiveSku(sku.sku)}
               >
-                <Text variant="caption" tone="default">{sku.desc}</Text>
+                <Stack direction="row" align="center" gap={2}>
+                  <SkuSwatch sku={sku} size={26} />
+                  <Text variant="caption" tone="default" style={{ minWidth: 0 }}>{sku.desc}</Text>
+                </Stack>
                 <Stack direction="row" justify="space-between" align="center" gap={2} wrap>
                   <Badge variant="subtle" size="small" color={DEPT_BADGE[sku.dept]} label={sku.dept} />
                   <Badge variant="subtle" size="small" color={meta.color} label={meta.label} />
@@ -349,6 +353,7 @@ export default function LikeItemForecast({ onNavigate }) {
         {/* SKU header */}
         <Card sx={panelSx}>
           <Stack direction="row" gap={2} align="center" wrap style={{ marginBottom: "var(--sp-2)" }}>
+            <SkuSwatch sku={active} size={32} />
             <Text variant="subheading" tone="strong">{active.desc}</Text>
             <Badge variant="subtle" size="small" color={meta.color} label={meta.label} />
           </Stack>

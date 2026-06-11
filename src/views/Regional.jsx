@@ -4,6 +4,7 @@ import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
 import { color } from "../styles/tokens.js";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
@@ -44,7 +45,14 @@ const SC = FD_CLUST_SCENARIOS.B;
 function SkuTable({ rows, carryHeader }) {
   const columns = useMemo(
     () => [
-      { field: "desc", headerName: "Description", minWidth: 220, flex: 1, filter: "agTextColumnFilter" },
+      { field: "desc", headerName: "Description", minWidth: 240, flex: 1, filter: "agTextColumnFilter",
+        cellRenderer: (p) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
+            <SkuSwatch sku={{ desc: p.data.desc, dept: p.data.dept, size: p.data.size }} size={22} />
+            <span>{p.value}</span>
+          </div>
+        ),
+      },
       { field: "sku", headerName: "SKU", width: 120, filter: "agTextColumnFilter", cellStyle: () => ({ fontFamily: "var(--font-mono)", color: color.textMuted }) },
       { field: "dept", headerName: "Dept", width: 140, filter: "agSetColumnFilter" },
       { field: "size", headerName: "Size", width: 90, filter: "agSetColumnFilter" },
@@ -181,13 +189,16 @@ export default function Regional({ onNavigate }) {
           </Stack>
           <Stack direction="column" className="rr-core-list">
             {coreSidebar.map((sku) => (
-              <Stack key={sku.sku} direction="column" gap={1} paddingX={3} paddingY={2} className="rr-core-row">
-                <Text variant="caption" tone="strong">{sku.desc}</Text>
-                <Stack direction="row" gap={1} wrap align="center">
-                  <Badge variant="subtle" size="small" color={DEPT_BADGE[sku.dept] || "default"} label={sku.dept} />
-                  <Badge variant="subtle" size="small" color="success" label={sku.tag} />
+              <Stack key={sku.sku} direction="row" align="flex-start" gap={2} paddingX={3} paddingY={2} className="rr-core-row">
+                <SkuSwatch sku={sku} size={28} />
+                <Stack direction="column" gap={1} style={{ minWidth: 0 }}>
+                  <Text variant="caption" tone="strong">{sku.desc}</Text>
+                  <Stack direction="row" gap={1} wrap align="center">
+                    <Badge variant="subtle" size="small" color={DEPT_BADGE[sku.dept] || "default"} label={sku.dept} />
+                    <Badge variant="subtle" size="small" color="success" label={sku.tag} />
+                  </Stack>
+                  <Text variant="micro" tone="muted" mono>${sku.price.toFixed(2)} · {Math.round(nationalR13(sku.sku))} sqft nat'l</Text>
                 </Stack>
-                <Text variant="micro" tone="muted" mono>${sku.price.toFixed(2)} · {Math.round(nationalR13(sku.sku))} sqft nat'l</Text>
               </Stack>
             ))}
           </Stack>
@@ -421,12 +432,15 @@ function ClusterDetail({ clusterId, activeStore, deptFilter, byDept, clusterAdds
               const added = !!adds[s.sku];
               return (
                 <Stack key={s.sku} className={`rr-add-row${added ? " is-added" : ""}`} direction="row" align="center" gap={4} wrap paddingX={4} paddingY={3}>
-                  <Stack direction="column" gap={1} flex="1 1 240px" style={{ minWidth: 0 }}>
-                    <Text variant="body-strong" tone="strong">{s.desc}</Text>
+                  <Stack direction="row" align="center" gap={2} flex="1 1 240px" style={{ minWidth: 0 }}>
+                    <SkuSwatch sku={s} size={30} />
+                    <Stack direction="column" gap={1} style={{ minWidth: 0 }}>
+                      <Text variant="body-strong" tone="strong">{s.desc}</Text>
                     <Stack direction="row" gap={2} align="center" wrap>
                       <Text variant="micro" tone="subtle" mono>{s.sku}</Text>
                       <Badge variant="subtle" size="small" color={DEPT_BADGE[s.dept] || "default"} label={s.dept} />
                       <Text variant="micro" tone="muted">{s.subDept}</Text>
+                      </Stack>
                     </Stack>
                   </Stack>
                   <Stack direction="column" gap={1} style={{ width: 90, flexShrink: 0 }}>

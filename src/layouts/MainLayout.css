@@ -110,9 +110,9 @@
   display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
   padding: var(--sp-1) var(--sp-2); border-radius: var(--r2); background: rgba(255,255,255,.08);
 }
-.override-sku { font-size: 10px; font-weight: var(--fw-bold); color: rgba(255,255,255,.6); min-width: 90px; flex-shrink: 0; font-family: var(--font-mono); }
+.override-sku { font-size: var(--fs-xs); font-weight: var(--fw-bold); color: rgba(255,255,255,.6); min-width: 90px; flex-shrink: 0; font-family: var(--font-mono); }
 .override-desc { flex: 1; font-size: var(--fs-caption); color: rgba(255,255,255,.9); }
-.override-dept { font-size: 10px; color: rgba(255,255,255,.5); min-width: 60px; flex-shrink: 0; }
+.override-dept { font-size: var(--fs-xs); color: rgba(255,255,255,.5); min-width: 60px; flex-shrink: 0; }
 .override-price-group { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
 .override-price-label { color: rgba(255,255,255,.6); font-size: var(--fs-caption); }
 .override-price-input {

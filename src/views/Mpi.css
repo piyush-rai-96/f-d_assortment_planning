@@ -37,3 +37,63 @@
   background: var(--color-warning-soft);
   border-top: 1px solid var(--color-border);
 }
+
+/* ── Store NPI table — "wow" cell visuals ─────────────────────────────────── */
+.mpi-store-name {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-strong);
+}
+
+/* NPI% — inline progress bar + value, scaled to the network's worst store. */
+.mpi-npi-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 100%;
+  width: 100%;
+}
+.mpi-npi-track {
+  flex: 1 1 auto;
+  min-width: 36px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+.mpi-npi-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 0.35s ease;
+}
+.mpi-npi-val {
+  flex: 0 0 auto;
+  min-width: 46px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-caption);
+  color: var(--color-text);
+}
+.mpi-npi-cell.is-flagged .mpi-npi-val {
+  color: var(--color-error);
+  font-weight: var(--fw-bold);
+}
+
+/* Center-aligned header (AG Grid ships right-aligned only). */
+.ag-center-aligned-header .ag-header-cell-label {
+  justify-content: center;
+}
+
+/* Velocity — soft pill badge. */
+.mpi-vel-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: 0.02em;
+}

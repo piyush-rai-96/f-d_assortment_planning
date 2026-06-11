@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { Card, Badge, Text } from "impact-ui";
+import Stack from "../components/Stack.jsx";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
@@ -9,6 +11,7 @@ import { INTEL_SEED } from "../data/intel.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import { FD_STORES } from "../data/stores.js";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import "./AssortmentIntelligence.css";
 
 /* ── Score builder ───────────────────────────────────────────────────────── */
@@ -79,7 +82,7 @@ function DetailPanel({ score, onNavigate, onClose }) {
     <div className="ai-detail">
       {/* Header */}
       <div className="ai-detail-header">
-        <button className="ai-detail-close" onClick={onClose} aria-label="Close detail panel">✕</button>
+        <button type="button" className="ai-detail-close" onClick={onClose} aria-label="Close detail panel">✕</button>
         <div className="ai-detail-sku-id">{score.skuId}</div>
         <div className="ai-detail-sku-name">{score.desc}</div>
         <div className="ai-detail-tags">
@@ -153,8 +156,8 @@ function DetailPanel({ score, onNavigate, onClose }) {
 
       {/* Actions */}
       <div className="ai-detail-actions">
-        <button className="ai-action-btn" onClick={() => onNavigate("catalogue")}>Open in Catalogue →</button>
-        <button className="ai-action-btn ai-action-btn--ghost" onClick={() => onNavigate("forecast")}>View Forecast →</button>
+        <button type="button" className="ai-action-btn" onClick={() => onNavigate("catalogue")}>Open in Catalogue →</button>
+        <button type="button" className="ai-action-btn ai-action-btn--ghost" onClick={() => onNavigate("forecast")}>View Forecast →</button>
       </div>
     </div>
   );
@@ -188,15 +191,12 @@ export default function AssortmentIntelligence({ onNavigate }) {
   const colDefs = useMemo(() => [
     {
       field: "skuId", headerName: "SKU", width: 120, pinned: "left",
-      cellRenderer: ({ value, data }) => {
-        const bg = data.dept === "Wood" ? color.wood : data.dept === "Tile" ? color.teal : color.primary;
-        return (
-          <div className="ai-sku-cell">
-            <div className="ai-sku-swatch" style={{ background: bg }} />
-            <span className="ai-sku-id">{value}</span>
-          </div>
-        );
-      },
+      cellRenderer: ({ value, data }) => (
+        <div className="ai-sku-cell">
+          <SkuSwatch sku={{ desc: data.desc, dept: data.dept, cls: data.cls, subDept: data.subDept }} size={22} />
+          <span className="ai-sku-id">{value}</span>
+        </div>
+      ),
     },
     { field: "desc",  headerName: "Description", flex: 1, minWidth: 180,
       cellStyle: { fontWeight: 500 } },
@@ -231,8 +231,8 @@ export default function AssortmentIntelligence({ onNavigate }) {
       {/* Header */}
       <div className="ai-header">
         <div className="ai-header-left">
-          <h1 className="ai-title">Assortment Intelligence</h1>
-          <span className="ai-season-badge">SS 2026 · {scores.length} SKUs</span>
+          <Text variant="title" as="h1" className="ai-title">Assortment Intelligence</Text>
+          <Badge variant="subtle" label={`SS 2026 · ${scores.length} SKUs`} className="ai-season-badge" />
         </div>
         <div className="ai-header-right">
           {intelCount > 0 && (
@@ -248,7 +248,7 @@ export default function AssortmentIntelligence({ onNavigate }) {
       <div className="ai-filters">
         <div className="ai-filter-group" role="tablist" aria-label="Filter by department">
           {DEPT_OPTS.map((d) => (
-            <button key={d} role="tab" aria-selected={deptFilter === d}
+            <button key={d} type="button" role="tab" aria-selected={deptFilter === d}
               className={`ai-filter-tab ${deptFilter === d ? "active" : ""}`}
               onClick={() => setDeptFilter(d)}>
               {d}
@@ -258,7 +258,7 @@ export default function AssortmentIntelligence({ onNavigate }) {
         <div className="ai-filter-divider" />
         <div className="ai-filter-group" role="tablist" aria-label="Filter by signal">
           {SIGNAL_TABS.map((t) => (
-            <button key={t} role="tab" aria-selected={signalTab === t}
+            <button key={t} type="button" role="tab" aria-selected={signalTab === t}
               className={`ai-filter-tab ai-filter-tab--outline ${signalTab === t ? "active" : ""}`}
               onClick={() => setSignalTab(t)}>
               {t}
@@ -270,7 +270,7 @@ export default function AssortmentIntelligence({ onNavigate }) {
 
       {/* Two-panel layout — detail panel only renders when a row is selected */}
       <div className={`ai-layout ${panelOpen ? "ai-layout--panel-open" : ""}`}>
-        <div className="ai-table-panel">
+        <Card className="ai-table-panel" padding="none">
           <div className="ag-theme-alpine ai-grid-wrap">
             <AgGridReact
               rowData={filtered}
@@ -291,16 +291,16 @@ export default function AssortmentIntelligence({ onNavigate }) {
               Click any row to view the score breakdown and store-level performance
             </div>
           )}
-        </div>
+        </Card>
 
         {panelOpen && (
-          <div className="ai-detail-panel">
+          <Card className="ai-detail-panel" padding="none">
             <DetailPanel
               score={selectedScore}
               onNavigate={onNavigate}
               onClose={() => setSelectedSkuId(null)}
             />
-          </div>
+          </Card>
         )}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "impact-ui";
 import {
   AGENT_SIGNALS, PIPELINE_STEPS, AUDIT_LOG,
   SUGGESTED_QUESTIONS, AGENT_KPIS,
@@ -59,13 +60,14 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
   if (collapsed) {
     return (
       <aside className="fd-agent-rail fd-agent-rail--collapsed" aria-label="Agent activity collapsed">
-        <button
+        <Button
+          variant="ghost"
           className="fd-agent-expand-tab"
           onClick={() => setCollapsed(false)}
           title="Expand Agent Rail"
         >
           <span className="fd-agent-expand-icon" aria-hidden="true" /> <span>Agent</span>
-        </button>
+        </Button>
       </aside>
     );
   }
@@ -79,14 +81,15 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
           Agent Activity
           <span className="fd-agent-period">SS 2026</span>
         </div>
-        <button
+        <Button
+          variant="ghost"
           className="fd-agent-collapse-btn"
           onClick={() => setCollapsed(true)}
           title="Collapse agent rail"
           aria-label="Collapse agent rail"
         >
           »
-        </button>
+        </Button>
         {/* Mini KPI strip */}
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {[
@@ -136,9 +139,9 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
                   <span className="ar-signal-time">{sig.time}</span>
                 </div>
                 <div className="ar-signal-body">{sig.body}</div>
-                <button className="ar-signal-action" onClick={() => onNavigate?.(sig.mod)}>
+                <Button variant="ghost" className="ar-signal-action" onClick={() => onNavigate?.(sig.mod)}>
                   {sig.action} →
-                </button>
+                </Button>
               </div>
             ))}
           </>
@@ -194,7 +197,7 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
                 <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>
                 <div>
                   <div className="ar-agent-hero-title">FD Assortment Agent</div>
-                  <div className="ar-agent-hero-sub">FW 2025 · 300 stores · ready to assist</div>
+                  <div className="ar-agent-hero-sub">FW 2025 · 21 stores · ready to assist</div>
                 </div>
               </div>
               <div className="ar-agent-hero-stats">
@@ -220,17 +223,17 @@ export default function AgentRail({ onOpenChat, onNavigate }) {
                   <span>{cat.icon}</span>{cat.category}
                 </div>
                 {cat.questions.map((q, i) => (
-                  <button key={i} className="ar-question-chip" onClick={() => onOpenChat?.(q)}>
+                  <Button key={i} variant="ghost" className="ar-question-chip" onClick={() => onOpenChat?.(q)}>
                     {q}
-                  </button>
+                  </Button>
                 ))}
               </div>
             ))}
 
             {/* Open full chat button */}
-            <button className="ar-open-chat-btn" onClick={() => onOpenChat?.("")}>
+            <Button variant="secondary" className="ar-open-chat-btn" onClick={() => onOpenChat?.("")}>
               <span>💬</span> Open full chat assistant
-            </button>
+            </Button>
           </>
         )}
       </div>

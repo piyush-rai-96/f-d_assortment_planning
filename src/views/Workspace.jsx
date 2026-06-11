@@ -1,11 +1,316 @@
-import React, { useState, useMemo } from "react";
-import { Card, Badge, Input, Select, EmptyState, Button } from "impact-ui";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { Card, Badge, EmptyState, Button } from "impact-ui";
+import Text from "../components/Text.jsx";
+import Stack from "../components/Stack.jsx";
+import Grid from "../components/Grid.jsx";
 import StepIndicator from "../components/StepIndicator.jsx";
 import {
   PLANS, PIPE_STAGES, PLAN_STATUS, PLAN_MODE,
   DEPT_OPTIONS, CLUSTERING_SCENARIOS, CONTEXT_CHIPS,
 } from "../data/workspace.js";
+import {
+  CATALOGUE_SKUS, HARD_LOCKED_COUNT, STORE_PICK_COUNT,
+  runCatalogueAgent,
+} from "../data/catalogue.js";
+import { FD_STORES } from "../data/stores.js";
+import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
+import { FD_ASSORTMENT } from "../data/assortment.js";
+import { INTEL_SEED } from "../data/intel.js";
+import { setAgentPlan, getAgentPlan, resetAgentPlan } from "../data/agentStore.js";
+import { panelSx, softSx } from "../styles/panelSx.js";
 import "./Workspace.css";
+
+/* ─── Agent recommendation pipeline ────────────────────────────────────── */
+const AGENT_PIPELINE = [
+  { id: "scan",    icon: "📂", tone: "primary", title: "Scanning FW 2025 catalogue",
+    result: (c) => `${c.total} SKUs · ${c.coreLocked} locked Core/BG · ${c.eligible} eligible to score` },
+  { id: "r13",     icon: "📊", tone: "info",    title: "Analyzing R13 sell-through",
+    result: (c) => `${c.assortRows.toLocaleString()} store-SKU rows · ${c.storeCount} stores` },
+  { id: "carry",   icon: "🧮", tone: "primary", title: "Computing carry rates & avg sqft",
+    result: (c) => `Carry % + avg sqft scored for ${c.eligible} SKUs` },
+  { id: "core",    icon: "🔒", tone: "success", title: "Selecting National Core",
+    result: (c) => `${c.natCount} SKUs promoted to Core` },
+  { id: "cluster", icon: "🗂", tone: "teal",    title: "Evaluating behavioral clusters",
+    result: (c) => `${c.clCount} cluster adds across ${c.clusterCount} clusters` },
+  { id: "intel",   icon: "📡", tone: "accent",  title: "Applying Market Intel signals",
+    result: (c) => (c.intelSignals ? `${c.intelSignals} actioned signal(s) folded in` : "No actioned signals — R13 only") },
+  { id: "plan",    icon: "🧩", tone: "success", title: "Generating 3-tier assortment plan",
+    result: (c) => `Core ${c.natCount} · Cluster ${c.clCount} · Store ${c.storePicks}` },
+];
+
+const AGENT_TIERS = [
+  { icon: "🔒", tier: "National Core", desc: "SKUs with ≥80% carry + high avg sqft → mandatory all stores", tone: "success" },
+  { icon: "🗂", tier: "Cluster Adds",  desc: "SKUs with ≥70% carry within a cluster → mandatory for that cluster", tone: "teal" },
+  { icon: "📍", tier: "Store Picks",   desc: "Remaining catalogue SKUs available for individual store selection", tone: "accent" },
+];
+
+/* ─── Animated agent run panel ──────────────────────────────────────────── */
+function AgentRunPanel({ ctx, onComplete }) {
+  const [done, setDone] = useState(0);
+  const total = AGENT_PIPELINE.length;
+  const cbRef = useRef(onComplete);
+  cbRef.current = onComplete;
+
+  useEffect(() => {
+    if (done >= total) {
+      const t = setTimeout(() => cbRef.current?.(), 760);
+      return () => clearTimeout(t);
+    }
+    const dur = 640 + (done % 3) * 200;
+    const t = setTimeout(() => setDone((d) => d + 1), dur);
+    return () => clearTimeout(t);
+  }, [done, total]);
+
+  const finished = done >= total;
+  const pct = Math.round((done / total) * 100);
+  const activeStep = finished ? null : AGENT_PIPELINE[done];
+
+  return (
+    <Card sx={panelSx}>
+      <div className="cat-run">
+        <div className="cat-run-head">
+          <div className={`cat-bot ${finished ? "is-done" : ""}`}>{finished ? "✅" : "🤖"}</div>
+          <div className="cat-run-head-txt">
+            <Text variant="subheading" tone="primary">
+              {finished ? "Assortment plan ready" : "Agent is building your assortment…"}
+            </Text>
+            <Text variant="caption" tone="muted">
+              {finished
+                ? "All 7 stages complete — tiers applied to Catalogue"
+                : `Step ${Math.min(done + 1, total)} of ${total} · ${activeStep?.title ?? ""}`}
+            </Text>
+          </div>
+          <div className="cat-run-pct">
+            <Text variant="kpi" tone={finished ? "success" : "primary"}>{pct}%</Text>
+          </div>
+        </div>
+
+        <div className="cat-run-bar">
+          <div className="cat-run-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+
+        <div className="cat-run-grid">
+          <ol className="cat-steps">
+            {AGENT_PIPELINE.map((s, i) => {
+              const state = i < done ? "done" : i === done ? "active" : "queued";
+              return (
+                <li key={s.id} className={`cat-step is-${state}`}>
+                  <span className={`cat-step-ico tone-${s.tone}`}>
+                    {state === "done" ? "✓" : state === "active" ? <span className="cat-spin" /> : s.icon}
+                  </span>
+                  <div className="cat-step-body">
+                    <span className="cat-step-title">{s.title}</span>
+                    <span className="cat-step-sub">
+                      {state === "active"
+                        ? <>{s.sub}<span className="cat-dots" /></>
+                        : state === "done" ? s.result(ctx) : "Waiting…"}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          <div className="cat-console" aria-hidden="true">
+            <div className="cat-console-bar">
+              <span className="cat-dot r" /><span className="cat-dot y" /><span className="cat-dot g" />
+              <span className="cat-console-title">assortment-agent · trace</span>
+            </div>
+            <div className="cat-console-body">
+              <div className="cat-log cat-log-muted">$ agent run --catalogue FW2025 --stores {ctx.storeCount}</div>
+              {AGENT_PIPELINE.slice(0, done).map((s) => (
+                <div key={s.id} className="cat-log">
+                  <span className="cat-log-ok">✓</span> {s.title} <span className="cat-log-muted">— {s.result(ctx)}</span>
+                </div>
+              ))}
+              {!finished && (
+                <div className="cat-log cat-log-run">
+                  <span className="cat-log-arrow">▸</span> {activeStep?.title}<span className="cat-cursor" />
+                </div>
+              )}
+              {finished && (
+                <div className="cat-log cat-log-done">
+                  ✓ Plan committed · Core {ctx.natCount} · Cluster {ctx.clCount} · Store {ctx.storePicks}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ─── Top-of-Workspace agent section ────────────────────────────────────── */
+function AgentSection({ onNavigateCatalogue }) {
+  const scClusters = FD_CLUST_SCENARIOS.B.clusters;
+  const existing = getAgentPlan();
+  const alreadyRun = !!existing.agentRunAt;
+
+  const [phase, setPhase]   = useState(alreadyRun ? "done" : "idle");
+  const [plan,  setPlanLocal] = useState(alreadyRun ? existing : null);
+  const [collapsed, setCollapsed] = useState(alreadyRun); // collapse after first run
+
+  const runAgent = () => {
+    const result = runCatalogueAgent();
+    setPlanLocal(result);
+    setPhase("running");
+  };
+  const reRun = () => {
+    resetAgentPlan();
+    setPlanLocal(null);
+    setPhase("idle");
+    setCollapsed(false);
+  };
+  const onComplete = () => {
+    setAgentPlan(plan);
+    setPhase("done");
+    setCollapsed(false);
+  };
+
+  const natCount = plan
+    ? HARD_LOCKED_COUNT + Object.values(plan.natDecisions || {}).filter((v) => v === "core").length
+    : HARD_LOCKED_COUNT;
+  const clCount = plan
+    ? Object.values(plan.clusterDecisions || {}).filter((v) => v === "add").length
+    : 0;
+
+  const agentCtx = useMemo(() => ({
+    total: CATALOGUE_SKUS.length,
+    coreLocked: HARD_LOCKED_COUNT,
+    eligible: CATALOGUE_SKUS.filter((s) => !s.tag && s.status === "Active").length,
+    assortRows: FD_ASSORTMENT.length,
+    storeCount: FD_STORES.length,
+    clusterCount: scClusters.length,
+    intelSignals: INTEL_SEED.filter((i) => i.feedsModel && (i.status === "actioned" || i.status === "reviewed")).length,
+    natCount,
+    clCount,
+    storePicks: STORE_PICK_COUNT,
+  }), [natCount, clCount, scClusters.length]);
+
+  /* Compact done banner */
+  if (phase === "done" && collapsed) {
+    return (
+      <Card sx={{ ...panelSx, borderLeft: "3px solid var(--color-success)" }}>
+        <Stack direction="row" justify="space-between" align="center" gap={3} wrap>
+          <Stack direction="row" gap={2} align="center" flex="1 1 auto" style={{ minWidth: 0 }}>
+            <span style={{ fontSize: 20 }}>✅</span>
+            <Stack direction="column" gap={0}>
+              <Text variant="body-strong" tone="success">Assortment agent applied</Text>
+              <Text variant="micro" tone="muted">
+                Core {natCount} · Cluster {clCount} · Store {STORE_PICK_COUNT} · {plan?.agentRunAt}
+              </Text>
+            </Stack>
+          </Stack>
+          <Stack direction="row" gap={2} wrap>
+            <Button variant="secondary" size="small" onClick={() => setCollapsed(false)}>View details</Button>
+            <Button variant="ghost" size="small" onClick={reRun}>Re-run</Button>
+            <Button variant="primary" size="small" onClick={onNavigateCatalogue}>View Catalogue →</Button>
+          </Stack>
+        </Stack>
+      </Card>
+    );
+  }
+
+  /* Idle CTA */
+  if (phase === "idle") {
+    return (
+      <Card sx={panelSx}>
+        <Stack direction="row" gap={3} align="flex-start" wrap>
+          <Stack className="cat-agent-dot" align="center" justify="center"
+            style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-primary-soft)", flexShrink: 0 }}>
+            <span style={{ fontSize: 22 }}>🤖</span>
+          </Stack>
+          <Stack direction="column" gap={3} flex="1 1 auto" style={{ minWidth: 0 }}>
+            <Stack direction="column" gap={1}>
+              <Text variant="subheading" tone="primary">Agent Assortment Recommendation</Text>
+              <Text variant="caption" tone="muted">
+                The agent analyses R13 sell-through, carry rates, cluster performance, and market intel signals across all{" "}
+                {FD_STORES.length} stores to recommend a 3-tier assortment plan — National Core, Cluster-level adds, and
+                Store picks. Results are reflected in the Catalogue screen.
+              </Text>
+            </Stack>
+
+            {/* Pipeline preview */}
+            <div className="cat-pipe">
+              {AGENT_PIPELINE.map((s, i) => (
+                <React.Fragment key={s.id}>
+                  <span className={`cat-pipe-chip tone-${s.tone}`}>
+                    <span className="cat-pipe-ico">{s.icon}</span>
+                    <span className="cat-pipe-label">{s.title.replace(/^(Scanning|Analyzing|Computing|Selecting|Evaluating|Applying|Generating) /, "")}</span>
+                  </span>
+                  {i < AGENT_PIPELINE.length - 1 && <span className="cat-pipe-arrow">→</span>}
+                </React.Fragment>
+              ))}
+            </div>
+
+            <Grid min={180} gap={3}>
+              {AGENT_TIERS.map((t) => (
+                <Card key={t.tier} sx={softSx}>
+                  <Stack direction="column" gap={1}>
+                    <Text variant="subheading">{t.icon}</Text>
+                    <Text variant="body-strong" tone={t.tone}>{t.tier}</Text>
+                    <Text variant="micro" tone="muted">{t.desc}</Text>
+                  </Stack>
+                </Card>
+              ))}
+            </Grid>
+
+            <Stack direction="row" gap={3} align="center" wrap>
+              <Button variant="primary" size="medium" onClick={runAgent}>🤖 Run agent recommendation</Button>
+              <Text variant="micro" tone="subtle">
+                Recommendations apply as defaults. Review and override in National Core → Regional → Store Curation.
+              </Text>
+            </Stack>
+          </Stack>
+        </Stack>
+      </Card>
+    );
+  }
+
+  /* Running */
+  if (phase === "running") {
+    return <AgentRunPanel ctx={agentCtx} onComplete={onComplete} />;
+  }
+
+  /* Done — expanded */
+  return (
+    <Stack direction="column" gap={3}>
+      {/* Success header */}
+      <Card sx={{ ...panelSx, borderLeft: "3px solid var(--color-success)" }}>
+        <Stack direction="row" justify="space-between" align="center" gap={3} wrap>
+          <Stack direction="row" gap={2} align="center" flex="1 1 auto">
+            <span style={{ fontSize: 22 }}>✅</span>
+            <Stack direction="column" gap={0}>
+              <Text variant="subheading" tone="success">Assortment plan committed to Catalogue</Text>
+              <Text variant="micro" tone="muted">Applied {plan?.agentRunAt} — navigate to Catalogue to see tier assignments</Text>
+            </Stack>
+          </Stack>
+          <Stack direction="row" gap={2} wrap>
+            <Button variant="ghost" size="small" onClick={reRun}>Re-run</Button>
+            <Button variant="ghost" size="small" onClick={() => setCollapsed(true)}>Collapse</Button>
+            <Button variant="primary" size="small" onClick={onNavigateCatalogue}>View Catalogue →</Button>
+          </Stack>
+        </Stack>
+      </Card>
+
+      {/* Tier cascade */}
+      <div className="ws-agent-cascade">
+        {[
+          { label: "🔒 National Core", n: natCount,       note: "All stores · locked", color: "var(--color-success)" },
+          { label: "🗂 Cluster Adds",  n: clCount,        note: "Per-cluster mandatory", color: "var(--color-teal)" },
+          { label: "📍 Store Picks",   n: STORE_PICK_COUNT, note: "Store-level curation", color: "var(--color-accent)" },
+        ].map((t) => (
+          <div key={t.label} className="ws-agent-cascade-tile" style={{ "--wac": t.color }}>
+            <span className="ws-agent-cascade-n">{t.n}</span>
+            <span className="ws-agent-cascade-label">{t.label}</span>
+            <span className="ws-agent-cascade-note">{t.note}</span>
+          </div>
+        ))}
+      </div>
+    </Stack>
+  );
+}
 
 /* ─── Shared atoms ──────────────────────────────────────────────────────── */
 const STATUS_BADGE_COLOR = {
@@ -130,7 +435,7 @@ function CompareTray({ planIds, plans, onClose }) {
             </div>
           ))}
         </div>
-        <button className="ws-compare-close" onClick={onClose}>✕ Clear</button>
+        <button type="button" className="ws-compare-close" onClick={onClose}>✕ Clear</button>
       </div>
     </div>
   );
@@ -142,7 +447,7 @@ function PlanDetail({ plan, onBack, onNavigate }) {
   return (
     <div className="ws-detail">
       <div className="ws-detail-header">
-        <button className="ws-back-btn" onClick={onBack}>← All Plans</button>
+        <button type="button" className="ws-back-btn" onClick={onBack}>← All Plans</button>
         <div className="ws-detail-title-row">
           <h2 className="ws-detail-name">{plan.name}</h2>
           <StatusPill status={plan.status} />
@@ -184,6 +489,7 @@ function PlanDetail({ plan, onBack, onNavigate }) {
               </div>
               {(done || isCurrent) && (
                 <button
+                  type="button"
                   className="ws-stage-go"
                   onClick={() => onNavigate(s.mod)}
                 >
@@ -198,6 +504,7 @@ function PlanDetail({ plan, onBack, onNavigate }) {
       {plan.activeStage && (
         <div className="ws-detail-cta">
           <button
+            type="button"
             className="ws-cta-btn"
             onClick={() => {
               const stage = PIPE_STAGES.find((s) => s.id === plan.activeStage);
@@ -252,7 +559,7 @@ function CreateWizard({ onClose, onCreate }) {
       <div className="ws-wizard">
         <div className="ws-wizard-header">
           <h3 id="ws-wizard-title">Create New Plan</h3>
-          <button className="ws-wizard-close" onClick={onClose} aria-label="Close create plan wizard">✕</button>
+          <button type="button" className="ws-wizard-close" onClick={onClose} aria-label="Close create plan wizard">✕</button>
         </div>
 
         <StepIndicator step={step} labels={WIZARD_STEPS} className="ws-wizard-steps" />
@@ -379,15 +686,15 @@ function CreateWizard({ onClose, onCreate }) {
         </div>
 
         <div className="ws-wizard-footer">
-          <button className="ws-btn-ghost" onClick={step === 0 ? onClose : () => setStep(step - 1)}>
+          <button type="button" className="ws-btn-ghost" onClick={step === 0 ? onClose : () => setStep(step - 1)}>
             {step === 0 ? "Cancel" : "← Back"}
           </button>
           {step < WIZARD_STEPS.length - 1 ? (
-            <button className="ws-btn-primary" disabled={!canNext()} onClick={() => setStep(step + 1)}>
+            <button type="button" className="ws-btn-primary" disabled={!canNext()} onClick={() => setStep(step + 1)}>
               Next →
             </button>
           ) : (
-            <button className="ws-btn-primary" onClick={handleCreate}>
+            <button type="button" className="ws-btn-primary" onClick={handleCreate}>
               Create Plan
             </button>
           )}
@@ -398,7 +705,7 @@ function CreateWizard({ onClose, onCreate }) {
 }
 
 /* ─── Main Workspace View ───────────────────────────────────────────────── */
-export default function Workspace({ onNavigate, user }) {
+export default function Workspace({ onNavigate, user }) { // eslint-disable-line no-unused-vars
   const [plans, setPlans]           = useState(PLANS);
   const [statusFilter, setStatusFilter] = useState("all");
   const [deptFilter, setDeptFilter] = useState("All");
@@ -446,10 +753,13 @@ export default function Workspace({ onNavigate, user }) {
           <span className="ws-season-badge">SS 2026</span>
           <span className="ws-active-badge">{activePlansCount} active</span>
         </div>
-        <button className="ws-btn-primary" onClick={() => setShowWizard(true)}>
+        <button type="button" className="ws-btn-primary" onClick={() => setShowWizard(true)}>
           + New Plan
         </button>
       </div>
+
+      {/* ── Agent Recommendation Section ─────────────────────────────────── */}
+      <AgentSection onNavigateCatalogue={() => onNavigate?.("catalogue")} />
 
       <div className="ws-filters">
         <div className="ws-status-tabs">

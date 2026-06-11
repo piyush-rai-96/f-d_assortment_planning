@@ -4,6 +4,7 @@ import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
+import SkuSwatch from "../components/SkuSwatch.jsx";
 import { color } from "../styles/tokens.js";
 import { FD_STORES } from "../data/stores.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
@@ -136,7 +137,14 @@ export default function StoreHub() {
   // ── Table column definitions ─────────────────────────────────────────────
   const oppColumns = useMemo(
     () => [
-      { field: "desc", headerName: "Description", minWidth: 220, flex: 1, filter: "agTextColumnFilter" },
+      { field: "desc", headerName: "Description", minWidth: 240, flex: 1, filter: "agTextColumnFilter",
+        cellRenderer: (p) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: "100%" }}>
+            <SkuSwatch sku={{ desc: p.data.desc, dept: p.data.dept }} size={22} />
+            <span>{p.value}</span>
+          </div>
+        ),
+      },
       { field: "sku", headerName: "SKU", width: 130, filter: "agTextColumnFilter" },
       { field: "dept", headerName: "Dept", width: 150, filter: "agSetColumnFilter" },
       { field: "price", headerName: "Price", width: 100, filter: "agNumberColumnFilter", valueFormatter: (p) => `$${Number(p.value).toFixed(2)}` },
@@ -191,6 +199,7 @@ export default function StoreHub() {
     const glyphTone = both ? "success" : kind === "my" ? "subtle" : "warning";
     return (
       <Stack direction="row" align="center" gap={3} paddingX={3} paddingY={2} className="sh-row">
+        <SkuSwatch sku={{ desc: r.desc, dept: r.dept }} size={26} />
         <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
           <Text variant="caption" tone="default" truncate>{r.desc}</Text>
           <Stack direction="row" gap={2} align="center" wrap>

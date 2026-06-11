@@ -31,7 +31,7 @@
   width: 200px;
   min-width: 200px;
   flex-shrink: 0;
-  padding: 8px 12px;
+  padding: var(--sp-2) var(--sp-3);
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
   position: sticky;
@@ -47,7 +47,7 @@
   width: 76px;
   min-width: 76px;
   flex-shrink: 0;
-  padding: 4px 2px;
+  padding: var(--sp-1) 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,7 +65,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--r2);
   background: var(--color-surface-alt);
-  padding: 8px 12px;
+  padding: var(--sp-2) var(--sp-3);
 }
 .pa-group:hover {
   background: var(--color-surface-sunken);
@@ -73,58 +73,58 @@
 
 /* ── Scope wizard ────────────────────────────────────────────────────────── */
 .pa-scope-steps {
-  display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: var(--sp-6);
 }
 .pa-scope-step {
-  display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-  color: var(--color-text-subtle, #7a9a7a);
+  display: flex; align-items: center; gap: 6px; font-size: var(--fs-caption); font-weight: var(--fw-semibold);
+  color: var(--color-text-subtle);
 }
-.pa-scope-step.active { color: var(--color-primary, #2d6a2d); }
+.pa-scope-step.active { color: var(--color-primary); }
 .pa-scope-step.done   { color: var(--color-success); }
 .pa-scope-step-circle {
   width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 800; border: 2px solid currentColor; background: transparent; flex-shrink: 0;
+  font-size: var(--fs-caption); font-weight: var(--fw-extrabold); border: 2px solid currentColor; background: transparent; flex-shrink: 0;
 }
-.pa-scope-step.done   .pa-scope-step-circle { background: var(--color-success); color: white; border-color: var(--color-success); }
-.pa-scope-step.active .pa-scope-step-circle { background: var(--color-primary, #2d6a2d); color: white; border-color: var(--color-primary, #2d6a2d); }
-.pa-scope-connector { width: 32px; height: 2px; background: var(--color-border, #c8dcbc); flex-shrink: 0; }
+.pa-scope-step.done   .pa-scope-step-circle { background: var(--color-success); color: var(--color-surface); border-color: var(--color-success); }
+.pa-scope-step.active .pa-scope-step-circle { background: var(--color-primary); color: var(--color-surface); border-color: var(--color-primary); }
+.pa-scope-connector { width: 32px; height: 2px; background: var(--color-border); flex-shrink: 0; }
 
-.pa-scope-body { padding: 16px 0; min-height: 160px; }
+.pa-scope-body { padding: var(--sp-4) 0; min-height: 160px; }
 .pa-scope-checks { display: flex; flex-direction: column; gap: 10px; }
 .pa-scope-check-label {
-  display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600;
-  cursor: pointer; color: var(--color-text-muted, #456845);
+  display: flex; align-items: center; gap: 10px; font-size: var(--fs-body-lg); font-weight: var(--fw-semibold);
+  cursor: pointer; color: var(--color-text-muted);
 }
-.pa-scope-check-label input { accent-color: var(--color-primary, #2d6a2d); width: 16px; height: 16px; }
+.pa-scope-check-label input { accent-color: var(--color-primary); width: 16px; height: 16px; }
 .pa-scope-summary {
-  background: var(--color-surface-alt, #f2f6ee); border-radius: 10px; padding: 14px 16px;
-  display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--color-text-muted, #456845);
+  background: var(--color-surface-alt); border-radius: var(--r); padding: 14px var(--sp-4);
+  display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-body); color: var(--color-text-muted);
 }
-.pa-scope-summary strong { color: var(--color-text-primary, #0a1a0a); }
+.pa-scope-summary strong { color: var(--color-text); }
 
 /* ── Calendar mapping ────────────────────────────────────────────────────── */
 .pa-fy-card {
   flex: 1; min-width: 180px; max-width: 240px;
-  border: 2px solid; border-radius: 12px; padding: 16px 18px;
-  background: white;
+  border: 2px solid; border-radius: var(--r); padding: var(--sp-4) 18px;
+  background: var(--color-surface);
 }
-.pa-fy-year { font-size: 20px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
-.pa-fy-season { font-size: 12px; color: var(--color-text-muted, #456845); margin-bottom: 4px; }
-.pa-fy-meta { font-size: 11px; color: var(--color-text-subtle, #7a9a7a); margin-bottom: 10px; }
-.pa-fy-status { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.pa-fy-year { font-size: var(--fs-title); font-weight: var(--fw-extrabold); line-height: 1; margin-bottom: var(--sp-1); }
+.pa-fy-season { font-size: var(--fs-caption); color: var(--color-text-muted); margin-bottom: var(--sp-1); }
+.pa-fy-meta { font-size: var(--fs-micro); color: var(--color-text-subtle); margin-bottom: 10px; }
+.pa-fy-status { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: var(--fs-micro); font-weight: var(--fw-bold); }
 
-.pa-period-list-header { margin-top: 8px; margin-bottom: 6px; }
-.pa-period-list { display: flex; flex-direction: column; gap: 4px; }
+.pa-period-list-header { margin-top: var(--sp-2); margin-bottom: 6px; }
+.pa-period-list { display: flex; flex-direction: column; gap: var(--sp-1); }
 .pa-period-row {
-  display: flex; align-items: center; gap: 16px;
-  padding: 8px 12px; border-radius: 8px; border: 1px solid var(--color-border, #c8dcbc);
-  background: white;
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r2); border: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 .pa-period-row--complete { opacity: .65; }
 .pa-period-row--current, .pa-period-row--active { border-color: var(--color-info); background: var(--color-info-soft); }
-.pa-period-id   { font-weight: 700; font-size: 13px; min-width: 100px; font-family: var(--font-mono, monospace); }
-.pa-period-range { flex: 1; font-size: 12px; color: var(--color-text-muted, #456845); }
-.pa-period-status { font-size: 11px; font-weight: 700; }
-.pa-period-status--complete { color: var(--color-neutral); }
+.pa-period-id   { font-weight: var(--fw-bold); font-size: var(--fs-body); min-width: 100px; font-family: var(--font-mono); }
+.pa-period-range { flex: 1; font-size: var(--fs-caption); color: var(--color-text-muted); }
+.pa-period-status { font-size: var(--fs-micro); font-weight: var(--fw-bold); }
+.pa-period-status--complete { color: var(--color-text-subtle); }
 .pa-period-status--current, .pa-period-status--active { color: var(--color-info); }
-.pa-period-status--upcoming { color: var(--color-text-subtle, #7a9a7a); }
+.pa-period-status--upcoming { color: var(--color-text-subtle); }

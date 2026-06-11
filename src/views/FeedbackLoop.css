@@ -16,7 +16,7 @@
 .fb-codebar {
   height: 6px;
   border-radius: 3px;
-  min-width: 4px;
+  min-width: var(--sp-1);
 }
 
 /* Model-update card left accent (color set inline per insight type). */
@@ -38,5 +38,5 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--fs-micro);
 }
