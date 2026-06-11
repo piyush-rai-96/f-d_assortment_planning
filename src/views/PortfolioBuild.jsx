@@ -384,11 +384,10 @@ export default function PortfolioBuild({ onNavigate }) {
       cellRenderer: (p) => {
         const isIntel = p.data.source === "intel" || p.data.source === "market-intel";
         const handleIntelClick = (e) => {
-          e.stopPropagation(); // don't also open the gap summary panel
-          if (p.data.intelId && onNavigate) {
-            setIntelHighlight(p.data.intelId);
-            onNavigate("intel");
-          }
+          /* Prevent the click from bubbling up to the AG Grid row/cell handler.
+             The actual navigation is handled by onCellClicked on the Table. */
+          e.stopPropagation();
+          e.preventDefault();
         };
         return (
           <div className="pf-inline-cell">
@@ -1119,13 +1118,28 @@ export default function PortfolioBuild({ onNavigate }) {
         count={gaps.length}
         onViewAll={() => goTab(1)}
         empty="No gaps logged yet."
-        table={<Table {...tableProps} tableHeader="Line gaps" columnDefs={gapColumns} rowData={gaps} onRowClicked={(e) => {
-          /* AG Grid fires onRowClicked even when a child element handles the click.
-             We use the native DOM event to check if the click came from the Intel
-             chip — if so, let handleIntelClick() in the cell renderer take over. */
-          if (e.event?.target?.closest?.(".pf-intel-chip")) return;
-          openSummaryGap(e.data.id);
-        }} />}
+        table={<Table
+          {...tableProps}
+          tableHeader="Line gaps"
+          columnDefs={gapColumns}
+          rowData={gaps}
+          onCellClicked={(e) => {
+            /* Use onCellClicked (not onRowClicked) so we know which column was
+               clicked. If it's the "addedBy" column on an intel-sourced row,
+               navigate to Market Intelligence. Otherwise open the gap panel. */
+            const isIntelCell =
+              e.column?.getColId?.() === "addedBy" &&
+              (e.data?.source === "intel" || e.data?.source === "market-intel") &&
+              e.data?.intelId;
+
+            if (isIntelCell && onNavigate) {
+              setIntelHighlight(e.data.intelId);
+              onNavigate("intel");
+            } else {
+              openSummaryGap(e.data.id);
+            }
+          }}
+        />}
       />
       <SummarySection
         title="📬 Field Wishlists"
