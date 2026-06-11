@@ -495,8 +495,8 @@ export default function Hindsight({ user }) {
   );
 
   const TAB_NAMES = [
-    { value: 0, label: "📊 Overview" },
-    { value: 1, label: "📈 Benchmarks" },
+    { value: 0, label: "Overview" },
+    { value: 1, label: "Benchmarks" },
   ];
 
   return (

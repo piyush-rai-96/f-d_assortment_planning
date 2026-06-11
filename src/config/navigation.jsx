@@ -123,6 +123,7 @@ export const routes = [
     label: "Others",
     icon: <OthersIcon />,
     link: "#others",
+    hidden: true,
     children: [
       { value: "assortment-intelligence", label: "Assortment Intelligence", icon: <AssortIntelIcon />, link: "/assortment-intelligence", badge: "Signals" },
       { value: "feedback",                label: "Feedback Loop",           icon: <FeedbackIcon />,    link: "/feedback"                },
@@ -151,16 +152,19 @@ export const actionRoutes = [
  *          parent groups dropped entirely.
  */
 export function filterRoutesByAccess(tree, allowed) {
-  if (allowed === "ALL") return tree;
   return tree.reduce((acc, route) => {
-    if (!route.children || route.children.length === 0) {
+    // Groups marked hidden: true are never rendered in the sidebar
+    if (route.hidden) return acc;
+    if (allowed !== "ALL" && !route.children?.length) {
       // Leaf (e.g. "today")
       if (allowed.includes(route.value)) acc.push(route);
+    } else if (!route.children?.length) {
+      acc.push(route);
     } else {
       // Group parent — keep only accessible children
-      const visibleChildren = route.children.filter((c) =>
-        allowed.includes(c.value)
-      );
+      const visibleChildren = allowed === "ALL"
+        ? route.children
+        : route.children.filter((c) => allowed.includes(c.value));
       if (visibleChildren.length > 0) {
         acc.push({ ...route, children: visibleChildren });
       }

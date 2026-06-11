@@ -43,7 +43,7 @@ export default function LeadTime() {
         <Stack direction="column" gap={3}>
           <Stack direction="row" justify="space-between" align="flex-start" gap={4} wrap>
             <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
-              <Text variant="title">Phase 5 — Lead Time &amp; Oracle</Text>
+              <Text variant="title">Lead Time &amp; Oracle</Text>
               <Text variant="caption" tone="muted">Approved SKUs · Oracle/Foundation creation · 6–8+ month lead times · Trend risk monitoring</Text>
             </Stack>
             <Stack direction="row" gap={2} wrap>

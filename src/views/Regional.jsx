@@ -42,7 +42,7 @@ const TIERS = [
 const SC = FD_CLUST_SCENARIOS.B;
 
 /* Reusable read-only SKU table. */
-function SkuTable({ rows, carryHeader }) {
+function SkuTable({ rows, carryHeader, label }) {
   const columns = useMemo(
     () => [
       { field: "desc", headerName: "Description", minWidth: 240, flex: 1, filter: "agTextColumnFilter",
@@ -67,7 +67,7 @@ function SkuTable({ rows, carryHeader }) {
       defaultColDef={{ floatingFilter: true }}
       cardContainer
       rowHeight="compact"
-      tableHeader=" "
+      tableHeader={label || `${rows.length} SKUs`}
       columnDefs={columns}
       rowData={rows}
       domLayout="autoHeight"
@@ -386,19 +386,19 @@ function ClusterDetail({ clusterId, activeStore, deptFilter, byDept, clusterAdds
         {coreRows.length ? (
           <Stack direction="column" gap={2}>
             <SectionHeader icon="🔒" title="National Core" count={coreRows.length} tone="success" sub="Locked · cannot change" />
-            <SkuTable rows={coreRows} carryHeader="Carry" />
+            <SkuTable rows={coreRows} carryHeader="Carry" label="National Core SKUs" />
           </Stack>
         ) : null}
         {clustRows.length ? (
           <Stack direction="column" gap={2}>
             <SectionHeader icon="🗂" title="Cluster Level" count={clustRows.length} tone="teal" sub={cl.label} />
-            <SkuTable rows={clustRows} carryHeader="Carry" />
+            <SkuTable rows={clustRows} carryHeader="Carry" label="Cluster-level SKUs" />
           </Stack>
         ) : null}
         {storeRows.length ? (
           <Stack direction="column" gap={2}>
             <SectionHeader icon="📍" title="Store Picks" count={storeRows.length} tone="accent" sub="This store only" />
-            <SkuTable rows={storeRows} carryHeader="Status" />
+            <SkuTable rows={storeRows} carryHeader="Status" label="Store pick SKUs" />
           </Stack>
         ) : null}
       </Stack>
@@ -491,7 +491,7 @@ function ClusterDetail({ clusterId, activeStore, deptFilter, byDept, clusterAdds
               </Stack>
               {pickRows.length ? (
                 <Stack paddingX={2} paddingY={2}>
-                  <SkuTable rows={pickRows} carryHeader="Status" />
+                  <SkuTable rows={pickRows} carryHeader="Status" label="Store pick SKUs" />
                 </Stack>
               ) : (
                 <Stack paddingX={3} paddingY={3}>

@@ -48,7 +48,6 @@ export default function PeerIntelligence() {
   const [exitFlags, setExitFlags] = useState(() => new Set());
   const [selectedSku, setSelectedSku] = useState(null);
   const [exportDone, setExportDone] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const catName = category === "all" ? null : CATEGORIES.find((c) => c.id === category)?.name;
   const inCategory = (s) => !catName || s.cat === catName;
@@ -93,9 +92,6 @@ export default function PeerIntelligence() {
             <Stack direction="row" gap={3} wrap>
               <Button variant="secondary" size="small" onClick={() => { setExportDone(true); setTimeout(() => setExportDone(false), 2500); }}>
                 {exportDone ? "✓ Exported" : "Export"}
-              </Button>
-              <Button variant={filterOpen ? "primary" : "secondary"} size="small" onClick={() => setFilterOpen((v) => !v)}>
-                {filterOpen ? "Close Filters" : "Filters"}
               </Button>
               <Button variant="primary" size="small" onClick={addAllWinners}>
                 Add to Review List ({reviewList.size})
