@@ -29,13 +29,13 @@
   border-left-color: var(--pf-accent, var(--color-primary));
 }
 
-/* ── Action column — approve/decline circle buttons (Shortlisted rows) ───── */
 /* ── Action column — Shortlisted: Approve + Decline buttons ─────────────── */
 .pf-action-btns {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 5px;
-  align-self: center;
+  flex-shrink: 0;
 }
 
 .pf-action-btn {
@@ -88,16 +88,18 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.03em;
   white-space: nowrap;
   flex-shrink: 0;
-  align-self: center;        /* don't stretch vertically in flex parent */
-  height: fit-content;       /* prevent AG Grid from inflating the height */
+  /* Hard height cap — prevents AG Grid from inflating chip into a circle */
+  height: 22px;
+  max-height: 22px;
   width: fit-content;
+  min-width: max-content;
   transition: opacity 0.15s;
 }
 
@@ -135,15 +137,14 @@
 
 /* AG-Grid: force .ag-react-container to fill the full row height so
    height:"100%" inside React cellRenderers resolves correctly.
-   align-items: flex-start prevents pill/chip children from stretching
-   to full row height and becoming blobs. */
+   flex-direction: row + align-items: center ensures chips stay as pills
+   (not circles) regardless of row height. */
 .ag-cell .ag-react-container {
   height: 100% !important;
   width: 100%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
 }
 
 

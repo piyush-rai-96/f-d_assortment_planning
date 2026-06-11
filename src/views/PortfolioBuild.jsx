@@ -516,7 +516,6 @@ export default function PortfolioBuild({ onNavigate }) {
       width: 160,
       sortable: false,
       filter: false,
-      cellStyle: () => ({ display: "flex", alignItems: "center" }),
       cellRenderer: (p) => {
         /* Mandatory / Core / BG — locked, not editable */
         if (p.data.tag === "Core" || p.data.tag === "BG") {
