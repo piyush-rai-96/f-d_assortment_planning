@@ -34,6 +34,7 @@ export const PLAN_MODE = {
 export const PLANS = [
   {
     id: "p1",
+    plrCalId: 529,
     name: "SS 2026 Tile & Ceramic",
     dept: "Tile",
     season: "SS 2026",
@@ -52,6 +53,7 @@ export const PLANS = [
   },
   {
     id: "p2",
+    plrCalId: 523,
     name: "SS 2026 Wood & LVP",
     dept: "Wood / LVP",
     season: "SS 2026",
@@ -70,6 +72,7 @@ export const PLANS = [
   },
   {
     id: "p3",
+    plrCalId: 531,
     name: "SS 2026 Laminate & Vinyl",
     dept: "Laminate & Vinyl",
     season: "SS 2026",

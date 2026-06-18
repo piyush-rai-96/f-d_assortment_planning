@@ -86,3 +86,75 @@ export const PRODUCTS_BY_DEPT = PRODUCTS.reduce((acc, p) => {
 export const DEPT_BADGE = { Wood: "warning", Tile: "success", "Laminate & Vinyl": "info", Stone: "info", "Decorative Accessories": "warning" };
 export const STATUS_BADGE = { Active: "success", Discontinued: "error", Pending: "warning" };
 export const VEL_BADGE = { A: "success", B: "info", C: "warning", D: "error", E: "error" };
+
+/* ── Assortment Periods ───────────────────────────────────────────────────── */
+export const ADMIN_WEEKS = Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, "0")}`);
+export const ADMIN_DEPT_OPTS = ["Wood", "Tile", "Laminate & Vinyl", "Stone", "Decorative Accessories"];
+export const ADMIN_SEASON_OPTS = ["SS 2026", "AW 2026", "SS 2027", "AW 2027"];
+export const PHASE_COLORS = ["#2563EB", "#059669", "#D97706", "#DC2626", "#7C3AED", "#0B7A6C"];
+export const DEPT_COLORS = {
+  Wood: { color: "#B45309", bg: "#FEF3C7" },
+  Tile: { color: "#0B7A6C", bg: "#E6F7F4" },
+  "Laminate & Vinyl": { color: "#2563EB", bg: "#DBEAFE" },
+  Stone: { color: "#7C3AED", bg: "#F5F3FF" },
+  "Decorative Accessories": { color: "#DC2626", bg: "#FEF2F2" },
+};
+
+export const INITIAL_ASSORT_PERIODS = [
+  {
+    id: "ap-1", dept: "Wood", season: "SS 2026", startWeek: "W01", endWeek: "W26",
+    presDate: "2026-04-21", dueDate: "2026-04-23", status: "active",
+    phases: [
+      { id: "ph1", name: "Pre-Season", startWeek: "W01", endWeek: "W04", color: "#2563EB" },
+      { id: "ph2", name: "Core",       startWeek: "W05", endWeek: "W16", color: "#059669" },
+      { id: "ph3", name: "Transition", startWeek: "W17", endWeek: "W20", color: "#D97706" },
+      { id: "ph4", name: "Clearance",  startWeek: "W21", endWeek: "W26", color: "#DC2626" },
+    ],
+  },
+  {
+    id: "ap-2", dept: "Tile", season: "SS 2026", startWeek: "W01", endWeek: "W26",
+    presDate: "2026-04-14", dueDate: "2026-04-16", status: "active",
+    phases: [
+      { id: "ph1", name: "Pre-Season", startWeek: "W01", endWeek: "W04", color: "#2563EB" },
+      { id: "ph2", name: "Core",       startWeek: "W05", endWeek: "W18", color: "#059669" },
+      { id: "ph3", name: "Transition", startWeek: "W19", endWeek: "W22", color: "#D97706" },
+      { id: "ph4", name: "Clearance",  startWeek: "W23", endWeek: "W26", color: "#DC2626" },
+    ],
+  },
+  {
+    id: "ap-3", dept: "Laminate & Vinyl", season: "SS 2026", startWeek: "W01", endWeek: "W26",
+    presDate: "2026-04-28", dueDate: "2026-04-30", status: "draft",
+    phases: [
+      { id: "ph1", name: "Pre-Season", startWeek: "W01", endWeek: "W06", color: "#2563EB" },
+      { id: "ph2", name: "Core",       startWeek: "W07", endWeek: "W18", color: "#059669" },
+      { id: "ph3", name: "Clearance",  startWeek: "W19", endWeek: "W26", color: "#DC2626" },
+    ],
+  },
+];
+
+/* ── Planning Rules ───────────────────────────────────────────────────────── */
+export const PLANNING_RULES = [
+  { name: "Minimum confidence threshold for recommendation", value: "72%",     type: "threshold", editable: true  },
+  { name: "Velocity band A — minimum presentation units",   value: "4",        type: "integer",   editable: true  },
+  { name: "Velocity band B — minimum presentation units",   value: "3",        type: "integer",   editable: true  },
+  { name: "Velocity band C — minimum presentation units",   value: "2",        type: "integer",   editable: true  },
+  { name: "Minimum depth of buy (weeks of supply)",         value: "8 wks",    type: "integer",   editable: true  },
+  { name: "Maximum depth of buy (weeks of supply)",         value: "20 wks",   type: "integer",   editable: true  },
+  { name: "Market intel signal — threat discount factor",   value: "−15 pp",   type: "formula",   editable: false },
+  { name: "Market intel signal — opportunity boost factor", value: "+10 pp",   type: "formula",   editable: false },
+  { name: "New item minimum trial period (weeks)",          value: "8 wks",    type: "integer",   editable: true  },
+  { name: "Core SKU — carry-forward protection",            value: "Locked",   type: "system",    editable: false },
+  { name: "Price ladder minimum gap",                       value: "$0.50/sqft", type: "threshold", editable: true },
+  { name: "Like-item correlation window",                   value: "52 weeks", type: "formula",   editable: false },
+];
+
+/* ── Admin Users ──────────────────────────────────────────────────────────── */
+const AVATAR_COLORS = ["#185FA5", "#0B7A6C", "#B45309", "#7C3AED", "#993C1D", "#2D6A2D"];
+export const ADMIN_USERS = [
+  { name: "Karen Mitchell",  email: "k.mitchell@fd.com",  role: "VP Merchandising",  access: "National",           status: "Active",  color: AVATAR_COLORS[0] },
+  { name: "Jason Rodriguez", email: "j.rodriguez@fd.com", role: "Regional VP",        access: "Southeast + Gulf",   status: "Active",  color: AVATAR_COLORS[1] },
+  { name: "Lisa Torres",     email: "l.torres@fd.com",    role: "Store Manager",      access: "ATL-01",             status: "Active",  color: AVATAR_COLORS[2] },
+  { name: "Priya Nair",      email: "p.nair@fd.com",      role: "Merchant Analyst",   access: "National",           status: "Active",  color: AVATAR_COLORS[3] },
+  { name: "David Chen",      email: "d.chen@fd.com",      role: "Planning Admin",     access: "All",                status: "Active",  color: AVATAR_COLORS[4] },
+  { name: "Sarah Williams",  email: "s.williams@fd.com",  role: "Buyer",              access: "Tile + Stone",       status: "Pending", color: AVATAR_COLORS[5] },
+];

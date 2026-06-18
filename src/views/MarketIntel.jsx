@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { Card, Button, Badge, Input, TextArea, EmptyState, Chips, FiltersStrip, FilterPanel } from "impact-ui";
-import { Bot, ClipboardList, Lock } from "lucide-react";
+import { Card, Button, Badge, Input, TextArea, Chips, FiltersStrip, FilterPanel } from "impact-ui";
+import { Bot, ClipboardList, X, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
@@ -24,13 +24,11 @@ import { popIntelHighlight } from "../data/intelStore.js";
 import "./MarketIntel.css";
 import { panelSx, softSx } from "../styles/panelSx.js";
 
-const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
-const sidebarSx = { ...paneSx, width: "288px", minWidth: "288px", flexShrink: 0, alignSelf: "flex-start" };
-const railSx = { ...paneSx };
+const EMPTY_LOG = {
+  type: null, direction: null, urgency: null, scope: null,
+  title: "", body: "", skus: [], confidence: null, skuPick: "", submitted: false,
+};
 
-const EMPTY_LOG = { type: null, direction: null, urgency: null, scope: null, title: "", body: "", skus: [], confidence: null, skuPick: "", submitted: false };
-
-/* Soft tint per signal type — drives the compact tag pills. */
 const TYPE_TINT = {
   competitive: { bg: "var(--color-error-soft)", fg: "var(--color-error)" },
   market: { bg: "var(--color-info-soft)", fg: "var(--color-info)" },
@@ -40,35 +38,128 @@ const TYPE_TINT = {
   trend: { bg: "var(--color-info-soft)", fg: "var(--color-info)" },
 };
 
-/* Tag pill — replaces the badge stacks with a quieter, premium token. */
 function Tag({ tint, children }) {
-  return <span className="mi-tag" style={tint ? { background: tint.bg, color: tint.fg } : undefined}>{children}</span>;
+  return (
+    <span className="mi-tag" style={tint ? { background: tint.bg, color: tint.fg } : undefined}>
+      {children}
+    </span>
+  );
 }
 
-/* SKU code → catalogue name, so the chip can render a material-accurate swatch. */
 const CAT_NAME = Object.fromEntries(CATALOGUE_SKUS.map((s) => [s.id, s.name]));
 
-/* SKU reference chip with a product-look thumbnail. */
 function SkuChip({ children }) {
   const code = typeof children === "string" ? children : "";
   const name = CAT_NAME[code] || code;
   return (
-    <Stack direction="row" align="center" gap={1} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--r2)", background: "var(--color-surface)", padding: "2px 7px 2px 3px" }}>
+    <Stack
+      direction="row" align="center" gap={1}
+      style={{ border: "1px solid var(--color-border)", borderRadius: "var(--r2)", background: "var(--color-surface)", padding: "2px 7px 2px 3px" }}
+    >
       <SkuSwatch desc={name} size={16} />
       <Text variant="micro" mono style={{ color: "var(--color-accent)" }}>{code}</Text>
     </Stack>
   );
 }
 
-/* Soft callout box used in the detail panel. */
 function NoteBox({ tone, label, children }) {
   const bg = { warning: "var(--color-warning-soft)", teal: "var(--color-surface-alt)", accent: "var(--color-primary-soft)" }[tone] || "var(--color-surface-alt)";
   const bd = { warning: "var(--color-warning)", teal: "var(--color-teal)", accent: "var(--color-primary)" }[tone] || "var(--color-border)";
   return (
-    <Stack direction="column" gap={1} paddingX={3} paddingY={2} style={{ background: bg, border: `1px solid ${bd}`, borderRadius: "var(--r2)" }}>
-      <Text variant="micro" tone={tone === "warning" ? "warning" : "teal"} style={{ fontWeight: 700 }}>{label}</Text>
-      <Text variant="caption" tone="default" style={{ lineHeight: 1.6 }}>{children}</Text>
+    <Stack direction="column" gap={1} paddingX={3} paddingY={2}
+      style={{ background: bg, border: `1px solid ${bd}`, borderRadius: "var(--r2)" }}
+    >
+      <Text variant="micro" style={{ fontWeight: 700, color: bd }}>{label}</Text>
+      <Text variant="caption" style={{ lineHeight: 1.6, color: "var(--color-text)" }}>{children}</Text>
     </Stack>
+  );
+}
+
+/* Signal card rendered in the 2-col grid */
+function SignalCard({ i, isSelected, fromPortfolio, onSelect, onMarkReviewed, onApplyModel, onCatTask, onFieldReq, onWatch, onDismiss }) {
+  const isThreat = i.direction === "threat";
+  const hasActions =
+    i.status === "new" ||
+    i.status === "reviewed" ||
+    ((i.status === "actioned" || i.status === "watching") && i.merchantNote);
+
+  return (
+    <div
+      className={`mi-signal-card mi-signal-card--${i.direction}${isSelected ? " mi-signal-card--selected" : ""}${i.id === fromPortfolio ? " mi-signal-card--portfolio" : ""}`}
+      onClick={onSelect}
+    >
+      {/* ── Top: title + status badge ── */}
+      <div className="mi-sc-top">
+        <div className="mi-sc-title">{i.title}</div>
+        <Badge variant="subtle" size="small" color={STATUS_BADGE[i.status]} label={i.status} />
+      </div>
+
+      {/* ── Meta row: author/date on left, scope pill on right ── */}
+      <div className="mi-sc-meta">
+        <span>{i.author} · {i.date}</span>
+        <span className="mi-sc-scope-pill">
+          {i.scope}{i.store ? ` · ${i.store}` : ""}
+        </span>
+      </div>
+
+      {/* ── Compact tag row: type + direction + urgency + icons ── */}
+      <div className="mi-sc-tags">
+        <Tag tint={TYPE_TINT[i.type]}>{i.type}</Tag>
+        <span className={`mi-dir-badge mi-dir-badge--${i.direction}`}>
+          {isThreat ? "↓" : "↑"} {i.direction}
+        </span>
+        {i.urgency !== "watch" ? (
+          <span className={`mi-urg-badge mi-urg-badge--${i.urgency}`}>{i.urgency}</span>
+        ) : null}
+        {i.feedsModel && (
+          <span className="mi-sc-indicator mi-sc-indicator--model" title="Feeds agent model">
+            <Bot size={10} aria-hidden="true" />
+          </span>
+        )}
+        {i.catalogueGap && (
+          <span className="mi-sc-indicator mi-sc-indicator--gap" title="Catalogue gap">gap</span>
+        )}
+      </div>
+
+      {/* ── Body — 2-line CSS clamp ── */}
+      <div className="mi-sc-body">{i.body}</div>
+
+      {/* ── Footer: SKUs + actions ── */}
+      {(i.skus.length > 0 || hasActions) && (
+        <div className="mi-sc-footer" onClick={(e) => e.stopPropagation()}>
+          {i.skus.length > 0 && (
+            <div className="mi-sc-skus">
+              {i.skus.map((s) => <SkuChip key={s}>{s}</SkuChip>)}
+            </div>
+          )}
+          {hasActions && (
+            <div className="mi-sc-actions">
+              {i.status === "new" && (
+                <Button size="small" variant="secondary" onClick={() => onMarkReviewed(i.id)}>Mark reviewed</Button>
+              )}
+              {(i.status === "new" || i.status === "reviewed") && i.feedsModel && (
+                <Button size="small" variant="primary" onClick={() => onApplyModel(i.id)}>Apply to model</Button>
+              )}
+              {(i.status === "new" || i.status === "reviewed") && i.catalogueGap && (
+                <Button size="small" variant="secondary" onClick={() => onCatTask(i.id)}>Line Gap</Button>
+              )}
+              {(i.status === "new" || i.status === "reviewed") && i.direction === "opportunity" && !i.feedsModel && (
+                <Button size="small" variant="secondary" onClick={() => onFieldReq(i.id)}>Field Request</Button>
+              )}
+              {i.status === "reviewed" && (
+                <>
+                  <Button size="small" variant="secondary" onClick={() => onWatch(i.id)}>Watch</Button>
+                  <Button size="small" variant="secondary" type="destructive" onClick={() => onDismiss(i.id)}>Dismiss</Button>
+                </>
+              )}
+              {(i.status === "actioned" || i.status === "watching") && i.merchantNote && (
+                <span className="mi-actioned-note">{i.merchantNote}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -78,25 +169,28 @@ export default function MarketIntel() {
   const [statusTab, setStatusTab] = useState("all");
   const [dirFilter, setDirFilter] = useState(null);
   const [typeFilter, setTypeFilter] = useState(null);
-  const [selectedId, setSelectedId] = useState(INTEL_SEED[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [log, setLog] = useState(EMPTY_LOG);
-  const [fromPortfolio, setFromPortfolio] = useState(null); // id that arrived via Portfolio Build chip
-  const highlightedRowRef = useRef(null);
-
-  /* ── Filter panel state ───────────────────────────────────────────────── */
+  const [fromPortfolio, setFromPortfolio] = useState(null);
+  const [toast, setToast] = useState(null);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState("status");
+  const highlightedRowRef = useRef(null);
+  const toastTimer = useRef(null);
 
-  /* On mount: check if we were navigated here from Portfolio Build with a
-     specific intel item to highlight. popIntelHighlight() clears the store
-     after reading so the highlight is one-shot only. */
+  const showToast = (msg, tone = "success") => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, tone });
+    toastTimer.current = setTimeout(() => setToast(null), 3200);
+  };
+
   useEffect(() => {
     const id = popIntelHighlight();
     if (id) {
       setSelectedId(id);
       setFromPortfolio(id);
-      setStatusTab("all");      // clear any active filter so the item is visible
+      setStatusTab("all");
       setDirFilter(null);
       setTypeFilter(null);
       const it = INTEL_SEED.find((i) => i.id === id);
@@ -104,7 +198,6 @@ export default function MarketIntel() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Scroll the highlighted row into view once it's rendered */
   useEffect(() => {
     if (fromPortfolio && highlightedRowRef.current) {
       highlightedRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -140,33 +233,56 @@ export default function MarketIntel() {
 
   /* ── Mutations ────────────────────────────────────────────────────────── */
   const patch = (id, fields) => setIntel((prev) => prev.map((i) => (i.id === id ? { ...i, ...fields } : i)));
-  const selectIntel = (id) => { setSelectedId(id); const it = intel.find((i) => i.id === id); setNoteDraft(it?.merchantNote || ""); };
-  const saveNote = (id) => patch(id, { merchantNote: noteDraft });
+  const selectIntel = (id) => {
+    setSelectedId((prev) => (prev === id ? null : id));
+    const it = intel.find((i) => i.id === id);
+    setNoteDraft(it?.merchantNote || "");
+  };
+  const saveNote = (id) => { patch(id, { merchantNote: noteDraft }); showToast("Note saved"); };
 
   /* ── Filter handlers ──────────────────────────────────────────────────── */
   const setStatus = (key) => { setStatusTab(key); setDirFilter(null); setTypeFilter(null); };
   const toggleDir = (key) => { setDirFilter((d) => (d === key ? null : key)); setStatusTab("all"); };
   const toggleType = (key) => { setTypeFilter((t) => (t === key ? null : key)); setStatusTab("all"); };
 
+  /* ── Card actions ─────────────────────────────────────────────────────── */
+  const markReviewed = (id) => { patch(id, { status: "reviewed" }); showToast('Status updated to "reviewed"'); };
+  const applyToModel = (id) => {
+    patch(id, { status: "actioned" });
+    showToast("Applied to model — confidence scores updated. Visible in Catalogue.", "accent");
+  };
+  const createCatalogueTask = (id) => { patch(id, { status: "actioned" }); showToast("Line gap added to Portfolio Build"); };
+  const sendFieldRequest = (id) => { patch(id, { status: "actioned" }); showToast("Field request sent to Portfolio Build"); };
+  const watchSignal = (id) => { patch(id, { status: "watching" }); showToast("Signal added to Watch list"); };
+  const dismissSignal = (id) => {
+    patch(id, { status: "dismissed" });
+    if (selectedId === id) setSelectedId(null);
+    showToast("Signal dismissed", "error");
+  };
+
   /* ── Log form ─────────────────────────────────────────────────────────── */
   const setLogField = (key, val) => setLog((p) => ({ ...p, [key]: p[key] === val ? null : val }));
   const addSku = () => setLog((p) => (p.skuPick && !p.skus.includes(p.skuPick) ? { ...p, skus: [...p.skus, p.skuPick], skuPick: "" } : p));
   const removeSku = (s) => setLog((p) => ({ ...p, skus: p.skus.filter((x) => x !== s) }));
   const submitLog = () => {
-    if (!log.type || !log.direction || !log.title.trim() || !log.body.trim()) return;
+    if (!log.type || !log.direction || !log.title.trim() || !log.body.trim()) {
+      showToast("Please fill in all required fields", "error");
+      return;
+    }
     const entry = {
       id: `I-${String(100 + intel.length + 1)}`,
       type: log.type, direction: log.direction, urgency: log.urgency || "watch", scope: log.scope || "store",
       cluster: "Southeast Suburban", store: "ATL-01", title: log.title, body: log.body,
       skus: [...log.skus], categories: [], confidence: log.confidence || "anecdotal",
-      modelInstruction: log.skus.length ? `Signal logged: ${log.type} / ${log.direction}. Affects ${log.skus.join(", ")}. Pending merchant review before model update.` : null,
-      feedsModel: !!log.skus.length, status: "new", author: "Lisa T.", authorRole: "Store Manager", date: "Jun 3, 2025", escalated: false, merchantNote: "",
+      modelInstruction: log.skus.length
+        ? `Signal logged: ${log.type} / ${log.direction}. Affects ${log.skus.join(", ")}. Pending merchant review before model update.`
+        : null,
+      feedsModel: !!log.skus.length, status: "new", author: "Lisa T.", authorRole: "Store Manager",
+      date: "Jun 3, 2025", escalated: false, merchantNote: "",
     };
     setIntel((prev) => [entry, ...prev]);
     setLog({ ...EMPTY_LOG, submitted: true });
   };
-
-  /* ── Chip (filter / tab) — removed; now using Impact UI Chips directly ── */
 
   const countBy = (pred) => intel.filter(pred).length;
 
@@ -182,7 +298,6 @@ export default function MarketIntel() {
     return tags;
   }, [statusTab, dirFilter, typeFilter]);
 
-  /* ── FilterPanel tabs ─────────────────────────────────────────────────── */
   const STATUS_FD_OPTIONS = [
     { value: "all", label: `All (${intel.length})` },
     { value: "new", label: `New (${newCount})` },
@@ -246,255 +361,241 @@ export default function MarketIntel() {
     },
   ];
 
-  /* ═══════════════ SIDEBAR ═══════════════ */
-  const sidebar = (
-    <Card sx={sidebarSx} className="mi-sidebar">
-      <Stack direction="column" style={{ height: "100%" }}>
-
-        <div className="mi-list" style={{ flex: 1, padding: "8px 8px" }}>
-          {filtered.length === 0 ? (
-            <Stack paddingY={5} align="center"><Text variant="caption" tone="subtle">No signals match current filters.</Text></Stack>
-          ) : (
-            <Stack direction="column" gap={1}>
-              {filtered.map((i) => (
-                <Stack
-                  key={i.id}
-                  ref={i.id === fromPortfolio ? highlightedRowRef : undefined}
-                  className={`mi-list-row${selectedId === i.id ? " is-active" : ""}${i.id === fromPortfolio ? " is-from-portfolio" : ""}`}
-                  direction="row" gap={2} align="flex-start" paddingX={2} paddingY={2}
-                  onClick={() => selectIntel(i.id)}
-                >
-                  <span className={`mi-dir-dot is-${i.direction}`} aria-hidden>{i.direction === "threat" ? "↓" : "↑"}</span>
-                  <Stack direction="column" gap={1} style={{ minWidth: 0, flex: 1 }}>
-                    <Text variant="caption" tone="default" className="mi-clamp-2" style={{ lineHeight: 1.35 }}>{i.title}</Text>
-                    <Stack direction="row" gap={1} align="center" wrap>
-                      <Tag tint={TYPE_TINT[i.type]}>{i.type}</Tag>
-                      {i.status === "new" ? <span className="mi-new-dot" title="New" /> : null}
-                      <Text variant="micro" tone="subtle">{i.date}</Text>
-                    </Stack>
-                  </Stack>
-                </Stack>
-              ))}
-            </Stack>
-          )}
-        </div>
-
-        <Stack paddingX={3} paddingY={3} style={{ borderTop: "1px solid var(--color-border)" }}>
-          <Button variant="primary" size="medium" onClick={() => { setView("log"); setLog(EMPTY_LOG); }} style={{ width: "100%" }}>+ Log new intelligence</Button>
-        </Stack>
-      </Stack>
-    </Card>
-  );
-
-  /* ═══════════════ STAT RAIL ═══════════════ */
-  const statRail = (
-    <Card sx={railSx}>
-      <div className="mi-stat-rail">
-        {metrics.map((m) => (
-          <div key={m.l} className="mi-stat">
-            <span className={`mi-stat-accent tone-${m.tone}`} />
-            <span className={`mi-stat-num tone-${m.tone}`}>{m.v}</span>
-            <span className="mi-stat-label">{m.l}</span>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-
-  /* ═══════════════ SIGNAL DETAIL (master-detail right pane) ═══════════════ */
-  const signalDetail = (i) => {
-    const isThreat = i.direction === "threat";
-    const meta = [
-      ["Author", `${i.author} · ${i.authorRole}`],
-      ["Date", i.date],
-      ["Scope", `${i.scope}${i.store ? ` · ${i.store}` : ""}${i.cluster ? ` / ${i.cluster}` : ""}`],
-      ["Confidence", i.confidence],
-    ];
-    return (
-      <Card sx={panelSx} className={`mi-detail-pane is-${i.direction}`}>
-        <Stack direction="column" gap={4}>
-          {/* Title row */}
-          <Stack direction="row" gap={3} align="flex-start">
-            <span className={`mi-medallion lg is-${i.direction}`} aria-hidden>{isThreat ? "↓" : "↑"}</span>
-            <Stack direction="column" gap={2} style={{ minWidth: 0, flex: 1 }}>
-              <Text variant="heading" tone="strong" style={{ lineHeight: 1.3 }}>{i.title}</Text>
-              <Stack direction="row" gap={1} wrap align="center">
-                <Tag tint={TYPE_TINT[i.type]}>{i.type}</Tag>
-                <Tag tint={isThreat ? TYPE_TINT.competitive : TYPE_TINT.customer}>{i.direction}</Tag>
-                {i.urgency !== "watch" ? <span className="mi-tag mi-tag--gap" style={i.urgency === "immediate" ? { background: "var(--color-error-soft)", color: "var(--color-error)" } : undefined}>{i.urgency}</span> : null}
-                {i.feedsModel ? <span className="mi-tag mi-tag--model"><Bot size={11} aria-hidden="true" style={{ verticalAlign: "middle", marginRight: 3 }} />feeds model</span> : null}
-                {i.catalogueGap ? <span className="mi-tag mi-tag--gap">catalogue gap</span> : null}
-                {i.id === fromPortfolio && (
-                  <span className="mi-tag mi-tag--portfolio"><ClipboardList size={11} aria-hidden="true" style={{ verticalAlign: "middle", marginRight: 3 }} />via Portfolio Build</span>
-                )}
-              </Stack>
-            </Stack>
-            <Badge variant="subtle" size="small" color={STATUS_BADGE[i.status]} label={i.status} />
-          </Stack>
-
-          {/* Two-column body / context */}
-          <div className="mi-detail-grid">
-            <Stack direction="column" gap={3} style={{ minWidth: 0 }}>
-              <Text variant="body" tone="default" className="mi-body-measure">{i.body}</Text>
-              <TextArea placeholder="Merchant note…" value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} width="100%" height="72px" />
-            </Stack>
-
-            <Stack direction="column" gap={3} className="mi-detail-aside">
-              <div className="mi-meta-card">
-                {meta.map(([l, v]) => (
-                  <Stack key={l} direction="row" justify="space-between" gap={2} className="mi-meta-row">
-                    <Text variant="micro" tone="subtle">{l}</Text>
-                    <Text variant="micro" tone="default" style={{ fontWeight: 600, textAlign: "right" }}>{v}</Text>
-                  </Stack>
-                ))}
-              </div>
-              {i.skus.length ? (
-                <Stack direction="row" gap={1} wrap>{i.skus.map((s) => <SkuChip key={s}>{s}</SkuChip>)}</Stack>
-              ) : null}
-              {i.feedsModel && i.modelInstruction ? <NoteBox tone="accent" label="Model instruction">{i.modelInstruction}</NoteBox> : null}
-              {i.catalogueGap ? <NoteBox tone="warning" label="Catalogue gap">{i.catalogueRequest}</NoteBox> : null}
-              {i.merchantNote ? <NoteBox tone="teal" label="Merchant note">{i.merchantNote}</NoteBox> : null}
-            </Stack>
-          </div>
-
-          {/* Actions */}
-          <Stack direction="row" gap={2} wrap align="center" style={{ borderTop: "1px solid var(--color-border)", paddingTop: "var(--sp-3)" }}>
-            {(i.status === "new" || i.status === "reviewed") && i.feedsModel ? <Button variant="primary" size="small" onClick={() => patch(i.id, { status: "actioned" })}>🤖 Apply tags to model</Button> : null}
-            {(i.status === "new" || i.status === "reviewed") && i.catalogueGap ? <Button variant="secondary" size="small" onClick={() => patch(i.id, { status: "actioned" })}>Create catalogue task</Button> : null}
-            {i.status === "new" ? <Button variant="secondary" size="small" onClick={() => patch(i.id, { status: "reviewed" })}>Mark reviewed</Button> : null}
-            {i.status !== "actioned" ? <Button variant="secondary" size="small" onClick={() => saveNote(i.id)}>Save note</Button> : null}
-            <Button variant="secondary" size="small" onClick={() => patch(i.id, { status: "watching" })}>Watch</Button>
-            <Button variant="secondary" size="small" type="destructive" onClick={() => patch(i.id, { status: "dismissed" })}>Dismiss</Button>
-          </Stack>
-        </Stack>
-      </Card>
-    );
-  };
-
-  /* ═══════════════ INBOX (master-detail) ═══════════════ */
-  const inbox = (
-    <Stack direction="column" gap={3}>
-      {statRail}
-      {selected ? (
-        signalDetail(selected)
-      ) : (
-        <Card sx={softSx}>
-          <EmptyState heading="No signal selected" />
-        </Card>
-      )}
-    </Stack>
-  );
-
-  /* ═══════════════ LOG FORM ═══════════════ */
-  const ChoiceGrid = ({ field, options, columns }) => (
-    <Grid columns={columns} gap={2}>
-      {options.map((o) => (
-        <Stack key={o.id} className={`mi-choice${log[field] === o.id ? " is-selected" : ""}`} direction="column" gap={0} onClick={() => setLogField(field, o.id)}>
-          <Text variant="caption" tone="strong">{o.label}</Text>
-          {o.desc ? <Text variant="micro" tone="subtle">{o.desc}</Text> : null}
-        </Stack>
-      ))}
-    </Grid>
-  );
-
-  const FormSection = ({ label, required, children }) => (
-    <Stack direction="column" gap={2}>
-      <Text variant="caption" tone="muted" style={{ fontWeight: 600 }}>{label}{required ? <Text as="span" variant="caption" tone="error"> *</Text> : null}</Text>
-      {children}
-    </Stack>
-  );
-
-  const feedsModelPreview = log.type && log.direction && log.skus.length > 0;
-  const logForm = log.submitted ? (
-    <Card sx={panelSx}>
-      <Stack direction="column" gap={3} align="center" paddingY={5}>
-        <Text variant="display">✅</Text>
-        <Text variant="heading" tone="strong">Intel logged</Text>
-        <Text variant="caption" tone="muted" style={{ textAlign: "center" }}>Your signal is in the merchant inbox. Structured tags will feed the agent model at the next refresh.</Text>
-        <Stack direction="row" gap={2}>
-          <Button variant="primary" size="medium" onClick={() => setLog(EMPTY_LOG)}>Log another signal</Button>
-          <Button variant="secondary" size="medium" onClick={() => setView("inbox")}>Back to inbox</Button>
-        </Stack>
-      </Stack>
-    </Card>
-  ) : (
-    <Grid columns="1fr 340px" gap={3}>
-      <Card sx={panelSx}>
-        <Stack direction="column" gap={4}>
-          <FormSection label="Signal type" required><ChoiceGrid field="type" options={TYPE_OPTIONS} columns={2} /></FormSection>
-          <FormSection label="Direction" required><ChoiceGrid field="direction" options={DIRECTION_OPTIONS} columns={2} /></FormSection>
-          <FormSection label="Urgency"><ChoiceGrid field="urgency" options={URGENCY_OPTIONS} columns={4} /></FormSection>
-          <FormSection label="Scope"><ChoiceGrid field="scope" options={SCOPE_OPTIONS} columns={4} /></FormSection>
-          <FormSection label="Title" required>
-            <Input placeholder="One-line description — e.g. Competitor opening 2 blocks away Q3" value={log.title} onChange={(e) => setLog((p) => ({ ...p, title: e.target.value }))} fullWidth />
-          </FormSection>
-          <FormSection label="What you observed" required>
-            <TextArea placeholder="The full picture — who, what, where, when. This stays human-read only; only the structured tags above feed the agent model." value={log.body} onChange={(e) => setLog((p) => ({ ...p, body: e.target.value }))} width="100%" height="110px" />
-          </FormSection>
-          <FormSection label="Affected SKUs (optional)">
-            {log.skus.length ? <Stack direction="row" gap={1} wrap>{log.skus.map((s) => (
-              <Stack key={s} direction="row" align="center" gap={1} paddingX={2} style={{ border: "1px solid var(--color-accent)", borderRadius: "var(--r2)" }}>
-                <Text variant="micro" mono style={{ color: "var(--color-accent)" }}>{s}</Text>
-                <Text variant="micro" tone="subtle" style={{ cursor: "pointer" }} onClick={() => removeSku(s)}>×</Text>
-              </Stack>
-            ))}</Stack> : null}
-            <Stack direction="row" gap={2} align="flex-end">
-              <FdSelect value={log.skuPick} options={[{ value: "", label: "Select a catalogue SKU…" }, ...CATALOGUE_SKUS.filter((s) => !log.skus.includes(s.id)).map((s) => ({ value: s.id, label: s.name }))]} onChange={(v) => setLog((p) => ({ ...p, skuPick: v }))} width={360} />
-              <Button variant="secondary" size="medium" onClick={addSku}>Add</Button>
-            </Stack>
-            <Text variant="micro" tone="subtle">SKU references enable per-product confidence updates.</Text>
-          </FormSection>
-          <FormSection label="Confidence level"><ChoiceGrid field="confidence" options={CONFIDENCE_OPTIONS} columns={3} /></FormSection>
-          <Stack direction="row" gap={2}>
-            <Button variant="primary" size="medium" onClick={submitLog} style={{ flex: 1 }}>Log intelligence →</Button>
-            <Button variant="secondary" size="medium" onClick={() => setView("inbox")}>Cancel</Button>
-          </Stack>
-        </Stack>
-      </Card>
-
-      <Card sx={softSx}>
-        <Stack direction="column" gap={3}>
-          {!log.type && !log.direction ? null : (
-            <Stack direction="column" gap={2}>
-              <Stack direction="row" gap={1} wrap>
-                {log.type ? <Badge variant="subtle" size="small" color={TYPE_BADGE[log.type]} label={log.type} /> : null}
-                {log.direction ? <Badge variant="subtle" size="small" color={DIR_BADGE[log.direction]} label={log.direction} /> : null}
-                {log.urgency ? <Badge variant="subtle" size="small" color={URGENCY_BADGE[log.urgency]} label={log.urgency} /> : null}
-                {log.scope ? <Badge variant="subtle" size="small" color="default" label={log.scope} /> : null}
-              </Stack>
-              {log.title ? <Text variant="caption" tone="strong">{log.title}</Text> : null}
-              {log.body ? <Text variant="micro" tone="muted" style={{ lineHeight: 1.5 }}>{log.body.slice(0, 200)}{log.body.length > 200 ? "…" : ""}</Text> : null}
-              {log.skus.length ? <Stack direction="row" gap={1} wrap>{log.skus.map((s) => <SkuChip key={s}>{s}</SkuChip>)}</Stack> : null}
-            </Stack>
-          )}
-          {feedsModelPreview ? (
-            <NoteBox tone="accent" label="Model tags">
-              {log.direction === "threat" ? "Reduce" : "Boost"} confidence for {log.skus.join(", ")} at {log.scope || "specified"} level.
-            </NoteBox>
-          ) : null}
-        </Stack>
-      </Card>
-    </Grid>
-  );
-
-  /* ═══════════════ MAP ═══════════════ */
+  /* ── Cluster map data ─────────────────────────────────────────────────── */
   const clusterData = useMemo(() => {
     const data = {};
     CLUSTER_NAMES.forEach((c) => { data[c] = { threats: 0, opps: 0, signals: [] }; });
     intel.forEach((i) => {
       const targets = i.scope === "national" ? CLUSTER_NAMES : i.cluster ? [i.cluster] : [];
-      targets.forEach((t) => { if (data[t]) { data[t][i.direction === "threat" ? "threats" : "opps"]++; data[t].signals.push(i); } });
+      targets.forEach((t) => {
+        if (data[t]) {
+          data[t][i.direction === "threat" ? "threats" : "opps"]++;
+          data[t].signals.push(i);
+        }
+      });
     });
     return data;
   }, [intel]);
 
+  /* ═══════════════ SIDEBAR (signal list only) ═══════════════ */
+  const sidebar = (
+    <div className="mi-sidebar-pane">
+      <div className="mi-filter-scroll">
+        <div className="mi-filter-label">{filtered.length} signal{filtered.length !== 1 ? "s" : ""}</div>
+        <div className="mi-list-items">
+          {filtered.length === 0 ? (
+            <div className="mi-list-empty">No signals match current filters.</div>
+          ) : (
+            filtered.map((i) => (
+              <div
+                key={i.id}
+                ref={i.id === fromPortfolio ? highlightedRowRef : undefined}
+                className={`mi-list-row${selectedId === i.id ? " is-active" : ""}${i.id === fromPortfolio ? " is-from-portfolio" : ""}`}
+                onClick={() => selectIntel(i.id)}
+              >
+                <span className={`mi-dir-dot is-${i.direction}`} aria-hidden>
+                  {i.direction === "threat" ? "↓" : "↑"}
+                </span>
+                <div className="mi-list-row-body">
+                  <div className="mi-list-row-title">{i.title}</div>
+                  <div className="mi-list-row-meta">
+                    <Tag tint={TYPE_TINT[i.type]}>{i.type}</Tag>
+                    {i.status === "new" ? <span className="mi-new-dot" title="New" /> : null}
+                    <span className="mi-list-row-date">{i.date}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Footer CTA */}
+      <div className="mi-sidebar-footer">
+        <Button
+          variant="primary" size="medium"
+          onClick={() => { setView("log"); setLog(EMPTY_LOG); }}
+          style={{ width: "100%" }}
+        >
+          + Log new intelligence
+        </Button>
+      </div>
+    </div>
+  );
+
+  /* ═══════════════ METRIC STRIP ═══════════════ */
+  const metricStrip = (
+    <div className="mi-metric-strip">
+      {metrics.map((m) => (
+        <div key={m.l} className="mi-metric">
+          <span className={`mi-metric-accent tone-${m.tone}`} />
+          <span className={`mi-metric-num tone-${m.tone}`}>{m.v}</span>
+          <span className="mi-metric-label">{m.l}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  /* ═══════════════ INBOX (card grid) ═══════════════ */
+  const TABS = [
+    { id: "all", label: "All signals" },
+    { id: "new", label: `New  (${newCount})` },
+    { id: "actioned", label: "Actioned" },
+    { id: "watching", label: "Watching" },
+  ];
+
+  const cardGrid = (
+    <div className="mi-main-scroll">
+      {metricStrip}
+      <div className="mi-tabs-row">
+        {TABS.map((t) => (
+          <Chips key={t.id} label={t.label} isActive={statusTab === t.id} onClick={() => setStatus(t.id)} />
+        ))}
+      </div>
+      {filtered.length === 0 ? (
+        <div className="mi-cards-empty">No signals match current filters.</div>
+      ) : (
+        <div className="mi-cards-grid">
+          {filtered.map((i) => (
+            <SignalCard
+              key={i.id}
+              i={i}
+              isSelected={selectedId === i.id}
+              fromPortfolio={fromPortfolio}
+              onSelect={() => selectIntel(i.id)}
+              onMarkReviewed={markReviewed}
+              onApplyModel={applyToModel}
+              onCatTask={createCatalogueTask}
+              onFieldReq={sendFieldRequest}
+              onWatch={watchSignal}
+              onDismiss={dismissSignal}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  /* ═══════════════ SIGNAL DETAIL (right panel) ═══════════════ */
+  const detailPanel = selected && (
+    <div className="mi-detail-inner">
+      {/* Close row */}
+      <div className="mi-detail-close-row">
+        <span className="mi-detail-label">Signal detail</span>
+        <button className="mi-detail-close-btn" onClick={() => setSelectedId(null)} aria-label="Close detail">
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="mi-detail-body">
+        {/* Title + badges */}
+        <div className="mi-detail-title">{selected.title}</div>
+        <div className="mi-signal-tags" style={{ marginBottom: "var(--sp-3)" }}>
+          <Tag tint={TYPE_TINT[selected.type]}>{selected.type}</Tag>
+          <span className={`mi-dir-badge mi-dir-badge--${selected.direction}`}>
+            {selected.direction === "threat" ? "↓" : "↑"} {selected.direction}
+          </span>
+          {selected.urgency !== "watch" ? (
+            <span className={`mi-urg-badge mi-urg-badge--${selected.urgency}`}>{selected.urgency}</span>
+          ) : null}
+          <Badge variant="subtle" size="small" color={STATUS_BADGE[selected.status]} label={selected.status} />
+        </div>
+
+        {/* Metadata grid */}
+        <div className="mi-detail-meta-card">
+          {[
+            ["Author", `${selected.author} · ${selected.authorRole}`],
+            ["Date", selected.date],
+            ["Scope", `${selected.scope}${selected.store ? ` · ${selected.store}` : ""}${selected.cluster ? ` / ${selected.cluster}` : ""}`],
+            ["Confidence", selected.confidence],
+          ].map(([l, v]) => (
+            <div key={l} className="mi-detail-meta-row">
+              <span className="mi-detail-meta-lbl">{l}</span>
+              <span className="mi-detail-meta-val">{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Full body */}
+        <div className="mi-detail-full-body">{selected.body}</div>
+
+        {/* Affected SKUs */}
+        {selected.skus.length > 0 && (
+          <div className="mi-detail-section">
+            <div className="mi-detail-section-label">Affected SKUs</div>
+            <div className="mi-signal-skus">
+              {selected.skus.map((s) => <SkuChip key={s}>{s}</SkuChip>)}
+            </div>
+          </div>
+        )}
+
+        {/* Model instruction */}
+        {selected.feedsModel && selected.modelInstruction && (
+          <NoteBox tone="accent" label="Agent model instruction">{selected.modelInstruction}</NoteBox>
+        )}
+
+        {/* Catalogue gap */}
+        {selected.catalogueGap && (
+          <NoteBox tone="warning" label="Catalogue gap flagged">{selected.catalogueRequest}</NoteBox>
+        )}
+
+        {/* Merchant note display */}
+        {selected.merchantNote && (
+          <NoteBox tone="teal" label="Merchant note">{selected.merchantNote}</NoteBox>
+        )}
+
+        {/* Merchant note input */}
+        <div className="mi-detail-section">
+          <div className="mi-detail-section-label">Add merchant note</div>
+          <TextArea
+            placeholder="Note for tracking — visible to merchant team only…"
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            width="100%"
+            height="72px"
+          />
+        </div>
+
+        {/* Detail action buttons */}
+        <div className="mi-detail-actions">
+          {(selected.status === "new" || selected.status === "reviewed") && selected.feedsModel && (
+            <Button variant="primary" size="medium" onClick={() => applyToModel(selected.id)} style={{ width: "100%" }}>
+              Apply structured tags to model
+            </Button>
+          )}
+          {(selected.status === "new" || selected.status === "reviewed") && selected.catalogueGap && (
+            <Button variant="secondary" size="medium" onClick={() => createCatalogueTask(selected.id)} style={{ width: "100%" }}>
+              Create catalogue task
+            </Button>
+          )}
+          <div className="mi-detail-actions-row">
+            {selected.status === "new" && (
+              <Button variant="secondary" size="small" onClick={() => markReviewed(selected.id)}>
+                Mark reviewed
+              </Button>
+            )}
+            {selected.status !== "actioned" && (
+              <Button variant="secondary" size="small" onClick={() => saveNote(selected.id)}>
+                Save note
+              </Button>
+            )}
+            <Button variant="secondary" size="small" onClick={() => watchSignal(selected.id)}>Watch</Button>
+            <Button variant="secondary" size="small" type="destructive" onClick={() => dismissSignal(selected.id)}>Dismiss</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ═══════════════ MAP VIEW ═══════════════ */
   const mapView = (
-    <Stack direction="column" gap={3}>
-      <Stack direction="row" justify="flex-end" align="center" wrap gap={2}>
+    <div className="mi-main-scroll">
+      <div className="mi-map-legend">
         <Badge variant="subtle" size="small" color="error" label="Threat" />
         <Badge variant="subtle" size="small" color="success" label="Opportunity" />
         <Badge variant="subtle" size="small" color="info" label="Feeds model" />
-      </Stack>
+      </div>
       <Grid columns={2} gap={3}>
         {CLUSTER_NAMES.map((cn) => {
           const cd = clusterData[cn];
@@ -502,29 +603,44 @@ export default function MarketIntel() {
           const urgImmediate = cd.signals.filter((s) => s.urgency === "immediate").length;
           const threatPct = totalSig > 0 ? Math.round((cd.threats / totalSig) * 100) : 0;
           return (
-            <Card key={cn} sx={{ ...panelSx, borderLeft: `3px solid ${cd.threats > 0 ? "var(--color-error)" : "var(--color-success)"}` }}>
+            <Card
+              key={cn}
+              sx={{ ...softSx, borderLeft: `3px solid ${cd.threats > 0 ? "var(--color-error)" : "var(--color-success)"}` }}
+            >
               <Stack direction="column" gap={2}>
                 <Stack direction="row" justify="space-between" align="center" gap={2}>
                   <Text variant="body-strong" tone="strong">{cn}</Text>
                   <Stack direction="row" gap={2} align="center">
-                    {urgImmediate ? <Badge variant="subtle" size="small" color="error" label={`${urgImmediate} immediate`} /> : null}
+                    {urgImmediate ? (
+                      <Badge variant="subtle" size="small" color="error" label={`${urgImmediate} immediate`} />
+                    ) : null}
                     <Text variant="micro" tone="subtle">{totalSig} signal{totalSig !== 1 ? "s" : ""}</Text>
                   </Stack>
                 </Stack>
                 <Stack direction="row" gap={2}>
-                  <Stack direction="column" align="center" paddingX={3} paddingY={1} style={{ background: "var(--color-error-soft)", borderRadius: "var(--r2)", minWidth: 56 }}>
+                  <Stack direction="column" align="center" paddingX={3} paddingY={1}
+                    style={{ background: "var(--color-error-soft)", borderRadius: "var(--r2)", minWidth: 56 }}>
                     <Text variant="kpi" tone="error">{cd.threats}</Text>
                     <Text variant="micro" tone="error">T</Text>
                   </Stack>
-                  <Stack direction="column" align="center" paddingX={3} paddingY={1} style={{ background: "var(--color-success-soft)", borderRadius: "var(--r2)", minWidth: 56 }}>
+                  <Stack direction="column" align="center" paddingX={3} paddingY={1}
+                    style={{ background: "var(--color-success-soft)", borderRadius: "var(--r2)", minWidth: 56 }}>
                     <Text variant="kpi" tone="success">{cd.opps}</Text>
                     <Text variant="micro" tone="success">O</Text>
                   </Stack>
                   <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
                     {cd.signals.slice(0, 2).map((s) => (
-                      <Text key={s.id} variant="micro" tone="muted" truncate style={{ cursor: "pointer" }} onClick={() => { selectIntel(s.id); setView("inbox"); }}>{s.title}</Text>
+                      <Text
+                        key={s.id} variant="micro" tone="muted" truncate
+                        style={{ cursor: "pointer" }}
+                        onClick={() => { selectIntel(s.id); setView("inbox"); }}
+                      >
+                        {s.title}
+                      </Text>
                     ))}
-                    {cd.signals.length > 2 ? <Text variant="micro" tone="subtle">+{cd.signals.length - 2} more</Text> : null}
+                    {cd.signals.length > 2 ? (
+                      <Text variant="micro" tone="subtle">+{cd.signals.length - 2} more</Text>
+                    ) : null}
                   </Stack>
                 </Stack>
                 {totalSig > 0 ? (
@@ -538,58 +654,230 @@ export default function MarketIntel() {
           );
         })}
       </Grid>
+    </div>
+  );
+
+  /* ═══════════════ LOG FORM ═══════════════ */
+  const ChoiceGrid = ({ field, options, columns }) => (
+    <Grid columns={columns} gap={2}>
+      {options.map((o) => (
+        <Stack
+          key={o.id}
+          className={`mi-choice${log[field] === o.id ? " is-selected" : ""}`}
+          direction="column" gap={0}
+          onClick={() => setLogField(field, o.id)}
+        >
+          <Text variant="caption" tone="strong">{o.label}</Text>
+          {o.desc ? <Text variant="micro" tone="subtle">{o.desc}</Text> : null}
+        </Stack>
+      ))}
+    </Grid>
+  );
+
+  const FormSection = ({ label, required, children }) => (
+    <Stack direction="column" gap={2}>
+      <Text variant="caption" tone="muted" style={{ fontWeight: 600 }}>
+        {label}
+        {required ? <Text as="span" variant="caption" tone="error"> *</Text> : null}
+      </Text>
+      {children}
     </Stack>
+  );
+
+  const feedsModelPreview = log.type && log.direction && log.skus.length > 0;
+
+  const logForm = log.submitted ? (
+    <Card sx={{ ...softSx, maxWidth: 560, margin: "0 auto" }}>
+      <Stack direction="column" gap={4} align="center" paddingY={6}>
+        <div className="mi-log-success-icon">✓</div>
+        <Text variant="heading" tone="strong">Intel logged</Text>
+        <Text variant="caption" tone="muted" style={{ textAlign: "center" }}>
+          Your signal is in the merchant inbox. Structured tags will feed the agent model at the next refresh.
+        </Text>
+        <Stack direction="row" gap={2}>
+          <Button variant="primary" size="medium" onClick={() => setLog(EMPTY_LOG)}>Log another signal</Button>
+          <Button variant="secondary" size="medium" onClick={() => { setView("inbox"); setLog(EMPTY_LOG); }}>
+            Back to inbox
+          </Button>
+        </Stack>
+      </Stack>
+    </Card>
+  ) : (
+    <Grid columns="1fr 340px" gap={4}>
+      <Card sx={softSx}>
+        <Stack direction="column" gap={4}>
+          <FormSection label="Signal type" required><ChoiceGrid field="type" options={TYPE_OPTIONS} columns={2} /></FormSection>
+          <FormSection label="Direction" required><ChoiceGrid field="direction" options={DIRECTION_OPTIONS} columns={2} /></FormSection>
+          <FormSection label="Urgency"><ChoiceGrid field="urgency" options={URGENCY_OPTIONS} columns={4} /></FormSection>
+          <FormSection label="Scope"><ChoiceGrid field="scope" options={SCOPE_OPTIONS} columns={4} /></FormSection>
+          <FormSection label="Title" required>
+            <Input
+              placeholder="One-line description — e.g. Competitor opening 2 blocks away Q3"
+              value={log.title}
+              onChange={(e) => setLog((p) => ({ ...p, title: e.target.value }))}
+              fullWidth
+            />
+          </FormSection>
+          <FormSection label="What you observed" required>
+            <TextArea
+              placeholder="The full picture — who, what, where, when. Free text stays human-read only."
+              value={log.body}
+              onChange={(e) => setLog((p) => ({ ...p, body: e.target.value }))}
+              width="100%" height="110px"
+            />
+          </FormSection>
+          <FormSection label="Affected SKUs (optional)">
+            {log.skus.length ? (
+              <Stack direction="row" gap={1} wrap>
+                {log.skus.map((s) => (
+                  <Stack key={s} direction="row" align="center" gap={1} paddingX={2}
+                    style={{ border: "1px solid var(--color-accent)", borderRadius: "var(--r2)" }}>
+                    <Text variant="micro" mono style={{ color: "var(--color-accent)" }}>{s}</Text>
+                    <Text variant="micro" tone="subtle" style={{ cursor: "pointer" }} onClick={() => removeSku(s)}>×</Text>
+                  </Stack>
+                ))}
+              </Stack>
+            ) : null}
+            <Stack direction="row" gap={2} align="flex-end">
+              <FdSelect
+                value={log.skuPick}
+                options={[
+                  { value: "", label: "Select a catalogue SKU…" },
+                  ...CATALOGUE_SKUS.filter((s) => !log.skus.includes(s.id)).map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                onChange={(v) => setLog((p) => ({ ...p, skuPick: v }))}
+                width={360}
+              />
+              <Button variant="secondary" size="medium" onClick={addSku}>Add</Button>
+            </Stack>
+            <Text variant="micro" tone="subtle">SKU references enable per-product confidence score updates.</Text>
+          </FormSection>
+          <FormSection label="Confidence level">
+            <ChoiceGrid field="confidence" options={CONFIDENCE_OPTIONS} columns={3} />
+          </FormSection>
+          <Stack direction="row" gap={2}>
+            <Button variant="primary" size="medium" onClick={submitLog} style={{ flex: 1 }}>Log intelligence →</Button>
+            <Button variant="secondary" size="medium" onClick={() => setView("inbox")}>Cancel</Button>
+          </Stack>
+        </Stack>
+      </Card>
+
+      {/* Preview panel */}
+      <div style={{ position: "sticky", top: 0 }}>
+        <Card sx={softSx}>
+          <Stack direction="column" gap={3}>
+            <Text variant="caption" tone="muted" style={{ fontWeight: 700 }}>Entry preview</Text>
+            {!log.type && !log.direction ? (
+              <Text variant="micro" tone="subtle" style={{ textAlign: "center", padding: "20px 0" }}>
+                Start filling in the form to preview your entry
+              </Text>
+            ) : (
+              <Stack direction="column" gap={2}>
+                <Stack direction="row" gap={1} wrap>
+                  {log.type ? <Badge variant="subtle" size="small" color={TYPE_BADGE[log.type]} label={log.type} /> : null}
+                  {log.direction ? <Badge variant="subtle" size="small" color={DIR_BADGE[log.direction]} label={log.direction} /> : null}
+                  {log.urgency ? <Badge variant="subtle" size="small" color={URGENCY_BADGE[log.urgency]} label={log.urgency} /> : null}
+                  {log.scope ? <Badge variant="subtle" size="small" color="default" label={log.scope} /> : null}
+                </Stack>
+                {log.title ? <Text variant="caption" tone="strong">{log.title}</Text> : null}
+                {log.body ? (
+                  <Text variant="micro" tone="muted" style={{ lineHeight: 1.5 }}>
+                    {log.body.slice(0, 200)}{log.body.length > 200 ? "…" : ""}
+                  </Text>
+                ) : null}
+                {log.skus.length ? (
+                  <Stack direction="row" gap={1} wrap>
+                    {log.skus.map((s) => <SkuChip key={s}>{s}</SkuChip>)}
+                  </Stack>
+                ) : null}
+              </Stack>
+            )}
+            {feedsModelPreview ? (
+              <NoteBox tone="accent" label="Model tags">
+                {log.direction === "threat" ? "Reduce" : "Boost"} confidence for{" "}
+                {log.skus.join(", ")} at {log.scope || "specified"} level.
+              </NoteBox>
+            ) : null}
+          </Stack>
+        </Card>
+      </div>
+    </Grid>
   );
 
   /* ═══════════════ SHELL ═══════════════ */
   return (
     <Stack direction="column" gap={4}>
-      <Card sx={panelSx}>
+      {/* Header */}
+      <Card sx={{ ...softSx, padding: "var(--sp-4) var(--sp-5)" }}>
         <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
-          <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
-            <Text variant="title">Market Intelligence</Text>
-          </Stack>
-          <Stack direction="row" gap={2} wrap>
-            <Chips label="Inbox" isActive={view === "inbox"} onClick={() => setView("inbox")} />
-            <Chips label="Signal map" isActive={view === "map"} onClick={() => setView("map")} />
+          <Text variant="title">Market Intelligence</Text>
+          <Stack direction="row" gap={2} wrap align="center">
+            {view !== "log" && (
+              <>
+                <Chips label="Inbox" isActive={view === "inbox"} onClick={() => setView("inbox")} />
+                <Chips label="Signal map" isActive={view === "map"} onClick={() => setView("map")} />
+              </>
+            )}
+            {view === "log" ? (
+              <Button variant="secondary" size="medium" onClick={() => setView("inbox")}>
+                ← Back to inbox
+              </Button>
+            ) : (
+              <Button variant="primary" size="medium" onClick={() => { setView("log"); setLog(EMPTY_LOG); }}>
+                + Log intelligence
+              </Button>
+            )}
           </Stack>
         </Stack>
       </Card>
 
-      <FiltersStrip
-        filterTags={miFilterTags}
-        filterButtonLabel="All Filters"
-        filterButtonClick={() => setFilterPanelOpen(true)}
-        hideSelectedFilterBadge
-        recentFilters={[]}
-        savedFiltersBadge={[]}
-        savedFilterLists={[]}
-        selectedFilter={null}
-        setSelectedFilter={() => {}}
-        handleBadgeChange={() => {}}
-        handleSavedRecentFilterDropdown={() => {}}
-      />
-      <FilterPanel
-        title="Signal Filters"
-        size="medium"
-        anchor="right"
-        isOpen={filterPanelOpen}
-        setIsOpen={setFilterPanelOpen}
-        active={activeFilterTab}
-        setActive={setActiveFilterTab}
-        filters={miFilterPanelTabs}
-        primaryButtonLabel="Apply"
-        onPrimaryButtonClick={() => setFilterPanelOpen(false)}
-        secondaryButtonLabel="Clear all"
-        onSecondaryButtonClick={() => { setStatus("all"); setDirFilter(null); setTypeFilter(null); }}
-      />
+      {/* Log form (full-width, no sidebar) */}
+      {view === "log" ? logForm : (
+        <>
+          <FiltersStrip
+            filterTags={miFilterTags}
+            filterButtonLabel="All Filters"
+            filterButtonClick={() => setFilterPanelOpen(true)}
+            hideSelectedFilterBadge
+            recentFilters={[]}
+            savedFiltersBadge={[]}
+            savedFilterLists={[]}
+            selectedFilter={null}
+            setSelectedFilter={() => {}}
+            handleBadgeChange={() => {}}
+            handleSavedRecentFilterDropdown={() => {}}
+          />
+          <FilterPanel
+            title="Signal Filters"
+            size="medium"
+            anchor="right"
+            isOpen={filterPanelOpen}
+            setIsOpen={setFilterPanelOpen}
+            active={activeFilterTab}
+            setActive={setActiveFilterTab}
+            filters={miFilterPanelTabs}
+            primaryButtonLabel="Apply"
+            onPrimaryButtonClick={() => setFilterPanelOpen(false)}
+            secondaryButtonLabel="Clear all"
+            onSecondaryButtonClick={() => { setStatus("all"); setDirFilter(null); setTypeFilter(null); }}
+          />
+          {/* 3-pane shell */}
+          <div className="mi-shell">
+            {sidebar}
+            <div className="mi-main-pane">
+              {view === "inbox" ? cardGrid : mapView}
+            </div>
+            <div className={`mi-detail-rail${selectedId && selected ? " is-open" : ""}`}>
+              {detailPanel}
+            </div>
+          </div>
+        </>
+      )}
 
-      <Stack direction="row" gap={3} align="flex-start" wrap>
-        {view !== "log" ? sidebar : null}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {view === "inbox" ? inbox : view === "log" ? logForm : mapView}
-        </div>
-      </Stack>
+      {/* Toast */}
+      {toast && (
+        <div className={`mi-toast mi-toast--${toast.tone}`}>{toast.msg}</div>
+      )}
     </Stack>
   );
 }

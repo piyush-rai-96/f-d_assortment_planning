@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Card, Button, Badge, Table, ProgressBar, EmptyState } from "impact-ui";
+import { AlertTriangle, Bot, Lock, ChevronRight, Check } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
@@ -132,7 +133,7 @@ export default function National({ onNavigate }) {
         <Card sx={panelSx}>
           <Stack direction="row" gap={3} align="flex-start" wrap>
             <Stack align="center" justify="center" style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--color-warning-soft)", flexShrink: 0 }}>
-              <Text variant="subheading">⚠️</Text>
+              <AlertTriangle size={18} color="var(--color-warning)" strokeWidth={1.75} />
             </Stack>
             <Stack direction="column" gap={3} flex="1 1 auto" style={{ minWidth: 0 }}>
               <Stack direction="column" gap={1}>
@@ -143,7 +144,10 @@ export default function National({ onNavigate }) {
                 </Text>
               </Stack>
               <Stack direction="row" gap={3} align="center" wrap>
-                <Button variant="primary" size="medium" onClick={runAgent}>🤖 Run agent recommendation</Button>
+                <Button variant="primary" size="medium" onClick={runAgent}>
+                  <Bot size={14} style={{ marginRight: 6 }} />
+                  Run agent recommendation
+                </Button>
                 {onNavigate ? (
                   <Button variant="tertiary" size="medium" onClick={() => onNavigate("catalogue")}>Open Catalogue step →</Button>
                 ) : null}
@@ -169,7 +173,8 @@ export default function National({ onNavigate }) {
       {/* ── Section 1: Hard-locked Core / BG ───────────────────────────────── */}
       <Stack direction="column" gap={3}>
         <Stack direction="row" align="center" gap={2} wrap>
-          <Text variant="body-strong" tone="success">🔒 Always Mandatory — Core / BG</Text>
+          <Lock size={14} color="var(--color-success)" strokeWidth={2} />
+          <Text variant="body-strong" tone="success">Always Mandatory — Core / BG</Text>
           <Badge variant="subtle" size="small" color="success" label={`${HARD_LOCKED.length}`} />
           <Text variant="caption" tone="muted">From the product catalogue — cannot be removed under any circumstance</Text>
         </Stack>
@@ -213,7 +218,7 @@ export default function National({ onNavigate }) {
                     </div>
                     <div className="nat-otb-dept-pct">
                       {over
-                        ? <span className="nat-otb-over">⚠️ Over budget by {fmtCurrency(consumed - budget)}</span>
+                        ? <span className="nat-otb-over"><AlertTriangle size={11} style={{ marginRight: 3, verticalAlign: "middle" }} />Over budget by {fmtCurrency(consumed - budget)}</span>
                         : <span>{pct}% of budget consumed</span>
                       }
                     </div>
@@ -229,7 +234,8 @@ export default function National({ onNavigate }) {
       {agentRun ? (
         <Stack direction="column" gap={3}>
           <Stack direction="row" align="center" gap={2} wrap>
-            <Text variant="body-strong" tone="teal">🤖 Agent Recommended for National Core</Text>
+            <Bot size={14} color="var(--color-teal)" strokeWidth={1.75} />
+            <Text variant="body-strong" tone="teal">Agent Recommended for National Core</Text>
             <Badge variant="subtle" size="small" color="info" label={`${agentRecs.length}`} />
             <Text variant="caption" tone="muted">Review each recommendation · approve or reject · approved items lock all stores</Text>
           </Stack>
@@ -299,7 +305,7 @@ export default function National({ onNavigate }) {
                     {/* Decision */}
                     <Stack direction="row" gap={2} align="center" style={{ flexShrink: 0 }}>
                       <Button variant={approved ? "primary" : "secondary"} size="small" onClick={() => decide(id, "core")}>
-                        {approved ? "✓ Approved" : "Approve"}
+                        {approved ? <><Check size={12} style={{ marginRight: 4 }} />Approved</> : "Approve"}
                       </Button>
                       <Button variant="secondary" size="small" type="destructive" onClick={() => decide(id, "rejected")}>
                         {rejected ? "✕ Rejected" : "Reject"}
@@ -323,7 +329,7 @@ export default function National({ onNavigate }) {
       {/* ── Lock-status footer ─────────────────────────────────────────────── */}
       <Card sx={{ ...panelSx, background: "var(--color-success-soft)", border: "1.5px solid var(--color-success)" }}>
         <Stack direction="row" align="center" gap={3} wrap>
-          <Text variant="subheading">🔒</Text>
+          <Lock size={18} color="var(--color-success)" strokeWidth={1.75} style={{ flexShrink: 0 }} />
           <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
             <Text variant="body-strong" tone="success">{totalCore} SKUs will be locked as National Core</Text>
             <Text variant="caption" tone="muted">
@@ -332,7 +338,7 @@ export default function National({ onNavigate }) {
             </Text>
           </Stack>
           <Button variant="primary" size="medium" onClick={() => onNavigate && onNavigate("regional")} style={{ flexShrink: 0 }}>
-            Advance to Regional Review →
+            Advance to Regional Review <ChevronRight size={14} style={{ marginLeft: 4 }} />
           </Button>
         </Stack>
       </Card>

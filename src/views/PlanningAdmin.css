@@ -1,32 +1,85 @@
-/* Planning Admin — matrix grid + accents. Color functional only. */
+/* Planning Admin — layout, nav, matrix, periods, rules, users. */
 
-.pa-tablewrap {
+/* ── Left navigation rail ─────────────────────────────────────────────────── */
+.pa-nav-rail {
+  width: 196px;
+  min-width: 196px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-2);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--r);
-  overflow: hidden;
+  position: sticky;
+  top: var(--sp-4);
+  align-self: flex-start;
 }
 
-/* Exceptions matrix — horizontal scroll container. */
+.pa-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3);
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: var(--r2);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.pa-nav-btn:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.pa-nav-btn.is-active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--fw-semibold);
+  border-left-color: var(--color-primary);
+}
+
+.pa-nav-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+}
+
+.pa-nav-btn.is-active .pa-nav-icon { opacity: 1; }
+
+/* ── Exceptions matrix ────────────────────────────────────────────────────── */
 .pa-matrix {
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--r);
 }
+
 .pa-matrix-row {
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid var(--color-border);
 }
-.pa-matrix-row:last-child {
-  border-bottom: none;
-}
+
+.pa-matrix-row:last-child { border-bottom: none; }
+
 .pa-matrix-row.is-head {
   background: var(--color-surface-alt);
   position: sticky;
   top: 0;
   z-index: 1;
 }
-/* Sticky first (label) column. */
+
 .pa-cell-label {
   width: 200px;
   min-width: 200px;
@@ -40,9 +93,9 @@
   display: flex;
   align-items: center;
 }
-.pa-matrix-row.is-head .pa-cell-label {
-  background: var(--color-surface-alt);
-}
+
+.pa-matrix-row.is-head .pa-cell-label { background: var(--color-surface-alt); }
+
 .pa-cell-store {
   width: 76px;
   min-width: 76px;
@@ -53,12 +106,14 @@
   justify-content: center;
   border-right: 1px solid var(--color-border);
 }
-.pa-cell-store:last-child {
-  border-right: none;
-}
 
-/* Collapsible group header button row. */
-.pa-group {
+.pa-cell-store:last-child { border-right: none; }
+
+/* Collapsible group header button */
+.pa-group-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   width: 100%;
   text-align: left;
   cursor: pointer;
@@ -66,65 +121,429 @@
   border-radius: var(--r2);
   background: var(--color-surface-alt);
   padding: var(--sp-2) var(--sp-3);
-}
-.pa-group:hover {
-  background: var(--color-surface-sunken);
+  font-family: inherit;
+  transition: background 0.1s;
 }
 
-/* ── Scope wizard ────────────────────────────────────────────────────────── */
+.pa-group-btn:hover { background: var(--color-surface-sunken); }
+
+/* Exception view toggles */
+.pa-ex-toggle {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  background: var(--color-surface-alt);
+  cursor: pointer;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  transition: all 0.12s;
+}
+
+.pa-ex-toggle:hover { background: var(--color-surface-sunken); }
+
+.pa-ex-toggle.is-active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-primary-300, var(--color-primary));
+  font-weight: var(--fw-semibold);
+}
+
+/* ── Assortment Periods — dark header ─────────────────────────────────────── */
+.pa-dark-hd {
+  background: var(--color-navy, #1A2B4A);
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.pa-dark-hd-title {
+  font-size: 18px;
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  line-height: 1.2;
+}
+
+.pa-dark-hd-sub {
+  font-size: var(--fs-caption);
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: var(--sp-1);
+}
+
+/* Back button inside dark header */
+.pa-back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--r2);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+
+.pa-back-btn:hover { background: rgba(255, 255, 255, 0.14); }
+
+/* ── KPI strip ────────────────────────────────────────────────────────────── */
+.pa-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pa-kpi-cell {
+  padding: var(--sp-4) var(--sp-5);
+  text-align: center;
+}
+
+.pa-kpi-num {
+  font-size: 28px;
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pa-kpi-label {
+  font-size: var(--fs-micro);
+  color: var(--color-text-muted);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-top: var(--sp-1);
+}
+
+/* ── Period card ──────────────────────────────────────────────────────────── */
+.pa-period-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid;
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+
+.pa-period-card:hover { box-shadow: var(--sh1); }
+
+.pa-period-hd {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pa-period-body { padding: var(--sp-3) var(--sp-4); }
+
+.pa-dept-pill {
+  padding: 2px 9px;
+  border-radius: var(--r2);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-extrabold);
+  flex-shrink: 0;
+}
+
+/* Delete button */
+.pa-del-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: var(--r2);
+  background: transparent;
+  color: var(--color-error);
+  cursor: pointer;
+  transition: background 0.1s;
+  flex-shrink: 0;
+}
+
+.pa-del-btn:hover { background: var(--color-error-soft); }
+
+/* ── Phase timeline bar ───────────────────────────────────────────────────── */
+.pa-phase-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  width: 100%;
+  margin-bottom: var(--sp-2);
+}
+
+.pa-phase-bar-seg {
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.pa-phase-bar-seg span {
+  position: absolute;
+  left: 4px;
+  font-size: 7px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 90%;
+}
+
+/* Phase pills */
+.pa-phase-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+.pa-phase-pill {
+  padding: 2px 9px;
+  border-radius: var(--r-pill, 999px);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+}
+
+/* ── Period form ──────────────────────────────────────────────────────────── */
+.pa-form-grid {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.pa-form-grid--3 { grid-template-columns: 1fr 1fr 120px; }
+.pa-form-grid--4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Phase rows in form */
+.pa-phase-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 26px 26px;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface-alt);
+  border-radius: var(--r2);
+  border-left: 3px solid;
+}
+
+.pa-phase-name-input {
+  padding: 6px 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  color: var(--color-text);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.1s;
+}
+
+.pa-phase-name-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.pa-phase-week-sel {
+  padding: 5px 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  color: var(--color-text);
+  font-size: var(--fs-micro);
+  font-family: var(--font-mono);
+  width: 100%;
+  cursor: pointer;
+}
+
+.pa-phase-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.12s;
+}
+
+.pa-phase-color-dot:hover { transform: scale(1.18); }
+
+.pa-phase-del {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--color-error);
+  cursor: pointer;
+  border-radius: var(--r2);
+  opacity: 0.6;
+  transition: opacity 0.1s;
+  flex-shrink: 0;
+}
+
+.pa-phase-del:hover { opacity: 1; background: var(--color-error-soft); }
+
+/* ── Planning Rules table ─────────────────────────────────────────────────── */
+.pa-rules-head {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 110px 110px;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}
+
+.pa-rules-row {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 110px 110px;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.pa-rules-row:last-child { border-bottom: none; }
+.pa-rules-row:hover { background: var(--color-surface-alt); }
+
+.pa-rules-name {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+.pa-rules-value {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+
+.pa-rules-editable {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-success);
+}
+
+.pa-rules-locked {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+
+/* ── Users & Roles table ──────────────────────────────────────────────────── */
+.pa-users-head {
+  display: grid;
+  grid-template-columns: 2fr 2.5fr 1.5fr 1.5fr 100px;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+}
+
+.pa-users-row {
+  display: grid;
+  grid-template-columns: 2fr 2.5fr 1.5fr 1.5fr 100px;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.pa-users-row:last-child { border-bottom: none; }
+.pa-users-row:hover { background: var(--color-surface-alt); }
+
+.pa-user-name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+.pa-user-email { font-size: var(--fs-caption); color: var(--color-text-secondary); }
+.pa-user-role  { font-size: var(--fs-caption); color: var(--color-text); }
+.pa-user-access { font-size: var(--fs-caption); color: var(--color-text-secondary); }
+
+.pa-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Scope wizard ─────────────────────────────────────────────────────────── */
 .pa-scope-steps {
   display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: var(--sp-6);
 }
+
 .pa-scope-step {
-  display: flex; align-items: center; gap: 6px; font-size: var(--fs-caption); font-weight: var(--fw-semibold);
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--fs-caption); font-weight: var(--fw-semibold);
   color: var(--color-text-subtle);
 }
+
 .pa-scope-step.active { color: var(--color-primary); }
 .pa-scope-step.done   { color: var(--color-success); }
+
 .pa-scope-step-circle {
   width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: var(--fs-caption); font-weight: var(--fw-extrabold); border: 2px solid currentColor; background: transparent; flex-shrink: 0;
+  font-size: var(--fs-caption); font-weight: var(--fw-extrabold); border: 2px solid currentColor;
+  background: transparent; flex-shrink: 0;
 }
+
 .pa-scope-step.done   .pa-scope-step-circle { background: var(--color-success); color: var(--color-surface); border-color: var(--color-success); }
 .pa-scope-step.active .pa-scope-step-circle { background: var(--color-primary); color: var(--color-surface); border-color: var(--color-primary); }
 .pa-scope-connector { width: 32px; height: 2px; background: var(--color-border); flex-shrink: 0; }
 
 .pa-scope-body { padding: var(--sp-4) 0; min-height: 160px; }
 .pa-scope-checks { display: flex; flex-direction: column; gap: 10px; }
+
 .pa-scope-check-label {
-  display: flex; align-items: center; gap: 10px; font-size: var(--fs-body-lg); font-weight: var(--fw-semibold);
+  display: flex; align-items: center; gap: 10px;
+  font-size: var(--fs-body-lg); font-weight: var(--fw-semibold);
   cursor: pointer; color: var(--color-text-muted);
 }
+
 .pa-scope-check-label input { accent-color: var(--color-primary); width: 16px; height: 16px; }
+
 .pa-scope-summary {
   background: var(--color-surface-alt); border-radius: var(--r); padding: 14px var(--sp-4);
-  display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-body); color: var(--color-text-muted);
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  font-size: var(--fs-body); color: var(--color-text-muted);
 }
+
 .pa-scope-summary strong { color: var(--color-text); }
 
-/* ── Calendar mapping ────────────────────────────────────────────────────── */
-.pa-fy-card {
-  flex: 1; min-width: 180px; max-width: 240px;
-  border: 2px solid; border-radius: var(--r); padding: var(--sp-4) 18px;
-  background: var(--color-surface);
+/* ── Responsive tweaks ────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pa-form-grid--3 { grid-template-columns: 1fr 1fr; }
+  .pa-form-grid--4 { grid-template-columns: 1fr 1fr; }
+  .pa-rules-head, .pa-rules-row { grid-template-columns: 2fr 1fr; }
+  .pa-users-head, .pa-users-row { grid-template-columns: 2fr 1fr; }
 }
-.pa-fy-year { font-size: var(--fs-title); font-weight: var(--fw-extrabold); line-height: 1; margin-bottom: var(--sp-1); }
-.pa-fy-season { font-size: var(--fs-caption); color: var(--color-text-muted); margin-bottom: var(--sp-1); }
-.pa-fy-meta { font-size: var(--fs-micro); color: var(--color-text-subtle); margin-bottom: 10px; }
-.pa-fy-status { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: var(--fs-micro); font-weight: var(--fw-bold); }
-
-.pa-period-list-header { margin-top: var(--sp-2); margin-bottom: 6px; }
-.pa-period-list { display: flex; flex-direction: column; gap: var(--sp-1); }
-.pa-period-row {
-  display: flex; align-items: center; gap: var(--sp-4);
-  padding: var(--sp-2) var(--sp-3); border-radius: var(--r2); border: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-.pa-period-row--complete { opacity: .65; }
-.pa-period-row--current, .pa-period-row--active { border-color: var(--color-info); background: var(--color-info-soft); }
-.pa-period-id   { font-weight: var(--fw-bold); font-size: var(--fs-body); min-width: 100px; font-family: var(--font-mono); }
-.pa-period-range { flex: 1; font-size: var(--fs-caption); color: var(--color-text-muted); }
-.pa-period-status { font-size: var(--fs-micro); font-weight: var(--fw-bold); }
-.pa-period-status--complete { color: var(--color-text-subtle); }
-.pa-period-status--current, .pa-period-status--active { color: var(--color-info); }
-.pa-period-status--upcoming { color: var(--color-text-subtle); }

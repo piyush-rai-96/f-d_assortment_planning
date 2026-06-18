@@ -20,6 +20,7 @@ import MarketIntel from "./views/MarketIntel.jsx";
 import FeedbackLoop from "./views/FeedbackLoop.jsx";
 import Approval from "./views/Approval.jsx";
 import PlanningAdmin from "./views/PlanningAdmin.jsx";
+import AssortmentPeriods from "./views/AssortmentPeriods.jsx";
 import PlrCalendar from "./views/PlrCalendar.jsx";
 import Clustering from "./views/Clustering.jsx";
 import LeadTime from "./views/LeadTime.jsx";
@@ -52,6 +53,7 @@ const VIEWS = {
   feedback: () => <FeedbackLoop />,
   approval: ({ navigate }) => <Approval onNavigate={navigate} />,
   "admin-planning": () => <PlanningAdmin />,
+  "assort-periods": () => <AssortmentPeriods />,
   periods: () => <PlrCalendar />,
   clustering: ({ navigate }) => <Clustering onNavigate={navigate} />,
   "lead-time": () => <LeadTime />,
