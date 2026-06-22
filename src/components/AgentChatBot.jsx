@@ -11,7 +11,13 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ChatBotComponent, Button, Badge, Card } from "impact-ui";
 import {
+  AlertCircle, AlertTriangle, Clock, CheckCircle2, BarChart2, Bot,
+  Lock, MapPin, Store, TrendingUp, Zap, Activity, Bell,
+  ChevronRight, Sparkles, CircleDashed, PlayCircle,
+} from "lucide-react";
+import {
   AGENT_SIGNALS, SUGGESTED_QUESTIONS, AGENT_KPIS,
+  PIPELINE_STEPS, AUDIT_LOG,
 } from "../data/agentActivity.js";
 import { ACTIVE_CLUSTER_SET } from "../data/clustering.js";
 
@@ -258,18 +264,69 @@ function buildSkuJsx(onAsk) {
   );
 }
 
+/* ── Activity Log response ────────────────────────────────────────────────  */
+function buildActivityLogJsx(onAsk) {
+  const totalEntries = AUDIT_LOG.length;
+  const urgentCount  = AUDIT_LOG.filter((e) => e.severity === "error" || e.severity === "warning").length;
+
+  return (
+    <div style={{ fontFamily: "Manrope, system-ui, sans-serif", fontSize: "var(--fs-body)", color: C.text }}>
+      {/* Summary banner */}
+      <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: "var(--fs-body-lg)", color: C.text }}>Agent Activity Log</div>
+          <div style={{ fontSize: "var(--fs-micro)", color: C.textMuted, marginTop: 2 }}>
+            {totalEntries} events · FW 2025 · last 24h
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: C.mintSoft, color: C.mint }}>
+            {totalEntries - urgentCount} ok
+          </span>
+          {urgentCount > 0 && (
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: C.amberSoft, color: C.amber }}>
+              {urgentCount} need attention
+            </span>
+          )}
+        </div>
+      </div>
+
+      <SectionLabel>Recent events</SectionLabel>
+      {AUDIT_LOG.map((entry) => {
+        const s = SEV[entry.severity] || SEV.info;
+        return (
+          <div key={entry.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "7px 0", borderBottom: `1px solid ${C.border}` }}>
+            {/* Severity dot */}
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0, marginTop: 4 }} />
+            {/* Event text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "var(--fs-caption)", fontWeight: 600, color: C.text, lineHeight: 1.35 }}>{entry.text}</div>
+            </div>
+            {/* Time */}
+            <span style={{ fontSize: "var(--fs-xs)", color: C.textSubtle, whiteSpace: "nowrap", flexShrink: 0 }}>{entry.time}</span>
+          </div>
+        );
+      })}
+
+      <FollowUps questions={[
+        "Show the FW 2025 pipeline status",
+        "Which stores haven't submitted curation yet?",
+        "Why is SOL-SEASHELL flagged for expansion?",
+        "Show me the latest market intel signals",
+      ]} onAsk={onAsk} />
+    </div>
+  );
+}
+
 /* ── Pipeline response ────────────────────────────────────────────────────  */
 function buildPipelineJsx(onAsk) {
-  const steps = [
-    { label: "Portfolio Build",  status: "done",    detail: "Completed Oct 2"         },
-    { label: "Forecast Receipt", status: "done",    detail: "87% confidence ✅"         },
-    { label: "Catalogue",        status: "active",  detail: "Agent pending ⚡"          },
-    { label: "National Core",    status: "partial", detail: "5 SKUs locked"             },
-    { label: "Regional Review",  status: "partial", detail: "6/8 clusters submitted"    },
-    { label: "Store Curation",   status: "active",  detail: "18/70 stores (26%)"        },
-    { label: "MPI / NPI",        status: "pending", detail: "Waiting on curation"       },
-    { label: "Oracle Export",    status: "pending", detail: "Final step — not started"  },
-  ];
+  /* Use the shared PIPELINE_STEPS from agentActivity.js so this response and
+   * the AgentRail Pipeline tab always reflect the same data. */
+  const steps = PIPELINE_STEPS.map((s) => ({
+    label:  s.label,
+    status: s.status,
+    detail: s.sub,
+  }));
   const statusColor = { done: C.mint, active: C.blue, partial: C.amber, pending: C.textSubtle };
   const statusIcon  = { done: "✅", active: "▶", partial: "◑", pending: "○" };
 
@@ -412,6 +469,7 @@ const THINKING_HEADERS = {
   pipeline:  { thinkingHeading: "🧠  Loading pipeline state…",         thinkingContent: "Fetched FW2025 phase status · calculated 63% completion · identified critical path blockers" },
   regional:  { thinkingHeading: "🧠  Checking regional review…",       thinkingContent: "Loaded 8-cluster regional submission log · identified Mid-Atlantic and Pacific South as pending" },
   intel:     { thinkingHeading: "🧠  Pulling market intelligence…",    thinkingContent: "Scanned 7 active signals · analysed 2 competitor threats and 1 expansion opportunity" },
+  activity:  { thinkingHeading: "🧠  Reviewing recent activity…",      thinkingContent: "Scanned FW2025 audit log · submissions, agent flags, locks, and lead-time changes across the last 24h" },
   default:   { thinkingHeading: "🧠  Thinking…",                       thinkingContent: "Reviewing FW2025 assortment state across clusters, curation, SKUs, and market signals" },
 };
 
@@ -425,6 +483,9 @@ function resolveJsxResponse(text, onAsk) {
     return { jsx: buildCurationJsx(onAsk),  thinking: THINKING_HEADERS.curation  };
   if (q.includes("seashell") || q.includes("travert") || q.includes("aqg"))
     return { jsx: buildSkuJsx(onAsk),       thinking: THINKING_HEADERS.sku       };
+  // Activity / audit log — must come before broad "store"/"signal" checks
+  if (q.includes("activity") || q.includes("audit") || q.includes("recent") || q.includes("happened") || q.includes(" log") || q.includes("timeline") || q.includes("latest update"))
+    return { jsx: buildActivityLogJsx(onAsk), thinking: THINKING_HEADERS.activity };
   // Domain topics, most specific first
   if (q.includes("cohesion") || q.includes("re-run") || q.includes("rerun") || q.includes("next run"))
     return { jsx: buildCohesionJsx(onAsk),  thinking: THINKING_HEADERS.cohesion  };
@@ -464,94 +525,261 @@ const CAT_ICON = {
   "Performance":      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><polyline points="2,12 6,7 9,10 13,4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 };
 
-function ChatLandingContent({ onAsk }) {
-  return (
-    <div style={{ fontFamily: "var(--font-sans)", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+/* ── emoji → lucide icon map ─────────────────────────────────────────────── */
+const ICON_MAP = {
+  "🚨": AlertCircle,
+  "⚠️": AlertTriangle,
+  "⏰": Clock,
+  "✅": CheckCircle2,
+  "📊": BarChart2,
+  "🤖": Bot,
+  "🔒": Lock,
+  "📍": MapPin,
+  "🏪": Store,
+  "📈": TrendingUp,
+  "⚡": Zap,
+  "📉": Activity,
+  "🔔": Bell,
+};
 
-      {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
-      <div style={{ padding: "var(--sp-6) var(--sp-5) var(--sp-4)", textAlign: "center", flexShrink: 0 }}>
-        {/* Avatar */}
-        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-accent-soft) 100%)", margin: "0 auto var(--sp-3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-display)", boxShadow: "var(--sh)", position: "relative" }}>
-          ✦
-          <div style={{ position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: "50%", background: "var(--color-success)", border: "2px solid var(--color-surface)" }} />
+/* ── Reusable panel block (bordered section, no Card overhead) ───────────── */
+const Panel = ({ children, style }) => (
+  <div style={{
+    background: "#fff",
+    border: "1px solid var(--cb-border, #e8eaf0)",
+    borderRadius: 12,
+    overflow: "hidden",
+    ...style,
+  }}>{children}</div>
+);
+
+/* ── Icon badge for signals / activity ──────────────────────────────────── */
+const IconBadge = ({ icon, severity, size = 28 }) => {
+  const s = SEV[severity] || SEV.info;
+  const LucideIcon = ICON_MAP[icon];
+  const iconSize = Math.round(size * 0.52);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: Math.round(size * 0.3), flexShrink: 0,
+      background: s.bg, border: `1px solid ${s.border}`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {LucideIcon
+        ? <LucideIcon size={iconSize} color={s.dot} strokeWidth={2.2} />
+        : <span style={{ fontSize: iconSize, lineHeight: 1 }}>{icon}</span>
+      }
+    </div>
+  );
+};
+
+/* ── Step status indicator ───────────────────────────────────────────────── */
+const StepMark = ({ status }) => {
+  /* done — solid green ring with white check */
+  if (status === "done")
+    return (
+      <div style={{ width: 20, height: 20, borderRadius: "50%", background: "linear-gradient(135deg, #059669, #10b981)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 1px 4px rgba(5,150,105,.35)" }}>
+        <CheckCircle2 size={13} color="#fff" strokeWidth={2.5} />
+      </div>
+    );
+  /* active — amber with play icon + glow ring */
+  if (status === "active")
+    return (
+      <div style={{ width: 20, height: 20, borderRadius: "50%", background: "linear-gradient(135deg, #d97706, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 0 3px rgba(245,158,11,.22), 0 1px 4px rgba(217,119,6,.35)" }}>
+        <PlayCircle size={13} color="#fff" strokeWidth={2.2} />
+      </div>
+    );
+  /* partial — dashed amber circle (shows partial completion visually) */
+  if (status === "partial")
+    return (
+      <div style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <CircleDashed size={20} color="#f59e0b" strokeWidth={2.2} />
+      </div>
+    );
+  /* pending — empty muted circle */
+  return (
+    <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid var(--cb-border, #e2e8f0)", background: "transparent", flexShrink: 0 }} />
+  );
+};
+
+/* ── Section header row ──────────────────────────────────────────────────── */
+const SectionHeader = ({ label, right }) => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+    <span style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--cb-text-subtle, #94a3b8)" }}>{label}</span>
+    {right}
+  </div>
+);
+
+function ChatLandingContent({ onAsk }) {
+  const doneCount = PIPELINE_STEPS.filter((s) => s.status === "done").length;
+  const activePipeline = PIPELINE_STEPS.filter((s) => s.status !== "pending");
+
+  return (
+    <div style={{ fontFamily: "var(--font-sans, Manrope, system-ui)", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+
+      {/* ══ HERO ════════════════════════════════════════════════════════════ */}
+      <div style={{
+        background: "linear-gradient(145deg, #1e3a8a 0%, #3730a3 40%, #6d28d9 100%)",
+        padding: "16px 14px 14px",
+        flexShrink: 0,
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", top: -30, right: -20, width: 110, height: 110, borderRadius: "50%", background: "rgba(255,255,255,.05)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -15, left: 20, width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,.04)", pointerEvents: "none" }} />
+
+        {/* Top row: avatar + title + live badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative", marginBottom: 12 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: "rgba(255,255,255,.14)", border: "1.5px solid rgba(255,255,255,.28)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", boxShadow: "inset 0 1px 0 rgba(255,255,255,.2), 0 4px 14px rgba(0,0,0,.3)" }}>
+            <Sparkles size={20} color="rgba(255,255,255,.9)" strokeWidth={1.8} />
+            <div style={{ position: "absolute", bottom: 2, right: 2, width: 9, height: 9, borderRadius: "50%", background: "#4ade80", border: "2px solid rgba(109,40,217,.85)" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: "-.02em", lineHeight: 1.25 }}>
+              FD Assortment{" "}<span style={{ color: "#c4b5fd" }}>Agent</span>
+            </div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,.58)", marginTop: 1, fontWeight: 500 }}>FW 2025 · 70 stores</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(74,222,128,.16)", border: "1px solid rgba(74,222,128,.32)", borderRadius: 20, padding: "2px 8px" }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80" }} />
+            <span style={{ fontSize: 8.5, fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: ".06em" }}>Live</span>
+          </div>
         </div>
-        {/* Name */}
-        <div style={{ fontSize: "var(--fs-title)", fontWeight: 800, color: "var(--color-text-strong)", letterSpacing: "-.02em", lineHeight: 1.2 }}>
-          FD Assortment{" "}
-          <span style={{ color: "var(--color-primary)" }}>Agent</span>
-        </div>
-        <div style={{ fontSize: "var(--fs-micro)", color: C.textSubtle, marginTop: "var(--sp-1)", fontWeight: 500 }}>
-          FW 2025 · 70 stores · Ask me anything
-        </div>
-        {/* KPI pills */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "var(--sp-2)", marginTop: "var(--sp-3)", flexWrap: "wrap" }}>
-          <Badge variant="subtle" size="small" color="success" label={`${AGENT_KPIS.confidence}% confidence`} />
-          <Badge variant="subtle" size="small" color="info"    label={`${AGENT_KPIS.pipelinePct}% pipeline`} />
-          <Badge variant="subtle" size="small" color="warning" label={`${AGENT_KPIS.storesSubmitted}/${AGENT_KPIS.storesTotal} curated`} />
-          <Badge variant="subtle" size="small" color="error"   label={`${AGENT_KPIS.activeSignals} signals`} />
+
+        {/* KPI grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+          {[
+            { val: `${AGENT_KPIS.confidence}%`,                              label: "Confidence", color: "#86efac", bg: "rgba(74,222,128,.13)",  bd: "rgba(74,222,128,.24)"  },
+            { val: `${AGENT_KPIS.pipelinePct}%`,                             label: "Pipeline",   color: "#bfdbfe", bg: "rgba(147,197,253,.13)", bd: "rgba(147,197,253,.24)" },
+            { val: `${AGENT_KPIS.storesSubmitted}/${AGENT_KPIS.storesTotal}`,label: "Curated",    color: "#fde68a", bg: "rgba(251,191,36,.13)",  bd: "rgba(251,191,36,.24)"  },
+            { val: `${AGENT_SIGNALS.length}`,                                 label: "Signals",   color: "#fca5a5", bg: "rgba(248,113,113,.13)", bd: "rgba(248,113,113,.24)" },
+          ].map(({ val, label, color, bg, bd }) => (
+            <div key={label} style={{ background: bg, border: `1px solid ${bd}`, borderRadius: 8, padding: "6px 4px", textAlign: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color, letterSpacing: "-.01em" }}>{val}</div>
+              <div style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,.45)", textTransform: "uppercase", letterSpacing: ".04em", marginTop: 1 }}>{label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ══ SCROLLABLE BODY ════════════════════════════════════════════════════ */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 var(--sp-4) var(--sp-5)" }}>
+      {/* ══ SCROLLABLE BODY ════════════════════════════════════════════════ */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 11px 18px", background: "var(--color-surface-alt, #f8fafc)" }}>
 
-        {/* ── Active Signals ──────────────────────────────────────────────────── */}
-        <div style={{ marginBottom: "var(--sp-4)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--sp-2)" }}>
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: C.textSubtle }}>
-              Active Signals
-            </span>
-            <Badge variant="subtle" size="small" color="error" label={String(AGENT_SIGNALS.length)} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
-            {AGENT_SIGNALS.map((sig) => {
-              const s = SEV[sig.severity] || SEV.info;
-              return (
-                <Card
-                  key={sig.id}
-                  size="small"
-                  sx={{ borderLeft: `3px solid ${s.dot}`, cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "var(--sp-2)", padding: "var(--sp-2) var(--sp-3)" }}
-                  onClick={() => onAsk(sig.ask || sig.title)}
-                  tabIndex={0}
-                >
-                  <span style={{ fontSize: "var(--fs-body-lg)", flexShrink: 0, marginTop: 1 }}>{sig.icon}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "var(--fs-micro)", fontWeight: 700, color: C.text, marginBottom: 1 }}>{sig.title}</div>
-                    <div style={{ fontSize: "var(--fs-micro)", color: C.textMuted, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{sig.body}</div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--sp-1)", flexShrink: 0 }}>
-                    <span style={{ fontSize: "var(--fs-xs)", color: C.textSubtle, whiteSpace: "nowrap" }}>{sig.time}</span>
-                    <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: s.dot, whiteSpace: "nowrap" }}>Ask →</span>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+        {/* ── Pipeline ───────────────────────────────────────────────────── */}
+        <div style={{ marginBottom: 14 }}>
+          <SectionHeader
+            label="FW 2025 Pipeline"
+            right={<span style={{ fontSize: 11, color: "var(--cb-blue, #2563eb)", fontWeight: 600, cursor: "pointer" }} onClick={() => onAsk("Show the FW 2025 pipeline status")}>View all →</span>}
+          />
+          <Panel>
+            {/* Track */}
+            <div style={{ display: "flex", gap: 2, padding: "10px 10px 0" }}>
+              {PIPELINE_STEPS.map((s) => {
+                const done = s.status === "done";
+                const active = s.status === "active" || s.status === "partial";
+                return <div key={s.id} style={{ flex: 1, height: 5, borderRadius: 3, background: done ? "var(--color-success, #059669)" : active ? "var(--color-warning, #d97706)" : "var(--cb-border, #e8eaf0)" }} />;
+              })}
+            </div>
+            {/* Active steps only */}
+            <div style={{ padding: "8px 10px 0" }}>
+              {activePipeline.map((step, i) => (
+                <div key={step.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: i < activePipeline.length - 1 ? "1px solid var(--cb-border, #e8eaf0)" : "none" }}>
+                  <StepMark status={step.status} />
+                  <span style={{ flex: 1, fontSize: 11.5, fontWeight: step.status !== "done" ? 700 : 500, color: step.status !== "done" ? "var(--cb-text, #0f172a)" : "var(--cb-text-muted, #64748b)" }}>{step.label}</span>
+                  <span style={{ fontSize: 10.5, color: "var(--cb-text-subtle, #94a3b8)", whiteSpace: "nowrap" }}>{step.sub}</span>
+                </div>
+              ))}
+            </div>
+            {/* Footer */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px", borderTop: "1px solid var(--cb-border, #e8eaf0)", marginTop: 7, background: "var(--color-surface-alt, #f8fafc)" }}>
+              <span style={{ fontSize: 11, color: "var(--cb-text-muted, #64748b)" }}>{doneCount} of {PIPELINE_STEPS.length} phases complete</span>
+              <Badge variant="subtle" size="small" color="info" label={`${Math.round(doneCount / PIPELINE_STEPS.length * 100)}% done`} />
+            </div>
+          </Panel>
         </div>
 
-        {/* ── Suggested Questions ─────────────────────────────────────────────── */}
+        {/* ── Active Signals ─────────────────────────────────────────────── */}
+        <div style={{ marginBottom: 14 }}>
+          <SectionHeader
+            label="Active Signals"
+            right={<Badge variant="subtle" size="small" color="error" label={String(AGENT_SIGNALS.length)} />}
+          />
+          <Panel>
+            {AGENT_SIGNALS.map((sig, idx) => {
+              const s = SEV[sig.severity] || SEV.info;
+              return (
+                <div
+                  key={sig.id}
+                  style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderBottom: idx < AGENT_SIGNALS.length - 1 ? "1px solid var(--cb-border, #e8eaf0)" : "none", cursor: "pointer", transition: "background .1s" }}
+                  onClick={() => onAsk(sig.ask || sig.title)}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--cb-bg-sunken, #f1f5f9)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <IconBadge icon={sig.icon} severity={sig.severity} size={28} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--cb-text, #0f172a)", lineHeight: 1.3 }}>{sig.title}</div>
+                    <div style={{ fontSize: 10.5, color: "var(--cb-text-muted, #64748b)", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>{sig.body}</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, color: "var(--cb-text-subtle, #94a3b8)", whiteSpace: "nowrap" }}>{sig.time}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: s.dot }}>Ask</span>
+                      <ChevronRight size={11} color={s.dot} strokeWidth={2.5} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </Panel>
+        </div>
+
+        {/* ── Recent Activity ────────────────────────────────────────────── */}
+        <div style={{ marginBottom: 14 }}>
+          <SectionHeader
+            label="Recent Activity"
+            right={<span style={{ fontSize: 11, color: "var(--cb-blue, #2563eb)", fontWeight: 600, cursor: "pointer" }} onClick={() => onAsk("Show me the recent agent activity")}>View all →</span>}
+          />
+          <Panel>
+            {AUDIT_LOG.slice(0, 5).map((entry, idx) => {
+              const s = SEV[entry.severity] || SEV.info;
+              return (
+                <div
+                  key={entry.id}
+                  style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderBottom: idx < 4 ? "1px solid var(--cb-border, #e8eaf0)" : "none", cursor: "pointer", transition: "background .1s" }}
+                  onClick={() => onAsk("Show me the recent agent activity")}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--cb-bg-sunken, #f1f5f9)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <IconBadge icon={entry.icon} severity={entry.severity} size={24} />
+                  <div style={{ flex: 1, fontSize: 11, color: "var(--cb-text, #0f172a)", lineHeight: 1.35, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{entry.text}</div>
+                  <span style={{ fontSize: 10, color: "var(--cb-text-subtle, #94a3b8)", whiteSpace: "nowrap", flexShrink: 0 }}>{entry.time}</span>
+                </div>
+              );
+            })}
+          </Panel>
+        </div>
+
+        {/* ── Quick Questions ────────────────────────────────────────────── */}
         <div>
-          <div style={{ fontSize: "var(--fs-xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: C.textSubtle, marginBottom: "var(--sp-2)" }}>
-            Start with a question
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-2)" }}>
+          <SectionHeader label="Ask a question" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {SUGGESTED_QUESTIONS.flatMap((cat) =>
-              cat.questions.slice(0, 2).map((q, i) => {
-                const cs = CAT_STYLE[cat.category] || { color: C.blue, bg: C.blueSoft, border: C.blueLight };
+              cat.questions.slice(0, 1).map((q, i) => {
+                const cs = CAT_STYLE[cat.category] || { color: C.blue, bg: C.blueSoft };
                 return (
-                  <Card
+                  <div
                     key={`${cat.category}-${i}`}
-                    size="small"
-                    sx={{ cursor: "pointer", padding: "var(--sp-2) var(--sp-3)" }}
+                    style={{ background: "#fff", border: "1px solid var(--cb-border, #e8eaf0)", borderRadius: 10, padding: "9px 10px", cursor: "pointer", transition: "transform .15s, box-shadow .15s" }}
                     onClick={() => onAsk(q)}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,.1)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
                     tabIndex={0}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)", color: cs.color, marginBottom: "var(--sp-1)" }}>
-                      {CAT_ICON[cat.category]}
-                      <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".07em" }}>{cat.category}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, color: cs.color, marginBottom: 4 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 6, background: cs.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>{CAT_ICON[cat.category]}</div>
+                      <span style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".07em" }}>{cat.category}</span>
                     </div>
-                    <span style={{ fontSize: "var(--fs-micro)", fontWeight: 500, color: C.text, lineHeight: 1.4 }}>{q}</span>
-                  </Card>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: "var(--cb-text, #0f172a)", lineHeight: 1.4, display: "-webkit-box", overflow: "hidden", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{q}</span>
+                  </div>
                 );
               })
             )}

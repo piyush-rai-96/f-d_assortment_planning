@@ -78,6 +78,7 @@ export const SUGGESTED_QUESTIONS = [
       "Show the FW 2025 pipeline status",
       "Which regions are behind on regional review?",
       "Show me the latest market intel signals",
+      "Show me the recent agent activity",
     ],
   },
 ];
