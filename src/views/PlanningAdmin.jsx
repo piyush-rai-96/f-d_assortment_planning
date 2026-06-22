@@ -105,7 +105,7 @@ export default function PlanningAdmin() {
 
   /* ── Scope wizard ─────────────────────────────────────────────────────── */
   const [scopeConfirmed, setScopeConfirmed] = useState(() => {
-    try { return localStorage.getItem("pa_scope_confirmed") === "1"; } catch { return false; }
+    try { return localStorage.getItem("pa_scope_confirmed") !== "0"; } catch { return true; }
   });
   const [scopeStep, setScopeStep] = useState(0);
   const [scopeDepts, setScopeDepts] = useState(["Wood", "Tile", "Laminate & Vinyl"]);
@@ -828,7 +828,7 @@ export default function PlanningAdmin() {
           </Stack>
           <Stack direction="row" gap={2} align="center">
             <Badge variant="subtle" size="small" color="warning" label="● Source system — read only" />
-            <Button variant="tertiary" size="small" onClick={() => { setScopeConfirmed(false); setScopeStep(0); try { localStorage.removeItem("pa_scope_confirmed"); } catch {} }}>
+            <Button variant="tertiary" size="small" onClick={() => { setScopeConfirmed(false); setScopeStep(0); try { localStorage.setItem("pa_scope_confirmed", "0"); } catch {} }}>
               Reset scope
             </Button>
           </Stack>

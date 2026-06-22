@@ -30,7 +30,7 @@ const STAGES = [
       ? "Setup complete. Cluster B accepted, assortment period defined."
       : "Go to Location Clustering to accept a scenario before curation can begin.",
     actions: [
-      { l: "PLR Calendar",         mod: "periods"    },
+      { l: "Define Assort Period",  mod: "assort-periods" },
       { l: "Market Intelligence",  mod: "intel"      },
       { l: "Location Clustering",  mod: "clustering" },
     ],
