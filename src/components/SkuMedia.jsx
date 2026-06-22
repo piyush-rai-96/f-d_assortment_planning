@@ -230,7 +230,7 @@ function Sku3D({ sku, vis, rot, dragging, onPointerDown }) {
             transform: `translateZ(${half(d)}px)`,
           })}
         >
-          <SkuSwatch sku={sku} size={w} />
+          <SkuSwatch sku={sku} size={w} disablePreview />
         </div>
         {/* Back */}
         <div
@@ -242,7 +242,7 @@ function Sku3D({ sku, vis, rot, dragging, onPointerDown }) {
             transform: `rotateY(180deg) translateZ(${half(d)}px)`,
           })}
         >
-          <SkuSwatch sku={sku} size={w} />
+          <SkuSwatch sku={sku} size={w} disablePreview />
         </div>
         {/* Right */}
         <div
@@ -499,7 +499,7 @@ export default function SkuMedia({ sku, size = 40 }) {
       >
         <div className="media-pop-head">
           <div className="media-pop-title">
-            <SkuSwatch sku={sku} size={22} />
+            <SkuSwatch sku={sku} size={22} disablePreview />
             <div className="media-pop-titletext">
               <span className="media-pop-name">{vis.label}</span>
               {skuId != null && <span className="media-pop-sku">SKU {skuId}</span>}
@@ -617,7 +617,7 @@ export default function SkuMedia({ sku, size = 40 }) {
         aria-label={`${vis.label} — open product imagery`}
         aria-expanded={open}
       >
-        <SkuSwatch sku={sku} size={size} />
+        <SkuSwatch sku={sku} size={size} disablePreview />
         <span className="media-thumb-hint" aria-hidden="true">
           {pinned ? "×" : "⤢"}
         </span>

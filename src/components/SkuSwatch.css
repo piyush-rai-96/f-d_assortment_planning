@@ -1,0 +1,61 @@
+/* ───────────────────────────────────────────────────────────────────────────
+ * SkuSwatch — real product image thumbnail + floating hover-focus preview.
+ * The preview is portalled to <body> so it escapes table/list overflow.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+.sku-swatch-img-wrap {
+  display: inline-flex;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.sku-swatch-img {
+  border-radius: 4px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: zoom-in;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+.sku-swatch-img-wrap:hover .sku-swatch-img {
+  transform: scale(1.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(10, 22, 64, 0.18);
+}
+
+/* Floating focused preview */
+.sku-hover-preview {
+  position: fixed;
+  z-index: 4000;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  box-shadow: var(--sh-lg);
+  overflow: hidden;
+  pointer-events: none;
+  animation: sku-hover-in 0.14s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.sku-hover-preview-img {
+  display: block;
+  width: 100%;
+  height: 248px;
+  object-fit: cover;
+  background: var(--color-surface-alt);
+}
+
+.sku-hover-preview-cap {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-strong);
+  border-top: 1px solid var(--color-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes sku-hover-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}

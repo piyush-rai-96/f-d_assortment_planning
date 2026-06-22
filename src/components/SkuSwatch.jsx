@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { SKU_IMAGE_MAP } from "../data/skuImageMap";
+import "./SkuSwatch.css";
 
 /*
  * SkuSwatch — a small product thumbnail for a SKU.
@@ -226,30 +228,91 @@ export function getSkuVisual({ sku, desc, dept, color } = {}) {
   return { dpt, look, baseColor, finishMeta, deptDot, gloss, label, text };
 }
 
-export default function SkuSwatch({ sku, desc, dept, color, size = 32 }) {
+/* ── Floating hover preview ───────────────────────────────────────────────
+ * When a SKU has a real product photo, hovering its thumbnail shows a larger
+ * focused preview of that same photo, portalled to <body> so it escapes any
+ * table/list overflow clipping. Disabled inside SkuMedia (which has its own
+ * rich popover) via the `disablePreview` prop. */
+const PREVIEW_W = 248;
+const PREVIEW_H = 288;
+const PREVIEW_MARGIN = 12;
+
+function RealImageSwatch({ src, label, size, disablePreview }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const ref = useRef(null);
+
+  const show = useCallback(() => {
+    if (disablePreview) return;
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    let left = r.right + PREVIEW_MARGIN;
+    if (left + PREVIEW_W > window.innerWidth - PREVIEW_MARGIN) {
+      left = r.left - PREVIEW_W - PREVIEW_MARGIN;
+    }
+    if (left < PREVIEW_MARGIN) {
+      left = Math.max(PREVIEW_MARGIN, (window.innerWidth - PREVIEW_W) / 2);
+    }
+    let top = r.top + r.height / 2 - PREVIEW_H / 2;
+    top = Math.min(Math.max(PREVIEW_MARGIN, top), window.innerHeight - PREVIEW_H - PREVIEW_MARGIN);
+    setPos({ left, top });
+    setOpen(true);
+  }, [disablePreview]);
+
+  const hide = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  return (
+    <span
+      ref={ref}
+      className="sku-swatch-img-wrap"
+      onMouseEnter={show}
+      onMouseLeave={hide}
+    >
+      <img
+        src={src}
+        alt={label || "SKU"}
+        width={size}
+        height={size}
+        className="sku-swatch-img"
+        style={{ width: size, height: size }}
+        loading="lazy"
+      />
+      {open && pos && createPortal(
+        <div className="sku-hover-preview" style={{ left: pos.left, top: pos.top, width: PREVIEW_W }}>
+          <img src={src} alt={label || "SKU"} className="sku-hover-preview-img" />
+          {label && <div className="sku-hover-preview-cap">{label}</div>}
+        </div>,
+        document.body
+      )}
+    </span>
+  );
+}
+
+export default function SkuSwatch({ sku, desc, dept, color, size = 32, disablePreview = false }) {
   const hasInput = !!(sku || desc || dept || color);
   if (!hasInput) return null;
 
   /* Use real product image when available */
   const imgSrc = sku?.sku ? SKU_IMAGE_MAP[sku.sku] : null;
   if (imgSrc) {
-    const borderRadius = 4;
     return (
-      <img
+      <RealImageSwatch
         src={imgSrc}
-        alt={sku.desc || "SKU"}
-        width={size}
-        height={size}
-        style={{
-          width: size,
-          height: size,
-          borderRadius,
-          objectFit: "cover",
-          flexShrink: 0,
-          display: "block",
-          border: "1px solid rgba(0,0,0,.10)",
-        }}
-        loading="lazy"
+        label={sku.desc || ""}
+        size={size}
+        disablePreview={disablePreview}
       />
     );
   }
