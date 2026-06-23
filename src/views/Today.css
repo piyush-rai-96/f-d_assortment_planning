@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   Today Dashboard — v6 layout (premium edition)
+   Today Dashboard
    All values use design tokens. Impact UI Card / Badge / Button components
    are used for all interactive panels. Raw divs are only for layout shell.
    ────────────────────────────────────────────────────────────────────────── */
@@ -12,9 +12,8 @@
   gap: var(--sp-4);
 }
 
-/* ── 1. Page header — notification widget (Card handles the container) ───── */
+/* ── 1. Page header — notification widget ─────────────────────────────────── */
 
-/* Notification widget — displayed inside the light page-header Card */
 .today-hero-notifs {
   background: var(--color-primary-tint-12);
   border: 1px solid var(--color-primary-tint-28);
@@ -25,13 +24,10 @@
   cursor: pointer;
   transition: opacity 0.15s, background 0.15s;
   flex-shrink: 0;
-  /* reset button defaults */
   font-family: inherit;
   color: inherit;
 }
-.today-hero-notifs:hover {
-  background: var(--color-primary-tint-20);
-}
+.today-hero-notifs:hover { background: var(--color-primary-tint-20); }
 
 .today-hero-notifs-count {
   font-size: var(--fs-kpi);
@@ -40,12 +36,49 @@
   line-height: 1;
   margin-bottom: var(--sp-1);
 }
+.today-hero-notifs-label { color: var(--color-text-subtle); }
 
-.today-hero-notifs-label {
-  color: var(--color-text-subtle);
+/* ── Agent-active pill ────────────────────────────────────────────────────── */
+.today-agent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--color-primary-tint-12);
+  border: 1px solid var(--color-primary-tint-28);
+  border-radius: 100px;
+  padding: 3px 10px 3px 6px;
+  cursor: default;
+  flex-shrink: 0;
+}
+.today-agent-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: pulse-dot 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+.today-agent-pill-text {
+  font-size: var(--fs-xs, 11px);
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: 0.01em;
+}
+.today-agent-pill-badge {
+  background: var(--color-error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 100px;
+  padding: 1px 5px;
+  line-height: 1.4;
 }
 
-/* ── 2. Quick-stat strip ─────────────────────────────────────────────────── */
+/* ── 2. Quick-stat strip ──────────────────────────────────────────────────── */
 .today-stat-strip {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -64,7 +97,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  /* reset button defaults */
   background: transparent;
   border-top: none;
   border-bottom: none;
@@ -74,11 +106,8 @@
   color: inherit;
 }
 .today-stat-cell:last-child { border-right: none; }
-.today-stat-cell:hover {
-  background: var(--stat-bg, var(--color-surface-alt));
-}
+.today-stat-cell:hover { background: var(--stat-bg, var(--color-surface-alt)); }
 
-/* Icon wrapped in a soft tinted pill */
 .today-stat-icon-wrap {
   width: 36px;
   height: 36px;
@@ -86,99 +115,207 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   flex-shrink: 0;
 }
-
 .today-stat-val {
   font-size: var(--fs-kpi);
   font-weight: var(--fw-bold);
   line-height: 1;
 }
+.today-stat-label { color: var(--color-text-subtle); }
 
-.today-stat-label {
-  /* typography handled by <Text variant="overline"> */
-  color: var(--color-text-subtle);
-}
-
-/* ── 3. Cluster model panel ──────────────────────────────────────────────── */
-.today-cluster-panel {
-  padding: var(--sp-4) var(--sp-5);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface-sunken);
-  flex-shrink: 0;
-}
-
-.today-cluster-empty-icon {
-  font-size: 20px;
-  color: var(--color-text-subtle);
-  flex-shrink: 0;
-}
-
-/* Cluster cards grid */
-.today-cluster-cards {
+/* ── 3. Main 3×2 grid ────────────────────────────────────────────────────── */
+.today-main-grid {
   display: grid;
-  gap: var(--sp-3);
-}
-
-.today-cluster-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--sp-4);
   flex-shrink: 0;
 }
 
-.today-cluster-label {
-  /* font-size + color handled by <Text variant="caption"> */
+/* All grid cells get a consistent min-height */
+.today-grid-card {
+  min-height: 200px;
+}
+.today-grid-card:hover {
+  border-color: var(--color-primary-tint-28) !important;
+  box-shadow: 0 4px 16px var(--color-primary-tint-12) !important;
+}
+
+/* ── Curation decisions tiles ─────────────────────────────────────────────── */
+.today-dec-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+.today-dec-tile {
+  background: var(--color-surface-alt);
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-1);
+  text-align: center;
+}
+.today-dec-tile-val {
+  font-size: var(--fs-lg, 18px);
   font-weight: var(--fw-bold);
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+.today-dec-tile-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.today-cluster-meta {
-  /* font-size + color handled by <Text variant="micro" tone="subtle"> */
-  line-height: 1.4;
+/* ── Segmented progress bar ───────────────────────────────────────────────── */
+.today-seg-bar {
+  display: flex;
+  gap: 2px;
+  border-radius: var(--r-xs);
+  overflow: hidden;
+  height: 8px;
+}
+.today-seg-bar-seg {
+  border-radius: 0;
+  height: 100%;
+  transition: flex 0.3s ease;
 }
 
-.today-cluster-signal {
-  /* font-size + color handled by <Text variant="micro" tone="muted"> */
-  margin-top: var(--sp-2);
-  font-style: italic;
+/* ── Agent awaiting list ──────────────────────────────────────────────────── */
+.today-awaiting-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.today-awaiting-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2);
+  border-radius: var(--r);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.today-awaiting-row:hover { background: var(--color-surface-alt); }
+
+.today-awaiting-title {
+  font-size: var(--fs-sm, 12px);
+  font-weight: 600;
+  color: var(--color-text-strong);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.today-awaiting-sub {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Cluster card hover */
-.today-cluster-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sh) !important;
+/* ── Range performance 2×2 ───────────────────────────────────────────────── */
+.today-metric-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+.today-metric-tile {
+  border-radius: var(--r);
+  padding: var(--sp-3) var(--sp-2);
+}
+.today-metric-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.today-metric-val {
+  font-size: var(--fs-lg, 18px);
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  margin: var(--sp-1) 0 2px;
+}
+.today-metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
+/* ── NPI Exposure card ────────────────────────────────────────────────────── */
+.today-npi-total {
+  font-size: var(--fs-kpi);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+.today-npi-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.today-npi-tier-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.today-npi-tier-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  width: 60px;
+  flex-shrink: 0;
+}
+.today-npi-tier-bar-wrap {
+  flex: 1;
+  height: 5px;
+  background: var(--color-border);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.today-npi-tier-bar {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+.today-npi-tier-count {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 100px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
 
-/* ── Section divider ─────────────────────────────────────────────────────── */
+/* ── Section divider ──────────────────────────────────────────────────────── */
 .today-section-divider {
   height: 1px;
   background: var(--color-border);
   margin: var(--sp-4) 0 var(--sp-3);
 }
 
-/* ── 4. Two-column body ──────────────────────────────────────────────────── */
-.today-body {
+/* ── 4. Bottom row: Quick access + Intel ──────────────────────────────────── */
+.today-bottom-row {
   display: grid;
-  grid-template-columns: 1fr var(--sidebar-col-w);
+  grid-template-columns: 1fr 1fr;
   gap: var(--sp-5);
-  padding: var(--sp-6);
-  flex: 1;
-  min-height: 0;
-  align-items: start;
+  padding-bottom: var(--sp-6);
 }
-
-.today-focus-col,
-.today-right-col {
+.today-bottom-left,
+.today-bottom-right {
   display: flex;
   flex-direction: column;
 }
 
 /* ── Plan cards ──────────────────────────────────────────────────────────── */
-.today-plan-card {
-  margin-bottom: var(--sp-3) !important;
-}
 .today-plan-card:hover {
   border-color: var(--color-primary) !important;
   box-shadow: 0 4px 16px var(--color-primary-tint-12) !important;
@@ -188,9 +325,8 @@
 .today-plan-pipe {
   display: flex;
   gap: var(--sp-1);
-  margin: var(--sp-3) 0 var(--sp-2);
+  margin: var(--sp-2) 0 var(--sp-2);
 }
-
 .today-plan-pipe-seg {
   flex: 1;
   height: 4px;
@@ -198,64 +334,46 @@
   transition: background 0.2s;
 }
 
-/* ── PLR cards hover ─────────────────────────────────────────────────────── */
+/* ── PLR cards hover ────────────────────────────────────────────────────────*/
 .today-plr-card:hover {
   border-color: var(--color-teal) !important;
-  box-shadow: 0 2px 8px var(--color-teal-tint-15) !important;
+  box-shadow: 0 2px 8px var(--color-teal-tint-15, rgba(0,150,136,0.15)) !important;
 }
 
-/* ── Quick access grid ───────────────────────────────────────────────────── */
+/* ── Quick access grid ────────────────────────────────────────────────────── */
 .today-quick-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-1);
 }
-
 .today-quick-card:hover {
   transform: translateY(-2px) !important;
   box-shadow: var(--sh) !important;
   border-color: var(--color-border) !important;
 }
+.today-quick-icon { flex-shrink: 0; }
 
-.today-quick-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-/* ── Intel signal cards ──────────────────────────────────────────────────── */
+/* ── Intel signal cards ───────────────────────────────────────────────────── */
 .today-intel-card:hover {
   box-shadow: 0 2px 10px var(--color-text-tint-10) !important;
 }
 
-.today-intel-meta { display: block; }
-
-
 /* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .today-main-grid { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 900px) {
-  .today-hero {
-    padding: var(--sp-6) var(--sp-5) var(--sp-5);
-    flex-wrap: wrap;
-  }
-  .today-hero-notifs { min-width: 110px; }
   .today-stat-strip { grid-template-columns: repeat(3, 1fr); }
   .today-stat-cell:nth-child(4),
   .today-stat-cell:nth-child(5) { border-top: 1px solid var(--color-border); }
-  .today-body {
-    grid-template-columns: 1fr;
-    padding: var(--sp-4);
-    gap: var(--sp-4);
-  }
-  .today-right-col {
-    border-top: 1px solid var(--color-border);
-    padding-top: var(--sp-5);
-  }
-  .today-cluster-panel { padding: var(--sp-3) var(--sp-4); }
+  .today-main-grid { grid-template-columns: 1fr; }
+  .today-bottom-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
-  .today-cluster-cards { grid-template-columns: 1fr 1fr !important; }
   .today-stat-strip { grid-template-columns: 1fr 1fr; }
   .today-stat-cell:last-child { grid-column: span 2; border-right: none; }
+  .today-dec-tiles { grid-template-columns: repeat(2, 1fr); }
+  .today-quick-grid { grid-template-columns: 1fr; }
 }

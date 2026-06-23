@@ -107,6 +107,24 @@ export const RECENT_ACTIVITY = [
   { time: "Yesterday",icon: "🏪", text: "Cluster CR-018 promoted to live — SS 2026 ready",  severity: "success", mod: "clustering" },
 ];
 
+/* National keep/add/drop/pending counts — used by CurationDecisionsCard */
+export const CURATION_DECISIONS = {
+  keep: 18, add: 7, drop: 4, pending: 6,
+  total: 35,
+};
+
+/* R13 range performance KPIs — used by RangePerformanceCard */
+export const RANGE_PERFORMANCE = {
+  salesDollars: "$2.4M",
+  gmPct:        46,
+  units:        "38.2K",
+  sellThruPct:  71,
+  gmTrend:      "+2pp",
+  salesTrend:   "+8%",
+  unitsTrend:   "+5%",
+  stTrend:      "+3pp",
+};
+
 export const QUICK_ACTIONS = [
   { icon: "🤖", label: "Run agent",      sub: "Catalogue step",     mod: "catalogue" },
   { icon: "🔒", label: "National Core",  sub: "Review recs",        mod: "national" },
