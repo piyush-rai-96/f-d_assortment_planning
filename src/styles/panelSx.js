@@ -14,8 +14,9 @@ export const panelSx = {
   padding: "var(--sp-4)",
   border: "1px solid var(--color-border)",
   borderRadius: "var(--r)",
-  boxShadow: "var(--sh)",
+  boxShadow: "var(--sh-card, var(--sh))",
   background: "var(--color-surface)",
+  transition: "box-shadow var(--transition-fast, 150ms), transform var(--transition-fast, 150ms)",
 };
 
 /** Sunken variant: no shadow, surface-alt background */
@@ -29,4 +30,22 @@ export const softSx = {
 export const compactSx = {
   ...panelSx,
   padding: "var(--sp-3)",
+};
+
+/** Elevated variant: stronger shadow with hover lift */
+export const elevatedSx = {
+  ...panelSx,
+  boxShadow: "var(--sh-hover, var(--sh))",
+};
+
+/** Hero dark card */
+export const heroSx = {
+  maxWidth: "none",
+  minHeight: "auto",
+  width: "100%",
+  padding: 0,
+  border: "none",
+  borderRadius: "var(--r)",
+  boxShadow: "var(--sh-pop, var(--sh))",
+  overflow: "hidden",
 };

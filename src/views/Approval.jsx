@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Card, Badge, Button } from "impact-ui";
 import {
   BarChart3, Package, Layers, TrendingDown, Send, Eye,
-  ChevronDown, ChevronUp, ChevronRight, ArrowLeft,
+  ChevronDown, ChevronUp, ChevronRight, ArrowLeft, ChevronLeft,
   CheckCircle2, Bot, Plus, RefreshCw, Sparkles,
   TreePine, Grid2x2, Mountain, Star, CheckCheck,
   Lock, ArrowRight,
@@ -87,17 +87,35 @@ const STAGES = [
     sub: "National → cluster → store three-tier cascade",
     Icon: Layers,
     doneFn: (p) => p.stagesCompleted?.includes("curation"),
-    metrics: (p) => [
-      { l: "National decisions", v: `${p.kpis.coreCount} / ${p.kpis.skus} done`,                         ok: p.stagesCompleted?.includes("national")  },
-      { l: "Cluster decisions",  v: p.stagesCompleted?.includes("regional") ? "All resolved" : "Pending", ok: p.stagesCompleted?.includes("regional")  },
-      { l: "National OTB",       v: `$${p.kpis.coreCount * 11}k / $${Math.round(p.kpis.skus * 12)}k`,    ok: true                                     },
-      { l: "Keeps",              v: `${p.kpis.coreCount} national`,                                        ok: true                                     },
-    ],
-    agentFn: (st, p) => st === "done"
-      ? "All curation decisions finalised. Range locked for NPI planning."
-      : p.stagesCompleted?.includes("national")
-        ? "National Core done. Complete Regional Review and Store Curation to finish this stage."
-        : "Review SKU decisions in National Core, then Regional Review and Store Curation.",
+    metrics: (p) => {
+      const calc     = p.optionCalc;
+      const natTgt   = calc?.national  ?? p.kpis.coreCount;
+      const regTgt   = calc?.regional  ?? p.kpis.regional  ?? Math.round((calc?.total ?? p.kpis.skus) * 0.3);
+      const stoTgt   = calc?.store     ?? p.kpis.store     ?? Math.round((calc?.total ?? p.kpis.skus) * 0.25);
+      const total    = natTgt + regTgt + stoTgt;
+      const natDone  = p.stagesCompleted?.includes("national");
+      const regDone  = p.stagesCompleted?.includes("regional");
+      const natActual = natDone ? natTgt : Math.round(natTgt * 0.75);
+      const regActual = regDone ? regTgt : 0;
+      return [
+        { l: "National core",      v: `${natDone ? natTgt : natActual} / ${natTgt} options`,  ok: natDone  },
+        { l: "Regional / cluster", v: `${regDone ? regTgt : regActual} / ${regTgt} options`,  ok: regDone  },
+        { l: "Store curated",      v: `0 / ${stoTgt} options`,                                ok: false    },
+        { l: "Total options",      v: `${total} (= ${natTgt} + ${regTgt} + ${stoTgt})`,       ok: !!calc   },
+      ];
+    },
+    agentFn: (st, p) => {
+      const calc   = p?.optionCalc;
+      const natTgt = calc?.national ?? p?.kpis?.coreCount ?? "—";
+      const regTgt = calc?.regional ?? p?.kpis?.regional  ?? "—";
+      const stoTgt = calc?.store    ?? p?.kpis?.store     ?? "—";
+      const total  = calc?.total    ?? p?.kpis?.skus      ?? "—";
+      if (st === "done")
+        return `All curation decisions finalised. Range locked — ${total} options (National ${natTgt} · Cluster ${regTgt} · Store ${stoTgt}).`;
+      if (p?.stagesCompleted?.includes("national"))
+        return `National Core complete (${natTgt} options). Complete Regional Review (${regTgt}) and Store Curation (${stoTgt}) to finish.`;
+      return `Three-tier cascade: National target ${natTgt} options · Cluster target ${regTgt} · Store target ${stoTgt} · Total ${total}.`;
+    },
     actions: [
       { l: "National Core",   mod: "national"       },
       { l: "Regional Review", mod: "regional"       },
@@ -128,12 +146,15 @@ const STAGES = [
     Icon: Send,
     doneFn: (p) => p.stagesCompleted?.includes("approval"),
     metrics: (p) => {
-      const pub = p.stagesCompleted?.includes("approval");
+      const pub   = p.stagesCompleted?.includes("approval");
+      const calc  = p.optionCalc;
+      const total = calc?.total ?? p.kpis.skus;
+      const nat   = calc?.national ?? p.kpis.coreCount;
       return [
-        { l: "Status",           v: pub ? "Published" : "Pending approval",         ok: pub  },
-        { l: "Total SKUs",       v: `${p.kpis.skus} in range`,                      ok: true },
-        { l: "Net range change", v: `+${Math.round(p.kpis.skus * 0.15) - 3} SKUs`,  ok: true },
-        { l: "OTB committed",    v: `$${p.kpis.coreCount * 11}k`,                   ok: true },
+        { l: "Status",           v: pub ? "Published" : "Pending approval",            ok: pub  },
+        { l: "Total options",    v: `${total} (N ${nat} · R ${calc?.regional ?? "—"} · S ${calc?.store ?? "—"})`, ok: !!calc },
+        { l: "Net range change", v: `+${Math.round(total * 0.15) - 3} options`,         ok: true },
+        { l: "OTB committed",    v: `$${nat * 11}k`,                                    ok: true },
       ];
     },
     agentFn: (st) => st === "done"
@@ -260,12 +281,91 @@ function useHindsightData(dept) {
   }, [dept]);
 }
 
+/* ─── Curation Tier Panel ─────────────────────────────────────────────────── */
+function CurationTierPanel({ plan }) {
+  const calc = plan?.optionCalc;
+  if (!calc) return null;
+
+  const tiers = [
+    { key: "national", label: "National core",      n: calc.national, color: "#059669", soft: "rgba(5,150,105,.08)",  border: "rgba(5,150,105,.2)",  desc: "Same options across all stores" },
+    { key: "regional", label: "Regional / cluster", n: calc.regional, color: "#2563EB", soft: "rgba(37,99,235,.08)",  border: "rgba(37,99,235,.2)",  desc: "Varies by cluster group"        },
+    { key: "store",    label: "Store curated",       n: calc.store,    color: "#D97706", soft: "rgba(217,119,6,.08)",  border: "rgba(217,119,6,.2)",  desc: "Store-level buyer picks"        },
+  ];
+  const total = calc.national + calc.regional + calc.store;
+
+  return (
+    <div className="plr-curation-panel">
+      {/* Three-tier totals */}
+      <div className="plr-tier-strip">
+        {tiers.map((t) => {
+          const pct = total > 0 ? Math.round(t.n / total * 100) : 0;
+          return (
+            <div key={t.key} className="plr-tier-box"
+              style={{ background: t.soft, borderColor: t.border }}>
+              <div className="plr-tier-label" style={{ color: t.color }}>{t.label}</div>
+              <div className="plr-tier-count" style={{ color: t.color }}>{t.n}</div>
+              <div className="plr-tier-pct" style={{ color: t.color }}>{pct}% of {total}</div>
+              <div className="plr-tier-desc">{t.desc}</div>
+            </div>
+          );
+        })}
+        {/* Total pill */}
+        <div className="plr-tier-total-pill">
+          <span className="plr-tier-total-n">{total}</span>
+          <span className="plr-tier-total-lbl">Total<br/>options</span>
+          <div className="plr-tier-bar-mini">
+            {tiers.map((t) => (
+              <div key={t.key} style={{
+                flex: t.n, background: t.color, height: "100%",
+                borderRadius: "2px", minWidth: t.n > 0 ? 2 : 0,
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Per-cluster breakdown */}
+      {calc.clusterBreakdown?.length > 0 && (
+        <div className="plr-clust-breakdown">
+          <div className="plr-clust-bk-title">Option count per cluster</div>
+          <div className="plr-clust-bk-head">
+            <span>Cluster</span>
+            <span className="plr-clust-bk-r">Stores</span>
+            <span className="plr-clust-bk-r" style={{ color: "#059669" }}>National</span>
+            <span className="plr-clust-bk-r" style={{ color: "#2563EB" }}>Regional</span>
+            <span className="plr-clust-bk-r" style={{ color: "#D97706" }}>Store</span>
+            <span className="plr-clust-bk-r">Total</span>
+          </div>
+          {calc.clusterBreakdown.map((row, ci) => {
+            const clColors = ["#2d6a2d","#2563eb","#7c3aed","#d97706"];
+            const cc = clColors[ci % clColors.length];
+            const rowTotal = (row.national ?? 0) + (row.regional ?? 0) + (row.store ?? 0);
+            return (
+              <div key={row.id} className="plr-clust-bk-row">
+                <span className="plr-clust-bk-label">
+                  <span className="plr-cl-dot" style={{ background: cc }} />{row.label}
+                </span>
+                <span className="plr-clust-bk-r plr-clust-bk-muted">{row.stores}</span>
+                <span className="plr-clust-bk-r" style={{ color: "#059669", fontWeight: 700 }}>{row.national ?? Math.round(calc.national / calc.clusterBreakdown.length)}</span>
+                <span className="plr-clust-bk-r" style={{ color: "#2563EB", fontWeight: 700 }}>{row.regional ?? Math.round(calc.regional / calc.clusterBreakdown.length)}</span>
+                <span className="plr-clust-bk-r" style={{ color: "#D97706", fontWeight: 700 }}>{row.store ?? Math.round(calc.store / calc.clusterBreakdown.length)}</span>
+                <span className="plr-clust-bk-r" style={{ fontWeight: 700 }}>{rowTotal || (row.opts ?? row.options)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Stage Card ──────────────────────────────────────────────────────────── */
 function StageCard({
   stage, plan, st, isExpanded, onToggle,
   onNavigate, onMarkDone, onReopen, onPublish,
   onRerun, isRerunning,
   s1SubStep, onS1SubStep, onOptionRec,
+  onPrevStage, onNextStage, hasPrev, hasNext, nextStageName,
 }) {
   const isDone    = st === "done";
   const isBlocked = st === "blocked";
@@ -435,7 +535,22 @@ function StageCard({
 
           /* ── Options sub-step (setup only) ─────────────────────────── */
           ) : isSetup && s1SubStep === "options" ? (
-            <OptionsPanel plan={plan} onOptionRec={onOptionRec} />
+            <>
+              <OptionsPanel plan={plan} onOptionRec={onOptionRec} />
+              {/* Stage nav at bottom of options sub-step */}
+              <div className="plr-stage-nav-footer">
+                <button type="button" className="plr-stage-nav-btn prev"
+                  onClick={() => onS1SubStep("hindsight")}>
+                  <ChevronLeft size={13} /> Hindsight Review
+                </button>
+                {hasNext && (
+                  <button type="button" className={`plr-stage-nav-btn next${isDone ? " done" : ""}`}
+                    onClick={onNextStage}>
+                    {nextStageName} <ChevronRight size={13} />
+                  </button>
+                )}
+              </div>
+            </>
 
           ) : (
             /* ── Default stage body (agent + metrics + actions) ─────────── */
@@ -456,6 +571,9 @@ function StageCard({
                   </button>
                 )}
               </div>
+
+              {/* Curation tier breakdown (only for stage 3) */}
+              {stage.key === "curation" && <CurationTierPanel plan={plan} />}
 
               {/* 4-col metric tiles */}
               <div className="plr-metric-grid">
@@ -509,6 +627,23 @@ function StageCard({
                   )
                 )}
               </div>
+
+              {/* ── Stage-to-stage navigation footer ─────────────────────── */}
+              {(hasPrev || (hasNext && !isLocked)) && (
+                <div className="plr-stage-nav-footer">
+                  {hasPrev && (
+                    <button type="button" className="plr-stage-nav-btn prev" onClick={onPrevStage}>
+                      <ChevronLeft size={13} /> Previous stage
+                    </button>
+                  )}
+                  {hasNext && !isLocked && (
+                    <button type="button" className={`plr-stage-nav-btn next${isDone ? " done" : ""}`}
+                      onClick={onNextStage}>
+                      {nextStageName || "Next stage"} <ChevronRight size={13} />
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -624,6 +759,72 @@ function OptionsPanel({ plan, onOptionRec }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Wizard Footer ───────────────────────────────────────────────────────── */
+function WizardFooter({
+  step, totalSteps,
+  onBack, backLabel = "Back",
+  onNext, nextLabel = "Continue", nextDisabled = false,
+  onConfirm, confirmLabel = "Create PLR", confirmDisabled = false,
+  onCancel,
+}) {
+  const isFirst = step === 1;
+  const isLast  = step === totalSteps;
+  return (
+    <div className="plr-wiz-footer">
+      <div className="plr-wiz-footer-left">
+        {!isFirst && (
+          <Button variant="secondary" size="medium" onClick={onBack}>
+            <ChevronLeft size={14} style={{ marginRight: 4 }} />{backLabel}
+          </Button>
+        )}
+        {isFirst && onCancel && (
+          <Button variant="ghost" size="medium" onClick={onCancel}
+            sx={{ color: "var(--color-text-muted)" }}>
+            Cancel
+          </Button>
+        )}
+      </div>
+
+      <div className="plr-wiz-footer-steps">
+        {Array.from({ length: totalSteps }, (_, i) => (
+          <span
+            key={i}
+            className={`plr-wiz-footer-dot${i + 1 === step ? " active" : i + 1 < step ? " done" : ""}`}
+          />
+        ))}
+      </div>
+
+      <div className="plr-wiz-footer-right">
+        {isLast ? (
+          <>
+            {onCancel && (
+              <Button variant="ghost" size="medium" onClick={onCancel}
+                sx={{ color: "var(--color-text-muted)", marginRight: 8 }}>
+                Cancel
+              </Button>
+            )}
+            <Button
+              variant="primary" size="medium"
+              disabled={confirmDisabled}
+              onClick={onConfirm}
+            >
+              <CheckCheck size={14} style={{ marginRight: 6 }} />{confirmLabel}
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="primary" size="medium"
+            disabled={nextDisabled}
+            onClick={onNext}
+          >
+            {nextLabel}<ArrowRight size={14} style={{ marginLeft: 6 }} />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -920,6 +1121,11 @@ function PLRDetail({
               s1SubStep={s1SubStep}
               onS1SubStep={setS1SubStep}
               onOptionRec={(id, calc) => handleOptionRec(id ?? activeVersion.id, calc)}
+              hasPrev={idx > 0}
+              hasNext={idx < STAGES.length - 1}
+              nextStageName={STAGES[idx + 1]?.label}
+              onPrevStage={() => setExpandedStage(stage.num - 1)}
+              onNextStage={() => setExpandedStage(stage.num + 1)}
             />
           ))}
         </div>
@@ -978,7 +1184,7 @@ export default function Approval({ onNavigate }) {
       dept: plrRow.dept, season: "SS 2026", status: "draft", mode: "gated",
       confidenceThreshold: 75, activeStage: "setup", stagesCompleted: [],
       clustIds: ["B1", "B2", "B3", "B4"],
-      kpis: { stores: 70, skus: 18, coreCount: 6, submittedPct: 0 },
+      kpis: { stores: 70, skus: 18, coreCount: 6, regional: 5, store: 4, submittedPct: 0 },
       notes: "", createdBy: "You",
       createdAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       updatedAt: "just now",
@@ -1038,9 +1244,11 @@ export default function Approval({ onNavigate }) {
       assortPeriodId: createWiz.assortPeriodId,
       optionCalc: createWiz.optionCalc,
       kpis: {
-        stores: 21,
-        skus: createWiz.optionCalc?.total || 20,
-        coreCount: Math.round((createWiz.optionCalc?.national || 8)),
+        stores:     21,
+        skus:       createWiz.optionCalc?.total    || 20,
+        coreCount:  Math.round(createWiz.optionCalc?.national || 8),
+        regional:   Math.round(createWiz.optionCalc?.regional || 6),
+        store:      Math.round(createWiz.optionCalc?.store    || 6),
         submittedPct: 0,
       },
       notes: "", createdBy: "You",
@@ -1105,7 +1313,7 @@ export default function Approval({ onNavigate }) {
                     key={name}
                     type="button"
                     className={`plr-dept-card${createWiz.dept === name ? " plr-dept-card--selected" : ""}`}
-                    onClick={() => setCreateWiz((prev) => ({ ...prev, dept: name, step: 2 }))}
+                    onClick={() => setCreateWiz((prev) => ({ ...prev, dept: name }))}
                   >
                     <div className="plr-dept-card-icon" style={{ background: color + "22", color }}>
                       <DIcon size={20} />
@@ -1114,20 +1322,24 @@ export default function Approval({ onNavigate }) {
                   </button>
                 ))}
               </div>
+              <WizardFooter
+                step={1} totalSteps={3}
+                onCancel={handleBack}
+                onNext={() => setCreateWiz((prev) => ({ ...prev, step: 2 }))}
+                nextLabel="Continue"
+                nextDisabled={!createWiz.dept}
+              />
             </>
           )}
 
           {/* ── Step 2: Assortment Period ─────────────────────────────────── */}
           {step === 2 && (
             <>
-              <Stack direction="row" align="center" justify="space-between" style={{ marginBottom: "var(--sp-4)" }}>
+              <div className="plr-step-subtitle">
                 <Text variant="caption" tone="muted">
-                  Select the assortment period for <strong>{createWiz.dept}</strong>
+                  Select the assortment period for <strong style={{ color: "var(--color-text-strong)" }}>{createWiz.dept}</strong>
                 </Text>
-                <button type="button" className="plr-back-step" onClick={() => setCreateWiz((prev) => ({ ...prev, step: 1 }))}>
-                  ← Change dept
-                </button>
-              </Stack>
+              </div>
               {deptPeriods.length === 0 ? (
                 <div className="plr-period-empty">
                   <Text variant="body-strong" tone="muted">No assortment periods defined for {createWiz.dept}</Text>
@@ -1162,31 +1374,25 @@ export default function Approval({ onNavigate }) {
                 </div>
               )}
 
-              {/* Navigation buttons */}
-              <div className="plr-wiz-nav">
-                <Button variant="secondary" size="small" onClick={() => setCreateWiz((prev) => ({ ...prev, step: 1 }))}>
-                  ← Back
-                </Button>
-                {createWiz.assortPeriodId && (
-                  <Button variant="primary" size="small" onClick={() => setCreateWiz((prev) => ({ ...prev, step: 3 }))}>
-                    Continue <ArrowRight size={12} style={{ marginLeft: 4 }} />
-                  </Button>
-                )}
-              </div>
+              <WizardFooter
+                step={2} totalSteps={3}
+                onBack={() => setCreateWiz((prev) => ({ ...prev, step: 1 }))}
+                backLabel="Department"
+                onNext={() => setCreateWiz((prev) => ({ ...prev, step: 3 }))}
+                nextLabel="Cluster & Options"
+                nextDisabled={!createWiz.assortPeriodId}
+              />
             </>
           )}
 
           {/* ── Step 3: Cluster Scenario + Option Count ─────────────────── */}
           {step === 3 && (
             <>
-              <Stack direction="row" align="center" justify="space-between" style={{ marginBottom: "var(--sp-4)" }}>
+              <div className="plr-step-subtitle">
                 <Text variant="caption" tone="muted">
-                  Select cluster scenario · then run option recommendation
+                  Select cluster scenario · then run the option recommendation
                 </Text>
-                <button type="button" className="plr-back-step" onClick={() => setCreateWiz((prev) => ({ ...prev, step: 2 }))}>
-                  ← Change period
-                </button>
-              </Stack>
+              </div>
 
               {/* Cluster scenario cards */}
               <div className="plr-clust-grid">
@@ -1248,18 +1454,15 @@ export default function Approval({ onNavigate }) {
                 </div>
               )}
 
-              {/* Confirm button */}
-              <div style={{ marginTop: "var(--sp-5)", display: "flex", justifyContent: "flex-end", gap: "var(--sp-3)" }}>
-                <Button variant="secondary" size="medium" onClick={handleBack}>Cancel</Button>
-                <Button
-                  variant="primary" size="medium"
-                  disabled={!createWiz.clustScenario}
-                  onClick={handleCreateConfirm}
-                >
-                  <CheckCheck size={13} style={{ marginRight: 6 }} />
-                  Create PLR
-                </Button>
-              </div>
+              <WizardFooter
+                step={3} totalSteps={3}
+                onBack={() => setCreateWiz((prev) => ({ ...prev, step: 2 }))}
+                backLabel="Assortment Period"
+                onCancel={handleBack}
+                onConfirm={handleCreateConfirm}
+                confirmLabel="Create PLR"
+                confirmDisabled={!createWiz.clustScenario}
+              />
             </>
           )}
         </div>

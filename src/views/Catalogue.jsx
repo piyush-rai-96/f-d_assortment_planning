@@ -24,6 +24,7 @@ import {
   CATALOGUE_SKUS, HARD_LOCKED_COUNT, STORE_PICK_COUNT,
   isNatLocked, isClusterAdd,
 } from "../data/catalogue.js";
+import { getWpMetrics } from "../data/wpMetrics.js";
 import { INTEL_SEED } from "../data/intel.js";
 import { getAgentPlan } from "../data/agentStore.js";
 import { panelSx, softSx } from "../styles/panelSx.js";
@@ -106,7 +107,7 @@ export default function Catalogue({ onNavigate }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deptFilter, tierFilter, statusFilter]);
 
-  /* Augment every SKU row with live tier + intel signals, then apply page-level filters */
+  /* Augment every SKU row with live tier + intel signals + WP metrics */
   const allRows = useMemo(
     () =>
       CATALOGUE_SKUS.map((sku) => {
@@ -116,7 +117,8 @@ export default function Catalogue({ onNavigate }) {
           : isClusterAdd(sku.id, plan.clusterDecisions)
           ? "cluster"
           : sku.tier || "store";
-        return { ...sku, tier, intel: getSkuSignals(sku) };
+        const wp = getWpMetrics(id) || {};
+        return { ...sku, tier, intel: getSkuSignals(sku), ...wp };
       }),
     // plan is a module-level object; re-compute only on mount (plan ref stable per session)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,6 +272,94 @@ export default function Catalogue({ onNavigate }) {
             <Badge variant="subtle" size="small" color={meta.badge} isIcon icon={<meta.Icon size={11} />} label={meta.label} />
           </div>
         );
+      },
+    },
+    /* ── Working-Plan columns ───────────────────────────────────────────── */
+    {
+      headerName: "Wp Start Wk",
+      field: "wpStartWeek",
+      width: 120,
+      filter: "agTextColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", color: "var(--color-text-muted)", display: "flex", alignItems: "center" }),
+    },
+    {
+      headerName: "Wp End Wk",
+      field: "wpEndWeek",
+      width: 115,
+      filter: "agTextColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", color: "var(--color-text-muted)", display: "flex", alignItems: "center" }),
+    },
+    {
+      headerName: "Wp Item Status",
+      field: "wpItemStatus",
+      width: 130,
+      filter: "agSetColumnFilter",
+      cellRenderer: (p) => {
+        const color = p.value === "New" ? "success" : p.value === "Carryover" ? "info" : p.value === "Dropped" ? "error" : "warning";
+        return (
+          <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Badge variant="subtle" size="small" color={color} label={p.value} />
+          </div>
+        );
+      },
+    },
+    {
+      headerName: "Wp Cost",
+      field: "wpCost",
+      width: 95,
+      filter: "agNumberColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", fontWeight: "600", color: "var(--color-text)", display: "flex", alignItems: "center" }),
+      valueFormatter: (p) => p.value != null ? `$${Number(p.value).toFixed(2)}` : "—",
+    },
+    {
+      headerName: "Wp Retail",
+      field: "wpRetail",
+      width: 95,
+      filter: "agNumberColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", fontWeight: "600", color: "var(--color-text)", display: "flex", alignItems: "center" }),
+      valueFormatter: (p) => p.value != null ? `$${Number(p.value).toFixed(2)}` : "—",
+    },
+    {
+      headerName: "Wp Receipt 1st",
+      field: "wpReceiptFirstDate",
+      width: 130,
+      filter: "agTextColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", color: "var(--color-text-muted)", display: "flex", alignItems: "center" }),
+    },
+    {
+      headerName: "Ly Sales U",
+      field: "lySalesU",
+      width: 110,
+      filter: "agNumberColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", fontWeight: "600", color: "var(--color-info)", display: "flex", alignItems: "center" }),
+      valueFormatter: (p) => p.value != null ? `${Number(p.value).toLocaleString()} sqft` : "—",
+    },
+    {
+      headerName: "Ly Avg ROS U",
+      field: "lyAvgRosU",
+      width: 120,
+      filter: "agNumberColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", fontWeight: "600", color: "var(--color-teal, #0d9488)", display: "flex", alignItems: "center" }),
+      valueFormatter: (p) => p.value != null ? `${p.value} sqft/wk` : "—",
+    },
+    {
+      headerName: "Wp On Order U",
+      field: "wpOnOrderU",
+      width: 125,
+      filter: "agNumberColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", fontWeight: "600", color: "var(--color-warning)", display: "flex", alignItems: "center" }),
+      valueFormatter: (p) => p.value != null ? `${Number(p.value).toLocaleString()} sqft` : "—",
+    },
+    {
+      headerName: "Wp On Order R",
+      field: "wpOnOrderR",
+      width: 125,
+      filter: "agNumberColumnFilter",
+      cellStyle: () => ({ fontFamily: "var(--font-mono, monospace)", fontSize: "var(--fs-micro)", fontWeight: "600", color: "var(--color-warning)", display: "flex", alignItems: "center" }),
+      valueFormatter: (p) => {
+        if (p.value == null) return "—";
+        const v = Number(p.value);
+        return v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v.toFixed(0)}`;
       },
     },
   ], []);

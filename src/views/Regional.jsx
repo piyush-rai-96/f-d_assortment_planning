@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Card, Button, Badge, Table, EmptyState, FiltersStrip, FilterPanel } from "impact-ui";
+import { ChevronDown } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import Grid from "../components/Grid.jsx";
@@ -21,6 +22,8 @@ import {
 } from "../data/regional.js";
 import { CLUSTER_SLOTS, otbClusterConsumed, fmtCurrency, otbPct } from "../data/otb.js";
 import { CATALOGUE_SKUS } from "../data/catalogue.js";
+import { getWpMetrics } from "../data/wpMetrics.js";
+import { WpMetricsPanel } from "./National.jsx";
 import "./Regional.css";
 import { panelSx, softSx } from "../styles/panelSx.js";
 
@@ -42,6 +45,25 @@ const TIERS = [
 ];
 
 const SC = FD_CLUST_SCENARIOS.B;
+
+/* ── Agent recommendation at cluster level ───────────────────────────────── */
+function agentClusterRec(cl, sku) {
+  const avgR13   = clusterAvgR13(cl, sku.sku);
+  const carryPct = sku.storeCount && sku.totalStores
+    ? Math.round((sku.storeCount / sku.totalStores) * 100) : 0;
+  const isDisc   = sku.status === "Discontinued";
+
+  if (isDisc)            return { rec: "drop", reason: "Discontinued",                                                  confidence: 95 };
+  if (carryPct >= 70 && avgR13 >= 100)
+                         return { rec: "keep", reason: `Strong cluster carry (${carryPct}%) · R13 ${avgR13} sqft`,      confidence: 88 };
+  if (avgR13 < 15 && avgR13 > 0)
+                         return { rec: "drop", reason: `Very low cluster R13 (${avgR13} sqft)`,                         confidence: 82 };
+  if (carryPct < 25 && avgR13 < 40)
+                         return { rec: "drop", reason: `Low adoption + weak performance`,                                confidence: 74 };
+  if (sku.storeCount === 0)
+                         return { rec: "add",  reason: `New to cluster — recommended from portfolio`,                   confidence: 71 };
+  return                        { rec: "keep", reason: `Cluster carry ${carryPct}% · R13 ${avgR13 || "—"} sqft`,       confidence: 70 };
+}
 
 /* Reusable read-only SKU table. */
 function SkuTable({ rows, carryHeader, label }) {
@@ -101,7 +123,7 @@ export default function Regional({ onNavigate }) {
   const [activeFilterTab, setActiveFilterTab] = useState("dept");
   const [activeCluster, setActiveCluster] = useState(null);
   const [activeStore, setActiveStore] = useState(null);
-  const [clusterAdds, setClusterAdds] = useState({});
+  const [clusterDecisions, setClusterDecisions] = useState({});
 
   /* Derived filter tag for the strip */
   const filterTags = useMemo(() => {
@@ -136,20 +158,19 @@ export default function Regional({ onNavigate }) {
   const openCluster = (id) => { setActiveCluster(id); setActiveStore(null); };
   const openStore = (clusterId, storeId) => { setActiveCluster(clusterId); setActiveStore(storeId); };
   const back = () => { if (activeStore) setActiveStore(null); else setActiveCluster(null); };
-  const toggleAdd = (clusterId, skuId) => {
-    setClusterAdds((prev) => {
-      const cl = { ...(prev[clusterId] || {}) };
-      if (cl[skuId]) delete cl[skuId];
-      else cl[skuId] = true;
+  /* Set (or toggle-off) a Keep/Add/Drop decision for a cluster SKU */
+  const setClusterDec = (clusterId, skuId, dec) => {
+    setClusterDecisions((prev) => {
+      const cl   = { ...(prev[clusterId] || {}) };
+      if (cl[skuId] === dec) delete cl[skuId];   // clicking same value clears
+      else cl[skuId] = dec;
       const next = { ...prev, [clusterId]: cl };
-      // V3: sync to shared ASSORTMENT_PLAN so StoreCuration can read cluster decisions
-      const flatDecisions = {};
-      Object.entries(next).forEach(([cid, adds]) => {
-        Object.keys(adds).forEach((sid) => {
-          flatDecisions[`${cid}:${sid}`] = "add";
-        });
+      // sync to shared ASSORTMENT_PLAN so StoreCuration can read cluster decisions
+      const flat = {};
+      Object.entries(next).forEach(([cid, decs]) => {
+        Object.entries(decs).forEach(([sid, d]) => { flat[`${cid}:${sid}`] = d; });
       });
-      ASSORTMENT_PLAN.clusterDecisions = flatDecisions;
+      ASSORTMENT_PLAN.clusterDecisions = flat;
       return next;
     });
   };
@@ -257,16 +278,16 @@ export default function Regional({ onNavigate }) {
 
         <Stack direction="column" gap={4} flex="1 1 460px" style={{ minWidth: 0 }}>
           {!activeCluster ? (
-            <ClusterOverview byDept={byDept} clusterAdds={clusterAdds} onReview={openCluster} onStore={openStore} />
+            <ClusterOverview byDept={byDept} clusterDecisions={clusterDecisions} onReview={openCluster} onStore={openStore} />
           ) : (
             <ClusterDetail
               clusterId={activeCluster}
               activeStore={activeStore}
               deptFilter={deptFilter}
               byDept={byDept}
-              clusterAdds={clusterAdds}
+              clusterDecisions={clusterDecisions}
               onStore={openStore}
-              onToggleAdd={toggleAdd}
+              onSetClusterDec={setClusterDec}
             />
           )}
         </Stack>
@@ -292,14 +313,18 @@ export default function Regional({ onNavigate }) {
 }
 
 /* ════════════ ALL-CLUSTERS OVERVIEW ════════════ */
-function ClusterOverview({ byDept, clusterAdds, onReview, onStore }) {
+function ClusterOverview({ byDept, clusterDecisions, onReview, onStore }) {
   return (
     <Stack direction="column" gap={3}>
       <Text variant="body-strong" tone="strong">Cluster assortment overview — open a cluster or store to drill in</Text>
       {SC.clusters.map((cl) => {
-        const clSkus = byDept(clusterSkus(cl));
-        const stores = cl.stores.map((id) => FD_STORES.find((s) => s.id === id)).filter(Boolean);
-        const addCount = Object.keys(clusterAdds[cl.id] || {}).length;
+        const clSkus  = byDept(clusterSkus(cl));
+        const stores  = cl.stores.map((id) => FD_STORES.find((s) => s.id === id)).filter(Boolean);
+        const decs    = clusterDecisions[cl.id] || {};
+        const keepCount = Object.values(decs).filter((d) => d === "keep").length;
+        const addCount  = Object.values(decs).filter((d) => d === "add").length;
+        const dropCount = Object.values(decs).filter((d) => d === "drop").length;
+        const decCount  = Object.keys(decs).length;
         const storePickTotal = stores.reduce((a, s) => a + storeOnlySkus(s.id, cl).length, 0);
 
         return (
@@ -312,7 +337,10 @@ function ClusterOverview({ byDept, clusterAdds, onReview, onStore }) {
                   <Text variant="body-strong" tone="strong">{cl.label}</Text>
                   <Stack direction="row" gap={2} align="center" wrap>
                     <Text variant="caption" tone="muted">{stores.length} stores · {clSkus.length} cluster SKUs</Text>
-                    {addCount ? <Badge variant="subtle" size="small" color="info" label={`+${addCount} regional adds`} /> : null}
+                    {keepCount  ? <Badge variant="subtle" size="small" color="success" label={`✓ ${keepCount} keep`}  /> : null}
+                  {addCount   ? <Badge variant="subtle" size="small" color="info"    label={`+ ${addCount} add`}    /> : null}
+                  {dropCount  ? <Badge variant="subtle" size="small" color="error"   label={`− ${dropCount} drop`}  /> : null}
+                  {!decCount  ? <Badge variant="subtle" size="small" color="neutral" label="No decisions yet"        /> : null}
                   </Stack>
                 </Stack>
                 <Stack direction="row" gap={3} align="center" wrap>
@@ -338,17 +366,17 @@ function ClusterOverview({ byDept, clusterAdds, onReview, onStore }) {
               </Stack>
 
               {/* OTB slot indicator */}
-              <div className="rr-otb-slot">
+                <div className="rr-otb-slot">
                 <span className="rr-otb-slot-label">Cluster slots</span>
                 <span className={`rr-otb-slot-count ${addCount > (CLUSTER_SLOTS[cl.id] || 10) ? "over" : ""}`}>
-                  {addCount} / {CLUSTER_SLOTS[cl.id] || 10} used
+                  {keepCount + addCount} / {CLUSTER_SLOTS[cl.id] || 10} kept/added
                 </span>
                 <div className="rr-otb-slot-bar">
                   <div
                     className="rr-otb-slot-fill"
                     style={{
-                      width: `${Math.min(100, (addCount / (CLUSTER_SLOTS[cl.id] || 10)) * 100)}%`,
-                      background: addCount > (CLUSTER_SLOTS[cl.id] || 10) ? "var(--color-error)" : "var(--color-success)",
+                      width: `${Math.min(100, ((keepCount + addCount) / (CLUSTER_SLOTS[cl.id] || 10)) * 100)}%`,
+                      background: (keepCount + addCount) > (CLUSTER_SLOTS[cl.id] || 10) ? "var(--color-error)" : "var(--color-success)",
                     }}
                   />
                 </div>
@@ -375,14 +403,21 @@ function ClusterOverview({ byDept, clusterAdds, onReview, onStore }) {
 }
 
 /* ════════════ CLUSTER DETAIL / STORE DRILL-IN ════════════ */
-function ClusterDetail({ clusterId, activeStore, deptFilter, byDept, clusterAdds, onStore, onToggleAdd }) {
+function ClusterDetail({ clusterId, activeStore, deptFilter, byDept, clusterDecisions, onStore, onSetClusterDec }) {
   const cl = SC.clusters.find((c) => c.id === clusterId);
   if (!cl) return <Card sx={panelSx}><Text tone="muted">Cluster not found.</Text></Card>;
 
-  const clStores = cl.stores.map((id) => FD_STORES.find((s) => s.id === id)).filter(Boolean);
+  const clStores   = cl.stores.map((id) => FD_STORES.find((s) => s.id === id)).filter(Boolean);
   const clSkusFull = clusterSkus(cl);
-  const clSkus = byDept(clSkusFull);
-  const adds = clusterAdds[cl.id] || {};
+  const clSkus     = byDept(clSkusFull);
+  const decs       = clusterDecisions[cl.id] || {};
+
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const toggleExpand = (id) =>
+    setExpandedRows((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  /* Effective decision: user override ?? agent rec */
+  const effDec = (sku) => decs[sku.sku] ?? agentClusterRec(cl, sku).rec;
 
   /* ── STORE DRILL-IN ─────────────────────────────────────────────────────── */
   if (activeStore) {
@@ -474,42 +509,89 @@ function ClusterDetail({ clusterId, activeStore, deptFilter, byDept, clusterAdds
         ))}
       </Stack>
 
-      {/* Cluster-level assortment — interactive add toggle */}
+      {/* Cluster-level assortment — agent rec + Keep/Add/Drop override */}
       <Stack direction="column" gap={2}>
         <SectionHeader icon="🗂" title="Cluster-Level Assortment" count={clSkus.length} tone="teal" sub="Carried by ≥50% of cluster stores · not Core/BG" />
         {clSkus.length ? (
           <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
+            {/* Column headers */}
+            <div className="rr-cl-head">
+              <span>SKU</span>
+              <span className="rr-cl-r">R13</span>
+              <span className="rr-cl-r">Carry</span>
+              <span className="rr-cl-r">Price</span>
+              <span>Agent Rec</span>
+              <span>Override</span>
+            </div>
             {clSkus.map((s) => {
-              const added = !!adds[s.sku];
+              const agRec    = agentClusterRec(cl, s);
+              const userDec  = decs[s.sku];
+              const effective = effDec(s);
+              const isOverridden = userDec && userDec !== agRec.rec;
+              const isExpanded   = expandedRows.has(s.sku);
+              const rowClass = effective === "keep" ? "rr-row-keep"
+                             : effective === "add"  ? "rr-row-add"
+                             : effective === "drop" ? "rr-row-drop" : "";
               return (
-                <Stack key={s.sku} className={`rr-add-row${added ? " is-added" : ""}`} direction="row" align="center" gap={4} wrap paddingX={4} paddingY={3}>
-                  <Stack direction="row" align="center" gap={2} flex="1 1 240px" style={{ minWidth: 0 }}>
-                    <SkuSwatch sku={s} size={30} />
-                    <Stack direction="column" gap={1} style={{ minWidth: 0 }}>
-                      <Text variant="body-strong" tone="strong">{s.desc}</Text>
-                    <Stack direction="row" gap={2} align="center" wrap>
-                      <Text variant="micro" tone="subtle" mono>{s.sku}</Text>
-                      <Badge variant="subtle" size="small" color={DEPT_BADGE[s.dept] || "default"} label={s.dept} />
-                      <Text variant="micro" tone="muted">{s.subDept}</Text>
-                      </Stack>
-                    </Stack>
-                  </Stack>
-                  <Stack direction="column" gap={1} style={{ width: 90, flexShrink: 0 }}>
-                    <Text variant="micro" tone="muted">Avg R13</Text>
-                    <Text variant="body-strong" tone="strong">{clusterAvgR13(cl, s.sku)} sqft</Text>
-                  </Stack>
-                  <Stack direction="column" gap={1} style={{ width: 110, flexShrink: 0 }}>
-                    <Text variant="micro" tone="muted">Carry</Text>
-                    <Text variant="body-strong" tone="strong">{s.storeCount}/{s.totalStores} stores</Text>
-                  </Stack>
-                  <Stack direction="column" gap={1} style={{ width: 70, flexShrink: 0 }}>
-                    <Text variant="micro" tone="muted">Price</Text>
-                    <Text variant="body-strong" tone="strong" mono>${s.price.toFixed(2)}</Text>
-                  </Stack>
-                  <Button variant={added ? "primary" : "secondary"} size="small" onClick={() => onToggleAdd(cl.id, s.sku)} style={{ flexShrink: 0 }}>
-                    {added ? "Added ✓" : "Add"}
-                  </Button>
-                </Stack>
+                <div key={s.sku} className={`rr-cl-row-wrap${isExpanded ? " expanded" : ""}`}>
+                <div className={`rr-cl-row ${rowClass}`}>
+                  {/* Identity */}
+                  <div className="rr-cl-identity">
+                    <SkuSwatch sku={s} size={28} />
+                    <div className="rr-cl-meta">
+                      <span className="rr-cl-desc">{s.desc}</span>
+                      <div className="rr-cl-sub">
+                        <span className="rr-cl-id">{s.sku}</span>
+                        <Badge variant="subtle" size="small" color={DEPT_BADGE[s.dept] || "default"} label={s.dept} />
+                        {isOverridden && <Badge variant="subtle" size="small" color="warning" label="Overridden" />}
+                      </div>
+                    </div>
+                  </div>
+                  {/* R13 */}
+                  <div className="rr-cl-r">
+                    <span className="rr-cl-r13">{clusterAvgR13(cl, s.sku)} sqft</span>
+                  </div>
+                  {/* Carry */}
+                  <div className="rr-cl-r">
+                    <span className="rr-cl-carry">{s.storeCount}/{s.totalStores}</span>
+                  </div>
+                  {/* Price */}
+                  <div className="rr-cl-r">
+                    <span className="rr-cl-price">${s.price.toFixed(2)}</span>
+                  </div>
+                  {/* Agent Rec */}
+                  <div className="rr-cl-agent">
+                    <Badge
+                      variant="subtle" size="small"
+                      color={agRec.rec === "keep" ? "success" : agRec.rec === "add" ? "info" : "error"}
+                      label={agRec.rec === "keep" ? "✓ Keep" : agRec.rec === "add" ? "+ Add" : "− Drop"}
+                    />
+                    <span className="rr-cl-reason">{agRec.reason}</span>
+                  </div>
+                  {/* Override buttons */}
+                  <div className="rr-cl-override">
+                    {["keep", "add", "drop"].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        className={`rr-dec-btn rr-dec-${val}${userDec === val ? " active" : ""}`}
+                        onClick={() => onSetClusterDec(cl.id, s.sku, val)}
+                      >
+                        {val === "keep" ? "Keep" : val === "add" ? "Add" : "Drop"}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`nat-wp-toggle${isExpanded ? " open" : ""}`}
+                      title="Working Plan metrics"
+                      onClick={() => toggleExpand(s.sku)}
+                    >
+                      <ChevronDown size={12} />
+                    </button>
+                  </div>
+                </div>
+                {isExpanded && <WpMetricsPanel skuId={s.sku} />}
+                </div>
               );
             })}
           </Card>

@@ -344,37 +344,39 @@ export default function StoreHub() {
     </Stack>
   );
 
+  const myDeptRows  = dept === "All" ? storeSKUs(store.id) : storeSKUs(store.id).filter((r) => r.dept === dept);
+  const myR13Total  = Math.round(myDeptRows.reduce((a, r) => a + (r.r13Sqft || 0), 0));
+
   return (
     <Stack direction="column" gap={4}>
-      {/* ── Header: title + store / comp / dept selectors ─────────────────── */}
-      <Card sx={panelSx}>
-        <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
-          <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
-            <Text variant="title">Store Hub</Text>
-            <Text variant="caption" tone="muted">
-              Compare SKU assortment, sister-store performance &amp; cluster benchmarks
-            </Text>
-          </Stack>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--sp-3)", flex: "0 0 auto", width: "clamp(300px, 46vw, 620px)" }}>
+      {/* ── Premium dark hero ─────────────────────────────────────────────── */}
+      <div className="sh-hero">
+        <div className="sh-hero-left">
+          <div className="sh-hero-overline">FW 2025 Assortment Analysis</div>
+          <h1 className="sh-hero-title">Store Hub</h1>
+          <p className="sh-hero-subtitle">
+            Compare SKU assortment, sister-store performance &amp; cluster benchmarks
+            across all {FD_STORES.length} locations
+          </p>
+          <div className="sh-hero-selectors">
             <FdSelect label="My store" value={storeId} options={STORE_OPTIONS} onChange={(v) => setStoreId(Number(v))} width={210} isWithSearch />
             <FdSelect label="Sister / comp store" value={effCompId} options={compOptions} onChange={(v) => setCompStoreId(Number(v))} width={210} isWithSearch />
             <FdSelect label="Department" value={dept} options={DEPT_OPTIONS} onChange={setDept} width={160} />
           </div>
-        </Stack>
-      </Card>
-
-      {/* ── KPI strip — neutral cards; emphasis via typography only ────────── */}
-      <Grid min={150} gap={3}>
-        {model.kpis.map((k) => (
-          <Card key={k.label} sx={{ ...panelSx, padding: "var(--sp-3)" }}>
-            <Stack direction="column" gap={1}>
-              <Text variant="overline" tone="muted">{k.label}</Text>
-              <Text variant="kpi" tone="strong">{k.value}</Text>
-              <Text variant="caption" tone="subtle">{k.sub}</Text>
-            </Stack>
-          </Card>
-        ))}
-      </Grid>
+        </div>
+        <div className="sh-hero-kpis">
+          {model.kpis.map((k, i) => {
+            const COLS = ["#93C5FD", "#6EE7B7", "#FCD34D", "#C4B5FD", "#FCA5A5"];
+            return (
+              <div key={k.label} className="sh-hero-kpi">
+                <div className="sh-hero-kpi-val" style={{ color: COLS[i % COLS.length] }}>{k.value}</div>
+                <div className="sh-hero-kpi-lbl">{k.label}</div>
+                <div className="sh-hero-kpi-sub">{k.sub}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ── Tabbed content (Impact UI Tabs) ───────────────────────────────── */}
       <Tabs

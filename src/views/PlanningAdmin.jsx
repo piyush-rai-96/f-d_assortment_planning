@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Card, Button, Badge, Table, Tabs, Checkbox, Input } from "impact-ui";
 import {
-  LayoutDashboard, CalendarRange, SlidersHorizontal, Users,
-  Plus, Trash2, ChevronLeft, Lock, Pencil, CheckCircle2, Tag, Package
+  LayoutDashboard, CalendarRange,
+  Plus, Trash2, ChevronLeft, CheckCircle2, Tag, Package
 } from "lucide-react";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
@@ -15,7 +15,7 @@ import {
   PRODUCTS, LOCATIONS, LOC_ATTRS, CORE_BG_OPTS, STATUS_OPTS, BAND_PCT,
   ATTR_GROUPS, PRODUCTS_BY_DEPT,
   ADMIN_WEEKS, ADMIN_DEPT_OPTS, ADMIN_SEASON_OPTS, PHASE_COLORS, DEPT_COLORS,
-  INITIAL_ASSORT_PERIODS, PLANNING_RULES, ADMIN_USERS,
+  INITIAL_ASSORT_PERIODS,
 } from "../data/admin.js";
 import "./PlanningAdmin.css";
 import { panelSx } from "../styles/panelSx.js";
@@ -679,76 +679,265 @@ export default function PlanningAdmin() {
     </Stack>
   );
 
-  /* ─────────────── PLANNING RULES section ─────────────────────────────── */
-  const planningRulesSection = (
-    <Stack direction="column" gap={3}>
-      <Card sx={panelSx}>
-        <Stack direction="column" gap={1}>
+  /* Planning Rules and Users & Roles have been promoted to dedicated views:
+   *   src/views/PlanningRules.jsx  →  /planning-rules
+   *   src/views/UsersRoles.jsx     →  /users-roles
+   * The JSX blocks below have been removed.
+   */
+  const _PLACEHOLDER = (
+    <div className="pr-page">
+      {/* ── Page header ── */}
+      <div className="pr-page-header">
+        <div>
           <Text variant="title">Planning Rules</Text>
-          <Text variant="caption" tone="muted">Agent thresholds, model weights, and system configuration</Text>
-        </Stack>
-      </Card>
-      <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
-        <div className="pa-rules-head">
-          <span>Rule</span><span>Current value</span><span>Type</span><span>Editable</span>
+          <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>Curation split by department and agent thresholds</Text>
         </div>
-        {PLANNING_RULES.map((r) => (
-          <div key={r.name} className="pa-rules-row">
-            <span className="pa-rules-name">{r.name}</span>
-            <span className="pa-rules-value">{r.value}</span>
-            <span><Badge variant="subtle" size="small" color="default" label={r.type} /></span>
-            <span>
-              {r.editable
-                ? <span className="pa-rules-editable"><Pencil size={11} style={{ marginRight: 4, verticalAlign: "middle" }} />Yes</span>
-                : <span className="pa-rules-locked"><Lock size={11} style={{ marginRight: 4, verticalAlign: "middle" }} />System</span>}
-            </span>
+      </div>
+
+      <div className="pr-content">
+        {/* ── Section 1: Dept split table ── */}
+        <div className="pr-section-block">
+          <div className="pr-section-top-row">
+            <div>
+              <div className="pr-section-title">Curation split by department</div>
+              <div className="pr-section-desc">Set the % of agent-recommended total options allocated to each curation tier, per department. Total options are always agent-calculated — only the split is configured here.</div>
+            </div>
+            <button className="pr-reset-all-btn" onClick={resetAllToGlobal}>Reset all to global</button>
           </div>
-        ))}
-      </Card>
-    </Stack>
+
+          {/* Table */}
+          <Card sx={{ padding: 0, overflow: "hidden", border: "1px solid var(--color-border)" }}>
+            {/* Col headers */}
+            <div className="pr-split-header">
+              <div className="pr-split-h-dept">Department</div>
+              <div className="pr-split-h-nat">⭐ National core</div>
+              <div className="pr-split-h-reg">🌍 Regional / cluster</div>
+              <div className="pr-split-h-sto">🏠 Store curated</div>
+              <div className="pr-split-h-val">Validation</div>
+            </div>
+            {deptSplits.map((d, i) => {
+              const tot = d.national + d.regional + d.store;
+              const ok  = tot === 100;
+              const dc  = DEPT_COLORS_HEX[d.dept] || "#64748B";
+              return (
+                <div key={d.dept} className={`pr-split-row${i % 2 === 1 ? " alt" : ""}${i === deptSplits.length - 1 ? " last" : ""}`}>
+                  <div className="pr-split-cell-dept">
+                    <span className="pr-dept-dot" style={{ background: dc }} />
+                    <span className="pr-dept-label">{d.dept}</span>
+                  </div>
+                  <div className="pr-split-cell-nat">
+                    <input className="pr-pct-input nat" type="number" min="0" max="100" value={d.national}
+                      onChange={e => updateDeptSplit(i, "national", e.target.value)} />
+                    <span className="pr-pct-sym nat">%</span>
+                  </div>
+                  <div className="pr-split-cell-reg">
+                    <input className="pr-pct-input reg" type="number" min="0" max="100" value={d.regional}
+                      onChange={e => updateDeptSplit(i, "regional", e.target.value)} />
+                    <span className="pr-pct-sym reg">%</span>
+                  </div>
+                  <div className="pr-split-cell-sto">
+                    <input className="pr-pct-input sto" type="number" min="0" max="100" value={d.store}
+                      onChange={e => updateDeptSplit(i, "store", e.target.value)} />
+                    <span className="pr-pct-sym sto">%</span>
+                  </div>
+                  <div className="pr-split-cell-val">
+                    <div className="pr-val-bar">
+                      {ok ? (
+                        <>
+                          <div style={{ flex: d.national, background: "#059669" }} />
+                          <div style={{ flex: d.regional, background: "#2563EB" }} />
+                          <div style={{ flex: d.store,    background: "#D97706" }} />
+                        </>
+                      ) : <div style={{ flex: 1, background: "#EF4444" }} />}
+                    </div>
+                    <div className={`pr-val-pct${ok ? " ok" : " err"}`}>{ok ? "✓ 100%" : `⚠ ${tot}%`}</div>
+                    <button className="pr-val-reset" onClick={() => resetDeptToGlobal(i)}>Reset</button>
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+
+          {/* Global fallback strip */}
+          <div className="pr-global-strip">
+            <span className="pr-global-label">Global fallback</span>
+            <span className="pr-global-desc">Used when no dept-specific split is set</span>
+            {[
+              { key: "national", label: "National", c: "#059669", bg: "#F0FDF4", bd: "#86EFAC" },
+              { key: "regional", label: "Regional", c: "#1E40AF", bg: "#EFF6FF", bd: "#93C5FD" },
+              { key: "store",    label: "Store",    c: "#92400E", bg: "#FFFBEB", bd: "#FDE68A" },
+            ].map(t => (
+              <div key={t.key} className="pr-global-field">
+                <span style={{ color: t.c, fontWeight: 600, fontSize: 11 }}>{t.label}</span>
+                <input className="pr-pct-global" type="number" min="0" max="100"
+                  value={globalSplit[t.key]}
+                  onChange={e => updateGlobal(t.key, e.target.value)}
+                  style={{ borderColor: t.bd, background: t.bg, color: t.c }} />
+                <span style={{ color: t.c, fontWeight: 700, fontSize: 11 }}>%</span>
+              </div>
+            ))}
+            {(() => {
+              const gt = globalSplit.national + globalSplit.regional + globalSplit.store;
+              return <span className={`pr-global-total${gt === 100 ? " ok" : " err"}`}>{gt === 100 ? "✓ 100%" : `⚠ ${gt}%`}</span>;
+            })()}
+          </div>
+        </div>
+
+        {/* ── Section 2: Agent rules table ── */}
+        <div className="pr-section-block" style={{ marginTop: 24 }}>
+          <div className="pr-section-title" style={{ marginBottom: 3 }}>Agent thresholds &amp; model weights</div>
+          <div className="pr-section-desc" style={{ marginBottom: 14 }}>System rules governing agent confidence, model signals, and enforcement behaviour.</div>
+          <Card sx={{ padding: 0, overflow: "hidden", border: "1px solid var(--color-border)" }}>
+            <div className="pr-agent-header">
+              <div>Rule</div><div>Value</div><div>Type</div><div>Editable</div>
+            </div>
+            {AGENT_RULES.map((r, ri) => (
+              <div key={r.id} className={`pr-agent-row${ri % 2 === 1 ? " alt" : ""}`}>
+                <div className="pr-agent-name">{r.name}</div>
+                <div className="pr-agent-value">{r.value}</div>
+                <div><Badge variant="subtle" size="small" color="default" label={r.type} /></div>
+                <div>
+                  {r.editable
+                    ? <span className="pr-editable-yes"><Pencil size={11} style={{ marginRight: 4 }} />Yes</span>
+                    : <span className="pr-editable-locked"><Lock size={11} style={{ marginRight: 4 }} />System</span>}
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 
   /* ─────────────── USERS & ROLES section ──────────────────────────────── */
+  const ROLE_BADGE_COLOR = { info: "#185FA5", success: "#059669", warning: "#D97706", error: "#7C3AED" };
+  const ROLE_BADGE_BG    = { info: "#EFF6FF", success: "#ECFDF5", warning: "#FFFBEB", error: "#F5F3FF" };
+
   const usersSection = (
-    <Stack direction="column" gap={3}>
-      <Card sx={panelSx}>
-        <Stack direction="row" justify="space-between" align="center">
-          <Stack direction="column" gap={1}>
-            <Text variant="title">Users &amp; Roles</Text>
-            <Text variant="caption" tone="muted">Access control and role assignments</Text>
-          </Stack>
-          <Button variant="primary" size="medium"><Plus size={14} style={{ marginRight: 4 }} />Invite user</Button>
-        </Stack>
-      </Card>
-      <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
-        <div className="pa-users-head">
-          <span>Name</span><span>Email</span><span>Role</span><span>Access scope</span><span>Status</span>
+    <div className="ur-page">
+      {/* ── Page header ── */}
+      <div className="ur-page-header">
+        <div>
+          <Text variant="title">Users &amp; Roles</Text>
+          <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>Access control and role assignments for the F&amp;D assortment platform</Text>
         </div>
-        {ADMIN_USERS.map((u) => {
-          const initials = u.name.split(" ").map((w) => w[0]).join("").substring(0, 2);
-          return (
-            <div key={u.email} className="pa-users-row">
-              <span className="pa-user-name">
-                <span className="pa-avatar" style={{ background: u.color }}>{initials}</span>
-                {u.name}
-              </span>
-              <span className="pa-user-email">{u.email}</span>
-              <span className="pa-user-role">{u.role}</span>
-              <span className="pa-user-access">{u.access}</span>
-              <span><Badge variant="subtle" size="small" color={u.status === "Active" ? "success" : "warning"} label={u.status} /></span>
+        <Button variant="primary" size="medium" onClick={() => setInviteOpen(v => !v)}>
+          <Plus size={14} style={{ marginRight: 6 }} />Invite user
+        </Button>
+      </div>
+
+      <div className="ur-content">
+        {/* ── Invite banner (togglable) ── */}
+        {inviteOpen && (
+          <div className="ur-invite-banner">
+            <div className="ur-invite-icon">✉</div>
+            <div style={{ flex: 1 }}>
+              <div className="ur-invite-title">Invite a team member</div>
+              <div className="ur-invite-desc">Enter an email address and select a role. An invitation will be sent with a secure login link.</div>
+              <div className="ur-invite-row">
+                <input className="ur-invite-input" type="email" placeholder="colleague@flooranddecor.com" />
+                <select className="ur-invite-select">
+                  {ROLE_DEFINITIONS.map(r => <option key={r.role}>{r.role}</option>)}
+                </select>
+                <button className="ur-invite-send">Send invite</button>
+              </div>
             </div>
-          );
-        })}
-      </Card>
-    </Stack>
+            <button className="ur-invite-close" onClick={() => setInviteOpen(false)}>
+              <Plus size={14} style={{ transform: "rotate(45deg)" }} />
+            </button>
+          </div>
+        )}
+
+        {/* ── Stats strip ── */}
+        <div className="ur-stats-strip">
+          {[
+            { label: "Total users",    value: ADMIN_USERS.length,                                       color: "#185FA5" },
+            { label: "Active",         value: ADMIN_USERS.filter(u => u.status === "Active").length,    color: "#059669" },
+            { label: "Pending invite", value: ADMIN_USERS.filter(u => u.status === "Pending").length,   color: "#D97706" },
+            { label: "Roles defined",  value: ROLE_DEFINITIONS.length,                                  color: "#7C3AED" },
+          ].map(s => (
+            <div key={s.label} className="ur-stat-card">
+              <div className="ur-stat-value" style={{ color: s.color }}>{s.value}</div>
+              <div className="ur-stat-label">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Users table ── */}
+        <Card sx={{ padding: 0, overflow: "hidden", border: "1px solid var(--color-border)", marginBottom: 24 }}>
+          <div className="ur-table-header">
+            <div>Name</div><div>Email</div><div>Role</div><div>Access scope</div><div>Last active</div><div>Status</div>
+          </div>
+          {ADMIN_USERS.map((u) => {
+            const initials = u.name.split(" ").map(w => w[0]).join("").substring(0, 2);
+            const roleD    = ROLE_DEFINITIONS.find(r => r.role === u.role);
+            const bc       = ROLE_BADGE_COLOR[roleD?.badge || "info"];
+            const bbg      = ROLE_BADGE_BG[roleD?.badge    || "info"];
+            return (
+              <div key={u.id} className="ur-table-row">
+                <div className="ur-user-name-cell">
+                  <div className="ur-avatar" style={{ background: u.color }}>{initials}</div>
+                  <div>
+                    <div className="ur-name">{u.name}</div>
+                    <div className="ur-id-chip">{u.id}</div>
+                  </div>
+                </div>
+                <div className="ur-email">{u.email}</div>
+                <div>
+                  <span className="ur-role-badge" style={{ color: bc, background: bbg, borderColor: bc + "33" }}>
+                    {u.role}
+                  </span>
+                </div>
+                <div className="ur-access">{u.access}</div>
+                <div className="ur-last-active">{u.lastActive}</div>
+                <div>
+                  <Badge
+                    variant="subtle" size="small"
+                    color={u.status === "Active" ? "success" : "warning"}
+                    label={u.status}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+
+        {/* ── Role cards ── */}
+        <div className="ur-roles-title">Role definitions &amp; permissions</div>
+        <div className="ur-role-grid">
+          {ROLE_DEFINITIONS.map(r => {
+            const bc  = ROLE_BADGE_COLOR[r.badge];
+            const bbg = ROLE_BADGE_BG[r.badge];
+            const usersWithRole = ADMIN_USERS.filter(u => u.role === r.role).length;
+            return (
+              <div key={r.role} className="ur-role-card">
+                <div className="ur-role-card-top">
+                  <div>
+                    <div className="ur-role-card-name">{r.role}</div>
+                    <div className="ur-role-level-badge" style={{ color: bc, background: bbg }}>{r.level}</div>
+                  </div>
+                  <div className="ur-role-user-count">
+                    <Users size={13} />
+                    <span>{usersWithRole}</span>
+                  </div>
+                </div>
+                <div className="ur-role-perms">
+                  {r.permissions.map(p => (
+                    <span key={p} className="ur-perm-chip">{p}</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 
   /* ─────────────── NAV config ──────────────────────────────────────────── */
   const NAV_ITEMS = [
     { id: "planning", icon: <LayoutDashboard size={15} />, label: "Planning Admin" },
     { id: "periods",  icon: <CalendarRange size={15} />,   label: "Assortment Periods" },
-    { id: "rules",    icon: <SlidersHorizontal size={15} />, label: "Planning Rules" },
-    { id: "users",    icon: <Users size={15} />,            label: "Users & Roles" },
   ];
 
   /* ─────────────── SCOPE WIZARD gate ──────────────────────────────────── */
@@ -852,7 +1041,7 @@ export default function PlanningAdmin() {
         </div>
 
         {/* Right content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           {section === "planning" && (
             <Stack direction="column" gap={3}>
               <Tabs
@@ -870,8 +1059,6 @@ export default function PlanningAdmin() {
             </Card>
           )}
 
-          {section === "rules" && planningRulesSection}
-          {section === "users" && usersSection}
         </div>
       </Stack>
     </Stack>

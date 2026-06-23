@@ -215,6 +215,27 @@
   --color-on-dark-faint:   rgba(255, 255, 255, 0.42);
   --color-on-dark-surface: rgba(255, 255, 255, 0.10);
   --color-on-dark-border:  rgba(255, 255, 255, 0.16);
+
+  /* ── Premium elevated shadows ─────────────────────────────────────────────── */
+  --sh-card:  0 1px 3px rgba(37,99,235,.06), 0 6px 20px rgba(37,99,235,.05);
+  --sh-hover: 0 4px 16px rgba(37,99,235,.12), 0 1px 4px rgba(37,99,235,.07);
+  --sh-pop:   0 12px 40px rgba(37,99,235,.16), 0 2px 8px rgba(37,99,235,.08);
+  --sh-glow:  0 0 0 3px rgba(37,99,235,.14), 0 4px 20px rgba(37,99,235,.18);
+  --sh-inner: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(37,99,235,.06);
+
+  /* ── Hero gradient stops ──────────────────────────────────────────────────── */
+  --hero-grad:      linear-gradient(135deg, #0a1640 0%, #0d4878 55%, #1e3a8a 100%);
+  --hero-grad-teal: linear-gradient(135deg, #042f2e 0%, #0b7a6c 55%, #0d4878 100%);
+  --hero-grad-warm: linear-gradient(135deg, #1c1917 0%, #44403c 55%, #1e3a8a 100%);
+
+  /* ── Transition presets ──────────────────────────────────────────────────── */
+  --transition-fast:   150ms cubic-bezier(.4,0,.2,1);
+  --transition-normal: 220ms cubic-bezier(.4,0,.2,1);
+  --transition-slow:   350ms cubic-bezier(.4,0,.2,1);
+
+  /* ── Backdrop blur ───────────────────────────────────────────────────────── */
+  --glass-bg:     rgba(255,255,255,.65);
+  --glass-border: rgba(255,255,255,.55);
 }
 
 * {
@@ -232,9 +253,14 @@ body,
 body {
   font-family: var(--font-sans);
   background: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(37,99,235,.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(11,122,108,.03) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--color-text);
   font-size: var(--fs-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
@@ -255,24 +281,19 @@ select {
   outline: none;
 }
 
-/* Slim blue-slate scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* Premium slim scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--slate-border);
   border-radius: 10px;
+  border: 1px solid transparent;
+  background-clip: content-box;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-strong);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-strong); background-clip: content-box; }
 
-/* Firefox scrollbars */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--slate-border) transparent;
-}
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--slate-border) transparent; }
 
 /* ── Utility ─────────────────────────────────────────────────────────────── */
 .fd-truncate {
@@ -282,3 +303,181 @@ select {
   text-overflow: ellipsis;
   display: block;
 }
+
+/* ── Premium dark hero card ───────────────────────────────────────────────── */
+.fd-hero {
+  background: var(--hero-grad);
+  border-radius: var(--r);
+  padding: var(--sp-7) var(--sp-8);
+  color: var(--color-on-dark);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--sh-pop);
+}
+.fd-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 85% 30%, rgba(37,99,235,.35) 0%, transparent 60%),
+    radial-gradient(ellipse at 10% 90%, rgba(11,122,108,.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.fd-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+.fd-hero > * { position: relative; z-index: 1; }
+
+.fd-hero-overline {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.55);
+  margin-bottom: var(--sp-2);
+}
+.fd-hero-title {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--tracking-tight);
+  color: #fff;
+  margin: 0 0 var(--sp-2);
+  line-height: var(--lh-tight);
+}
+.fd-hero-subtitle {
+  font-size: var(--fs-caption);
+  color: rgba(255,255,255,.62);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Premium KPI stat block ──────────────────────────────────────────────── */
+.fd-hero-kpis {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-6);
+  flex-wrap: wrap;
+}
+.fd-hero-kpi {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: var(--r2);
+  padding: var(--sp-3) var(--sp-5);
+  backdrop-filter: blur(8px);
+  min-width: 120px;
+}
+.fd-hero-kpi-val {
+  font-size: 26px;
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  color: #fff;
+}
+.fd-hero-kpi-lbl {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.55);
+  margin-top: 4px;
+}
+.fd-hero-kpi-sub {
+  font-size: var(--fs-xs);
+  color: rgba(255,255,255,.42);
+  margin-top: 2px;
+}
+
+/* ── Card hover lift ─────────────────────────────────────────────────────── */
+.fd-card-hover {
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+.fd-card-hover:hover {
+  box-shadow: var(--sh-hover) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Section heading bar ─────────────────────────────────────────────────── */
+.fd-section-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.fd-section-bar-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--color-border), transparent);
+}
+
+/* ── Glass panel ─────────────────────────────────────────────────────────── */
+.fd-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r2);
+}
+
+/* ── Metric chip ─────────────────────────────────────────────────────────── */
+.fd-metric-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+}
+.fd-metric-chip-val { font-size: var(--fs-heading); font-weight: var(--fw-extrabold); line-height: 1; }
+.fd-metric-chip-lbl { font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-subtle); }
+
+/* ── Animated skeleton pulse (loading states) ───────────────────────────── */
+@keyframes fd-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .5; }
+}
+.fd-skeleton {
+  background: var(--color-surface-alt);
+  border-radius: var(--r2);
+  animation: fd-pulse 1.8s ease-in-out infinite;
+}
+
+/* ── Step connector line ─────────────────────────────────────────────────── */
+.fd-step-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.fd-step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 1;
+  padding: var(--sp-4) var(--sp-3);
+  position: relative;
+}
+.fd-step-node + .fd-step-node::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60%;
+  background: var(--color-border);
+}
+.fd-step-circle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-caption); font-weight: var(--fw-extrabold);
+  flex-shrink: 0;
+}
+.fd-step-lbl { font-size: var(--fs-caption); font-weight: var(--fw-bold); text-align: center; }
+.fd-step-desc { font-size: var(--fs-micro); color: var(--color-text-subtle); text-align: center; line-height: 1.4; }

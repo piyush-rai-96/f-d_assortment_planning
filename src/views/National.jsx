@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Card, Badge, Button, ProgressBar } from "impact-ui";
-import { Lock, ChevronRight, AlertTriangle } from "lucide-react";
+import { Lock, ChevronRight, AlertTriangle, ChevronDown } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
 import SkuMedia from "../components/SkuMedia.jsx";
@@ -8,6 +8,7 @@ import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import { FD_OTB_DEPTS, fmtCurrency } from "../data/otb.js";
+import { getWpMetrics } from "../data/wpMetrics.js";
 import { panelSx } from "../styles/panelSx.js";
 import "./National.css";
 
@@ -31,10 +32,47 @@ function fmtM(n) {
   return `$${Math.round(n)}`;
 }
 
+/* ── WP Metrics panel (shared across curation views) ──────────────────────── */
+export function WpMetricsPanel({ skuId }) {
+  const wp = getWpMetrics(skuId);
+  if (!wp) return null;
+  const STATUS_COLOR = { New: "#059669", Carryover: "#2563EB", "Vendor SKU": "#D97706", Dropped: "#DC2626" };
+  const fields = [
+    { label: "Wp Start Week",       value: wp.wpStartWeek },
+    { label: "Wp End Week",         value: wp.wpEndWeek },
+    { label: "Wp Item Status",      value: wp.wpItemStatus, color: STATUS_COLOR[wp.wpItemStatus] },
+    { label: "Wp Cost",             value: `$${wp.wpCost.toFixed(2)}` },
+    { label: "Wp Retail",           value: `$${wp.wpRetail.toFixed(2)}` },
+    { label: "Wp Receipt 1st Date", value: wp.wpReceiptFirstDate },
+    { label: "Ly Sales U",          value: `${wp.lySalesU.toLocaleString()} sqft` },
+    { label: "Ly Avg ROS U",        value: `${wp.lyAvgRosU} sqft/wk` },
+    { label: "Wp On Order U",       value: `${wp.wpOnOrderU.toLocaleString()} sqft` },
+    { label: "Wp On Order R",       value: wp.wpOnOrderR >= 1000 ? `$${(wp.wpOnOrderR / 1000).toFixed(1)}k` : `$${wp.wpOnOrderR}` },
+  ];
+  return (
+    <div className="nat-wp-panel">
+      {fields.map((f) => (
+        <div key={f.label} className="nat-wp-cell">
+          <span className="nat-wp-lbl">{f.label}</span>
+          <span className="nat-wp-val" style={f.color ? { color: f.color, fontWeight: 700 } : undefined}>{f.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function National({ onNavigate }) {
   const [deptFilter, setDeptFilter] = useState("All");
   const [metricsTab, setMetricsTab] = useState("full");
   const [natDecisions, setNatDecisions] = useState({});
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  const toggleExpand = (id) =>
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   /* Per-SKU stats aggregated from FD_ASSORTMENT */
   const skuStats = useMemo(() => {
@@ -365,8 +403,10 @@ export default function National({ onNavigate }) {
                 ? "nat-row-drop"
                 : "";
 
+            const isExpanded = expandedRows.has(id);
             return (
-              <div key={id} className={`nat-table-row ${rowClass}`}>
+              <div key={id} className={`nat-table-row-wrap${isExpanded ? " expanded" : ""}`}>
+              <div className={`nat-table-row ${rowClass}`}>
                 {/* SKU / Description */}
                 <div className="nat-col-sku">
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
@@ -499,7 +539,17 @@ export default function National({ onNavigate }) {
                       </button>
                     </div>
                   )}
+                  <button
+                    type="button"
+                    className={`nat-wp-toggle${isExpanded ? " open" : ""}`}
+                    title="Working Plan metrics"
+                    onClick={() => toggleExpand(id)}
+                  >
+                    <ChevronDown size={13} />
+                  </button>
                 </div>
+              </div>
+              {isExpanded && <WpMetricsPanel skuId={id} />}
               </div>
             );
           })}

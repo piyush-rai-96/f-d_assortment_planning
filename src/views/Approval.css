@@ -981,11 +981,279 @@
 .plr-cl-sto     { color: #d97706; font-weight: 600; }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/* Wizard Step 2 — navigation buttons row                                      */
+/* Curation Tier Panel — N / R / S breakdown inside Stage 3 body              */
 /* ═══════════════════════════════════════════════════════════════════════════ */
+.plr-curation-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 6px 0 10px;
+}
+
+/* Three tier boxes + total pill in a row */
+.plr-tier-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+@media (max-width: 600px) {
+  .plr-tier-strip { grid-template-columns: 1fr 1fr; }
+}
+
+.plr-tier-box {
+  border-radius: 10px;
+  border: 1px solid;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.plr-tier-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.plr-tier-count {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.plr-tier-pct {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: .75;
+}
+
+.plr-tier-desc {
+  font-size: 10px;
+  color: rgba(255,255,255,.4);
+  margin-top: 2px;
+}
+
+/* Total pill */
+.plr-tier-total-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  gap: 3px;
+  min-width: 68px;
+}
+
+.plr-tier-total-n {
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(255,255,255,.9);
+  line-height: 1;
+}
+
+.plr-tier-total-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.4);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.plr-tier-bar-mini {
+  display: flex;
+  gap: 2px;
+  width: 44px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+/* Per-cluster breakdown table */
+.plr-clust-breakdown {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.plr-clust-bk-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.4);
+  padding: 8px 14px 6px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.plr-clust-bk-head {
+  display: grid;
+  grid-template-columns: 1fr 60px 80px 80px 80px 60px;
+  gap: 4px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,.04);
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.35);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.plr-clust-bk-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 80px 80px 80px 60px;
+  gap: 4px;
+  padding: 7px 14px;
+  border-top: 1px solid rgba(255,255,255,.05);
+  font-size: 12px;
+  align-items: center;
+  transition: background .1s;
+}
+
+.plr-clust-bk-row:hover { background: rgba(255,255,255,.04); }
+
+.plr-clust-bk-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: rgba(255,255,255,.8);
+}
+
+.plr-clust-bk-r {
+  text-align: right;
+}
+
+.plr-clust-bk-muted {
+  color: rgba(255,255,255,.35);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Wizard Footer — Back / dots / Next-Confirm                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.plr-wiz-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-top: var(--sp-6);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  position: sticky;
+  bottom: var(--sp-4);
+  z-index: 10;
+}
+
+.plr-wiz-footer-left,
+.plr-wiz-footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 130px;
+}
+
+.plr-wiz-footer-right {
+  justify-content: flex-end;
+}
+
+.plr-wiz-footer-steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plr-wiz-footer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border, #E2E8F0);
+  transition: background .2s, transform .2s;
+}
+
+.plr-wiz-footer-dot.active {
+  background: var(--color-primary, #2563EB);
+  transform: scale(1.3);
+}
+
+.plr-wiz-footer-dot.done {
+  background: var(--color-success, #059669);
+}
+
+/* Step subtitle (replaces old inline back-step links) */
+.plr-step-subtitle {
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface-muted, #F8FAFC);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-primary, #2563EB);
+}
+
+/* Legacy nav row (kept for backwards compat) */
 .plr-wiz-nav {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   margin-top: var(--sp-5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Stage-to-stage navigation footer inside expanded StageCard body             */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.plr-stage-nav-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  gap: var(--sp-3);
+}
+
+.plr-stage-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.65);
+}
+
+.plr-stage-nav-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.plr-stage-nav-btn.next {
+  margin-left: auto;
+}
+
+.plr-stage-nav-btn.next.done {
+  background: rgba(16,185,129,0.15);
+  color: #6EE7B7;
+  border-color: rgba(16,185,129,0.3);
+}
+
+.plr-stage-nav-btn.next.done:hover {
+  background: rgba(16,185,129,0.25);
+  border-color: rgba(16,185,129,0.5);
 }

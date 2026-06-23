@@ -390,10 +390,47 @@ export default function LikeItemForecast({ onNavigate }) {
     );
   }
 
+  const totalNew    = NEW_SKUS.length;
+  const pctDone     = totalNew ? Math.round((counts.received / totalNew) * 100) : 0;
+
   return (
-    <Grid columns="260px minmax(0, 1fr)" gap={4} align="start" style={{ flexWrap: "wrap" }}>
-      {leftPanel}
-      {rightPanel}
-    </Grid>
+    <Stack direction="column" gap={4}>
+      {/* ── Premium dark hero ──────────────────────────────────────────── */}
+      <div className="lif-hero">
+        <div>
+          <div className="lif-hero-overline">SS 2026 · New PLR Items</div>
+          <h1 className="lif-hero-title">Like-Item Forecast</h1>
+          <p className="lif-hero-subtitle">
+            Assign a like-item proxy to each new SKU · the vendor submission generates
+            a store-by-store velocity forecast before the item hits floor
+          </p>
+          <div className="lif-hero-kpis">
+            {[
+              { v: totalNew,          lbl: "New PLR SKUs",      color: "#93C5FD" },
+              { v: counts.received,   lbl: "Forecast received", color: "#6EE7B7" },
+              { v: counts.submitted,  lbl: "Pending",           color: "#FCD34D" },
+              { v: counts.unassigned, lbl: "Unassigned",        color: counts.unassigned ? "#FCA5A5" : "#6EE7B7" },
+            ].map((k) => (
+              <div key={k.lbl} className="lif-hero-kpi">
+                <div className="lif-hero-kpi-val" style={{ color: k.color }}>{k.v}</div>
+                <div className="lif-hero-kpi-lbl">{k.lbl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="lif-hero-progress">
+          <div className="lif-hero-progress-ring" style={{ "--pct": `${pctDone}%` }}>
+            <div className="lif-hero-progress-val">{pctDone}%</div>
+            <div className="lif-hero-progress-lbl">complete</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main two-column layout ─────────────────────────────────────── */}
+      <Grid columns="260px minmax(0, 1fr)" gap={4} align="start" style={{ flexWrap: "wrap" }}>
+        {leftPanel}
+        {rightPanel}
+      </Grid>
+    </Stack>
   );
 }

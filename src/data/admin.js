@@ -148,13 +148,54 @@ export const PLANNING_RULES = [
   { name: "Like-item correlation window",                   value: "52 weeks", type: "formula",   editable: false },
 ];
 
+/* ── Planning dept splits (mirrors HTML ADMIN_S.planningRules) ─────────────── */
+export const GLOBAL_OPTION_SPLIT = { national: 40, regional: 30, store: 30 };
+
+export const DEPT_COLORS_HEX = {
+  "Wood":                    "#B45309",
+  "Tile":                    "#0B7A6C",
+  "Laminate & Vinyl":        "#2563EB",
+  "Stone":                   "#7C3AED",
+  "Decorative Accessories":  "#D97706",
+};
+
+export const PLANNING_DEPT_SPLITS = [
+  { dept: "Wood",                   total: 35, national: 40, regional: 30, store: 30 },
+  { dept: "Tile",                   total: 45, national: 35, regional: 35, store: 30 },
+  { dept: "Laminate & Vinyl",       total: 30, national: 45, regional: 30, store: 25 },
+  { dept: "Stone",                  total: 20, national: 50, regional: 25, store: 25 },
+  { dept: "Decorative Accessories", total: 40, national: 30, regional: 30, store: 40 },
+];
+
+/* ── Agent rules (mirrors HTML ADMIN_S.rules) ─────────────────────────────── */
+export const AGENT_RULES = [
+  { id: "R001", name: "Minimum agent confidence to auto-recommend", value: "70%",         type: "threshold", editable: true  },
+  { id: "R002", name: "High-confidence dismissal alert threshold",  value: "80%",         type: "threshold", editable: true  },
+  { id: "R003", name: "Override rate warning trigger",              value: "25%",         type: "threshold", editable: true  },
+  { id: "R004", name: "Max store slot budget (default)",            value: "80 SKUs",     type: "limit",     editable: true  },
+  { id: "R005", name: "Sister store sell-through signal weight",    value: "High",        type: "weight",    editable: true  },
+  { id: "R006", name: "Cluster signal weight",                      value: "Medium",      type: "weight",    editable: true  },
+  { id: "R007", name: "Model retraining cadence",                   value: "Seasonal",    type: "config",    editable: true  },
+  { id: "R008", name: "Catalogue fence enforcement",                value: "Hard (system)", type: "config",  editable: false },
+];
+
+/* ── Role permission matrix ──────────────────────────────────────────────── */
+export const ROLE_DEFINITIONS = [
+  { role: "VP Merchandising",   badge: "info",    level: "Corporate", permissions: ["View all", "Approve PLR", "Override agent", "Manage users", "Edit rules"] },
+  { role: "Regional VP",        badge: "success", level: "Regional",  permissions: ["View region", "Approve PLR", "Override agent", "Manage regional users"] },
+  { role: "Merchant Analyst",   badge: "info",    level: "Corporate", permissions: ["View all", "Edit catalogue", "Run clustering", "Log intelligence"] },
+  { role: "Buyer",              badge: "warning", level: "Dept",      permissions: ["View dept", "Submit PLR", "Log intelligence"] },
+  { role: "Store Manager",      badge: "warning", level: "Store",     permissions: ["View store", "Override curation", "Log intelligence"] },
+  { role: "Planning Admin",     badge: "error",   level: "System",    permissions: ["View all", "Edit rules", "Manage users", "System config"] },
+];
+
 /* ── Admin Users ──────────────────────────────────────────────────────────── */
 const AVATAR_COLORS = ["#185FA5", "#0B7A6C", "#B45309", "#7C3AED", "#993C1D", "#2D6A2D"];
 export const ADMIN_USERS = [
-  { name: "Karen Mitchell",  email: "k.mitchell@fd.com",  role: "VP Merchandising",  access: "National",           status: "Active",  color: AVATAR_COLORS[0] },
-  { name: "Jason Rodriguez", email: "j.rodriguez@fd.com", role: "Regional VP",        access: "Southeast + Gulf",   status: "Active",  color: AVATAR_COLORS[1] },
-  { name: "Lisa Torres",     email: "l.torres@fd.com",    role: "Store Manager",      access: "ATL-01",             status: "Active",  color: AVATAR_COLORS[2] },
-  { name: "Priya Nair",      email: "p.nair@fd.com",      role: "Merchant Analyst",   access: "National",           status: "Active",  color: AVATAR_COLORS[3] },
-  { name: "David Chen",      email: "d.chen@fd.com",      role: "Planning Admin",     access: "All",                status: "Active",  color: AVATAR_COLORS[4] },
-  { name: "Sarah Williams",  email: "s.williams@fd.com",  role: "Buyer",              access: "Tile + Stone",       status: "Pending", color: AVATAR_COLORS[5] },
+  { id: "U001", name: "Karen Mitchell",  email: "k.mitchell@fd.com",  role: "VP Merchandising",  access: "National",           status: "Active",  lastActive: "Today",    color: AVATAR_COLORS[0] },
+  { id: "U002", name: "Jason Rodriguez", email: "j.rodriguez@fd.com", role: "Regional VP",        access: "Southeast + Gulf",   status: "Active",  lastActive: "Today",    color: AVATAR_COLORS[1] },
+  { id: "U003", name: "Lisa Torres",     email: "l.torres@fd.com",    role: "Store Manager",      access: "ATL-01",             status: "Active",  lastActive: "2h ago",   color: AVATAR_COLORS[2] },
+  { id: "U004", name: "Priya Nair",      email: "p.nair@fd.com",      role: "Merchant Analyst",   access: "National",           status: "Active",  lastActive: "Yesterday",color: AVATAR_COLORS[3] },
+  { id: "U005", name: "David Chen",      email: "d.chen@fd.com",      role: "Planning Admin",     access: "All",                status: "Active",  lastActive: "Today",    color: AVATAR_COLORS[4] },
+  { id: "U006", name: "Sarah Williams",  email: "s.williams@fd.com",  role: "Buyer",              access: "Tile + Stone",       status: "Pending", lastActive: "—",        color: AVATAR_COLORS[5] },
 ];

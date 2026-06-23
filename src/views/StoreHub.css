@@ -1,10 +1,109 @@
-/* ──────────────────────────────────────────────────────────────────────────
-   Store Hub — view-specific visual accents only.
-   Layout (Stack/Grid), typography (Text), color roles and all interactive /
-   tabular chrome come from the shared token primitives + Impact UI components.
-   This file holds just the dense scroll panels and zebra striping that have no
-   component equivalent.
-   ────────────────────────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* Store Hub                                                                   */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Premium dark hero ─────────────────────────────────────────────────── */
+.sh-hero {
+  background: linear-gradient(135deg, #0a1640 0%, #0d4878 55%, #1e3a8a 100%);
+  border-radius: var(--r);
+  padding: var(--sp-7) var(--sp-8);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(10,22,64,.22);
+}
+.sh-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 90% 20%, rgba(37,99,235,.38) 0%, transparent 55%),
+    radial-gradient(ellipse at 5% 90%, rgba(11,122,108,.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.sh-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.sh-hero > * { position: relative; z-index: 1; }
+
+.sh-hero-left { flex: 1 1 360px; min-width: 0; }
+
+.sh-hero-overline {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.5);
+  margin-bottom: var(--sp-2);
+}
+.sh-hero-title {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 var(--sp-2);
+  line-height: 1.1;
+}
+.sh-hero-subtitle {
+  font-size: var(--fs-caption);
+  color: rgba(255,255,255,.6);
+  line-height: 1.65;
+  margin: 0 0 var(--sp-5);
+  max-width: 500px;
+}
+.sh-hero-selectors {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.sh-hero-kpis {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-self: center;
+}
+.sh-hero-kpi {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: var(--r2);
+  padding: var(--sp-2) var(--sp-4);
+  backdrop-filter: blur(8px);
+  min-width: 120px;
+  transition: background .15s;
+}
+.sh-hero-kpi:hover { background: rgba(255,255,255,.15); }
+.sh-hero-kpi-val {
+  font-size: 20px;
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 3px;
+}
+.sh-hero-kpi-lbl {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.55);
+}
+.sh-hero-kpi-sub {
+  font-size: var(--fs-xs);
+  color: rgba(255,255,255,.38);
+  margin-top: 2px;
+}
 
 /* Scrollable SKU list inside each comparison pane */
 .sh-scroll {

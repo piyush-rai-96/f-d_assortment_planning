@@ -1,42 +1,256 @@
-/* Feedback Loop — token-driven bars + accents. Color is functional only. */
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* FeedbackLoop — premium navy hero + polished insight cards                  */
+/* ══════════════════════════════════════════════════════════════════════════ */
 
-.fb-bar {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--color-surface-sunken);
+/* ── Navy trend hero header ─────────────────────────────────────────────── */
+.fl-navy-header {
+  background: linear-gradient(135deg, #0a1640 0%, #0d4878 55%, #1a2c6b 100%);
+  border-radius: var(--r);
+  padding: var(--sp-6) var(--sp-7);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(10,22,64,.22);
+}
+.fl-navy-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 90% 20%, rgba(37,99,235,.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 5% 90%, rgba(11,122,108,.22) 0%, transparent 50%);
+  pointer-events: none;
+}
+.fl-navy-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.fl-navy-header > * { position: relative; z-index: 1; }
+
+.fl-navy-titlerow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+  flex-wrap: wrap;
+}
+
+.fl-navy-title {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: var(--sp-1);
+  line-height: 1.1;
+}
+.fl-navy-sub {
+  font-size: var(--fs-caption);
+  color: rgba(110,237,184,.85);
+  line-height: 1.5;
+}
+
+.fl-model-updates-badge {
+  background: rgba(109,40,217,.25);
+  border: 1px solid rgba(109,40,217,.45);
+  color: #C4B5FD;
+  border-radius: var(--r-pill);
+  padding: 5px 14px;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: .04em;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Season trend cards ─────────────────────────────────────────────────── */
+.fl-trend-grid {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+}
+.fl-trend-card {
+  flex: 1 1 100px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--r2);
+  padding: var(--sp-3) var(--sp-4);
+  text-align: center;
+  transition: background .15s, border-color .15s;
+  backdrop-filter: blur(6px);
+}
+.fl-trend-card:hover { background: rgba(255,255,255,.11); }
+.fl-trend-card.is-current {
+  background: rgba(45,106,45,.25);
+  border-color: rgba(110,237,184,.4);
+}
+.fl-trend-season {
+  font-size: var(--fs-xs);
+  color: rgba(110,237,184,.8);
+  margin-bottom: var(--sp-2);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.fl-trend-conf {
+  font-size: 26px;
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 2px;
+  letter-spacing: var(--tracking-tight);
+}
+.fl-trend-conf.is-current { color: #6EEDB8; }
+.fl-trend-label {
+  font-size: var(--fs-xs);
+  color: rgba(255,255,255,.35);
+  margin-bottom: var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.fl-trend-rate {
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-bold);
+  color: #FCD34D;
+  margin-bottom: 1px;
+}
+.fl-trend-rate.is-good { color: #6EEDB8; }
+.fl-trend-st {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  color: #A3DDD6;
+  margin-top: var(--sp-2);
+  margin-bottom: 1px;
+}
+
+/* ── Callout strip ──────────────────────────────────────────────────────── */
+.fl-navy-callout {
+  background: rgba(11,122,108,.12);
+  border: 1px solid rgba(11,122,108,.25);
+  border-radius: var(--r2);
+  padding: var(--sp-3) var(--sp-4);
+  backdrop-filter: blur(4px);
+}
+.fl-navy-callout-stat {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  color: #A3DDD6;
+  margin-bottom: 3px;
+}
+.fl-navy-callout-note {
+  font-size: var(--fs-micro);
+  color: rgba(110,237,184,.7);
+  line-height: 1.55;
+}
+
+/* ── How it works — step strip ─────────────────────────────────────────── */
+.fl-steps-strip {
+  display: flex;
   overflow: hidden;
 }
-.fb-bar-fill {
-  height: 100%;
-  border-radius: 3px;
+.fl-step {
+  flex: 1;
+  padding: var(--sp-5) var(--sp-4);
+  border-right: 1px solid rgba(0,0,0,.06);
+  transition: opacity .15s;
+  position: relative;
 }
-
-/* Thin reason-code bars sit inline with their count label. */
-.fb-codebar {
-  height: 6px;
-  border-radius: 3px;
-  min-width: var(--sp-1);
+.fl-step:hover { opacity: .9; }
+.fl-step:last-child { border-right: none; }
+.fl-step::after {
+  content: "›";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: rgba(0,0,0,.2);
+  z-index: 2;
+  pointer-events: none;
 }
+.fl-step:last-child::after { display: none; }
 
-/* Model-update card left accent (color set inline per insight type). */
-.fb-insight {
-  border-left: 3px solid var(--color-border);
+.fl-step-icon {
+  font-size: 20px;
+  margin-bottom: var(--sp-2);
+  line-height: 1;
 }
-
-/* Step connector cells in the "how it works" strip. */
-.fb-step:not(:first-child) {
-  border-left: 1px solid var(--color-border);
+.fl-step-label {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
-
-/* Round status dot for session feedback rows. */
-.fb-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+.fl-step-desc {
   font-size: var(--fs-micro);
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+/* ── Insight card ────────────────────────────────────────────────────────── */
+.fl-insight-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5) var(--sp-3);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+.fl-type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: .03em;
+}
+
+/* ── Stats row inside insight ───────────────────────────────────────────── */
+.fl-stats-row {
+  display: flex;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.fl-stat-box {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: center;
+  min-width: 80px;
+}
+.fl-stat-num {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-extrabold);
+  color: var(--color-text-strong);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+.fl-stat-label {
+  font-size: var(--fs-xs);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: var(--fw-bold);
+}
+
+/* ── Session feedback dot ────────────────────────────────────────────────── */
+.fb-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: var(--fs-body);
 }

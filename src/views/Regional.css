@@ -65,3 +65,136 @@
 .rr-add-row, .rr-store-row {
   min-width: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Cluster-level Keep/Add/Drop table (Regional)                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.rr-cl-head {
+  display: grid;
+  grid-template-columns: 1fr 90px 80px 80px 200px 160px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--color-surface-alt, #F8FAFC);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.rr-cl-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 80px 80px 200px 160px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  transition: background .12s, border-color .12s;
+}
+
+.rr-cl-row:hover  { background: var(--color-surface-alt); }
+.rr-cl-row:last-child { border-bottom: none; }
+
+/* expandable wrapper */
+.rr-cl-row-wrap { display: flex; flex-direction: column; border-bottom: 1px solid var(--color-border); }
+.rr-cl-row-wrap .rr-cl-row { border-bottom: none; }
+.rr-cl-row-wrap.expanded .rr-cl-row { background: var(--color-surface-alt); }
+
+.rr-cl-row.rr-row-keep { border-left-color: var(--color-success, #059669); background: rgba(5,150,105,.03); }
+.rr-cl-row.rr-row-add  { border-left-color: var(--color-info, #2563EB);    background: rgba(37,99,235,.03); }
+.rr-cl-row.rr-row-drop { border-left-color: var(--color-error, #DC2626);   background: rgba(220,38,38,.03); }
+
+.rr-cl-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.rr-cl-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.rr-cl-desc {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.rr-cl-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.rr-cl-id {
+  font-size: 10px;
+  font-family: var(--ff-mono, monospace);
+  color: var(--color-text-subtle);
+}
+
+.rr-cl-r { text-align: right; }
+
+.rr-cl-r13, .rr-cl-carry {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.rr-cl-price {
+  font-size: 12px;
+  font-family: var(--ff-mono, monospace);
+  color: var(--color-text-muted);
+}
+
+.rr-cl-agent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rr-cl-reason {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  line-height: 1.4;
+}
+
+.rr-cl-override {
+  display: flex;
+  gap: 4px;
+}
+
+/* K/A/D button base */
+.rr-dec-btn {
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all .12s;
+}
+
+.rr-dec-btn:hover { background: var(--color-surface-alt); color: var(--color-text); }
+
+.rr-dec-keep.active { background: #ECFDF5; border-color: #6EE7B7; color: #059669; }
+.rr-dec-keep:hover  { border-color: #059669; color: #059669; }
+
+.rr-dec-add.active  { background: #EFF6FF; border-color: #93C5FD; color: #2563EB; }
+.rr-dec-add:hover   { border-color: #2563EB; color: #2563EB; }
+
+.rr-dec-drop.active { background: #FEF2F2; border-color: #FCA5A5; color: #DC2626; }
+.rr-dec-drop:hover  { border-color: #DC2626; color: #DC2626; }

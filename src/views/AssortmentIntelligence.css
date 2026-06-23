@@ -1,6 +1,8 @@
-/* ── Assortment Intelligence — clean, premium enterprise layout ──────────── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* Assortment Intelligence — premium enterprise layout                         */
+/* ══════════════════════════════════════════════════════════════════════════ */
 
-/* Root — padding + max-width owned by shell (.fd-content-inner) */
+/* Root */
 .ai-root {
   min-height: 100%;
   display: flex;
@@ -8,46 +10,90 @@
   gap: var(--sp-5);
 }
 
-/* ── Header ───────────────────────────────────────────────────────────────── */
-.ai-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-3);
-}
-.ai-header-left { display: flex; align-items: center; gap: var(--sp-3); }
-.ai-title {
-  font-size: var(--fs-title);
-  font-weight: var(--fw-extrabold);
-  color: var(--color-text);
-  margin: 0;
-  letter-spacing: var(--tracking-tight);
-}
-.ai-season-badge {
-  padding: 3px 10px;
+/* ── Premium dark hero ─────────────────────────────────────────────────── */
+.ai-hero {
+  background: linear-gradient(135deg, #0a1640 0%, #0d4878 55%, #1e3a8a 100%);
   border-radius: var(--r);
+  padding: var(--sp-7) var(--sp-8);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(10,22,64,.22);
+}
+.ai-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 90% 20%, rgba(37,99,235,.38) 0%, transparent 55%),
+    radial-gradient(ellipse at 5% 90%, rgba(11,122,108,.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.ai-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.ai-hero > * { position: relative; z-index: 1; }
+
+.ai-hero-overline {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.5);
+  margin-bottom: var(--sp-2);
+}
+.ai-hero-title {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 var(--sp-2);
+  line-height: 1.1;
+}
+.ai-hero-subtitle {
+  font-size: var(--fs-caption);
+  color: rgba(255,255,255,.6);
+  line-height: 1.65;
+  margin: 0 0 var(--sp-5);
+  max-width: 540px;
+}
+.ai-hero-kpis { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.ai-hero-kpi {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: var(--r2);
+  padding: var(--sp-3) var(--sp-4);
+  backdrop-filter: blur(8px);
+  min-width: 110px;
+  transition: background .15s;
+}
+.ai-hero-kpi:hover { background: rgba(255,255,255,.15); }
+.ai-hero-kpi-val {
+  font-size: 22px;
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 4px;
+}
+.ai-hero-kpi-lbl {
   font-size: var(--fs-micro);
   font-weight: var(--fw-bold);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  border: 1px solid var(--color-border);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.5);
 }
-.ai-intel-count {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-semibold);
-  color: var(--color-text-muted);
-}
-.ai-intel-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-info);
-  flex-shrink: 0;
-}
+
+/* legacy header elements (no longer rendered but kept for safety) */
+.ai-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-3); }
+.ai-header-left { display: flex; align-items: center; gap: var(--sp-3); }
+.ai-title { font-size: var(--fs-title); font-weight: var(--fw-extrabold); color: var(--color-text); margin: 0; letter-spacing: var(--tracking-tight); }
+.ai-season-badge { padding: 3px 10px; border-radius: var(--r); font-size: var(--fs-micro); font-weight: var(--fw-bold); background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--color-border); }
+.ai-intel-count { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--color-text-muted); }
+.ai-intel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-info); flex-shrink: 0; }
 
 /* ── Filters ──────────────────────────────────────────────────────────────── */
 .ai-filters {

@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Card, Button, Badge, EmptyState, Alert, Chips, Input, FiltersStrip, FilterPanel } from "impact-ui";
+import { ChevronDown } from "lucide-react";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
@@ -10,6 +11,7 @@ import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
 import { isMandatory, clusterLockedIds, newPlrSkus, storeUniqueRows } from "../data/curation.js";
 import { storeLocationBudget, otbStoreConsumed, fmtCurrency } from "../data/otb.js";
+import { WpMetricsPanel } from "./National.jsx";
 import "./StoreCuration.css";
 import { panelSx, softSx } from "../styles/panelSx.js";
 
@@ -24,18 +26,42 @@ const NEW_PLR     = newPlrSkus();
 const NEW_PLR_IDS = new Set(NEW_PLR.map((s) => s.sku));
 const MANDATORY   = FD_SKUS.filter(isMandatory);
 
+/* ── Agent recommendation at store level ────────────────────────────────── */
+function agentStoreRec(sku, assocRow, locked) {
+  if (locked)            return { rec: "keep", reason: "Mandatory — cannot change",          locked: true  };
+  if (!assocRow) {
+    if (sku.status === "Discontinued")
+                         return { rec: null,   reason: "Discontinued — not recommended",      locked: false };
+    if (NEW_PLR_IDS.has(sku.sku))
+                         return { rec: "add",  reason: "New PLR item — agent recommends add", locked: false };
+    return               { rec: null,   reason: "Not carried here — add if needed",           locked: false };
+  }
+  const r13 = assocRow.r13Sqft ?? 0;
+  if (sku.status === "Discontinued")
+                         return { rec: "drop", reason: "Discontinued — agent recommends drop", locked: false };
+  if (r13 >= 100)        return { rec: "keep", reason: `Strong R13 (${Math.round(r13)} sqft)`, locked: false };
+  if (r13 < 15 && r13 > 0)
+                         return { rec: "drop", reason: `Very low R13 (${Math.round(r13)} sqft)`, locked: false };
+  return                 { rec: "keep", reason: `R13 ${Math.round(r13)} sqft — continue carry`, locked: false };
+}
+
 /* ── Curation row ────────────────────────────────────────────────────────── */
-function CurationRow({ sku, assocRow, locked, decision, localPrice, onDecision, onPrice }) {
+function CurationRow({ sku, assocRow, locked, decision, localPrice, onDecision, onPrice, isExpanded, onToggleExpand }) {
   const isActive  = !!assocRow;
   const menuPrice = assocRow ? assocRow.menuPrice : sku.price;
   const r13       = assocRow ? assocRow.r13Sqft   : 0;
   const lp        = localPrice != null ? localPrice : menuPrice;
   const lpEdited  = localPrice != null && localPrice !== menuPrice;
 
-  const stateClass = decision === "add" ? " is-add" : decision === "drop" ? " is-drop" : "";
+  const agRec        = agentStoreRec(sku, assocRow, locked);
+  const isOverridden = !agRec.locked && decision && decision !== agRec.rec;
+
+  const stateClass = decision === "add"  ? " is-add"
+                   : decision === "drop" ? " is-drop"
+                   : decision === "keep" ? " is-keep" : "";
 
   return (
-    <div className={`sc-row${stateClass}`}>
+    <div className={`sc-row-wrap${isExpanded ? " expanded" : ""}`}><div className={`sc-row${stateClass}`}>
       {/* Left: swatch + identity */}
       <div className="sc-row-identity">
         <SkuSwatch sku={sku} size={28} />
@@ -47,6 +73,7 @@ function CurationRow({ sku, assocRow, locked, decision, localPrice, onDecision, 
             {sku.tag && <Badge variant="subtle" size="small" color="success" label={sku.tag} />}
             {sku.status === "Discontinued" && <Badge variant="subtle" size="small" color="error" label="Disc." />}
             {!isActive && !locked && <Badge variant="subtle" size="small" color="neutral" label="Not carried" />}
+            {isOverridden && <Badge variant="subtle" size="small" color="warning" label="Overridden" />}
           </div>
         </div>
       </div>
@@ -61,7 +88,21 @@ function CurationRow({ sku, assocRow, locked, decision, localPrice, onDecision, 
         </span>
       </div>
 
-      {/* Right: local price override + decision */}
+      {/* Agent rec */}
+      <div className="sc-row-agent">
+        {agRec.rec ? (
+          <Badge
+            variant="subtle" size="small"
+            color={agRec.rec === "keep" ? "success" : agRec.rec === "add" ? "info" : "error"}
+            label={agRec.rec === "keep" ? "✓ Keep" : agRec.rec === "add" ? "+ Add" : "− Drop"}
+          />
+        ) : (
+          <Badge variant="subtle" size="small" color="neutral" label="— No rec" />
+        )}
+        <span className="sc-agent-reason">{agRec.reason}</span>
+      </div>
+
+      {/* Right: local price override + K/A/D decision */}
       <div className="sc-row-actions">
         <div className={`sc-price-field${lpEdited ? " sc-price-field--edited" : ""}`}>
           <Input
@@ -77,26 +118,39 @@ function CurationRow({ sku, assocRow, locked, decision, localPrice, onDecision, 
           {lpEdited && <span className="sc-price-edited-dot" title="Price overridden" />}
         </div>
 
-        {locked ? (
-          <Badge variant="subtle" color="neutral" label="Locked" />
-        ) : isActive ? (
-          <Button
-            variant={decision === "drop" ? "danger" : "ghost"}
-            size="small"
-            onClick={() => onDecision("drop")}
-          >
-            {decision === "drop" ? "Dropped" : "Drop"}
-          </Button>
+        {agRec.locked ? (
+          <span className="sc-mandatory-label">Mandatory</span>
         ) : (
-          <Button
-            variant={decision === "add" ? "primary" : "ghost"}
-            size="small"
-            onClick={() => onDecision("add")}
-          >
-            {decision === "add" ? "Added" : "+ Add"}
-          </Button>
+          <div className="sc-dec-btns">
+            <button
+              type="button"
+              className={`sc-dec-btn sc-dec-keep${decision === "keep" ? " active" : ""}`}
+              onClick={() => onDecision("keep")}
+            >Keep</button>
+            <button
+              type="button"
+              className={`sc-dec-btn sc-dec-add${decision === "add" ? " active" : ""}`}
+              onClick={() => onDecision("add")}
+            >Add</button>
+            <button
+              type="button"
+              className={`sc-dec-btn sc-dec-drop${decision === "drop" ? " active" : ""}`}
+              onClick={() => onDecision("drop")}
+            >Drop</button>
+          </div>
         )}
+        <button
+          type="button"
+          className={`nat-wp-toggle${isExpanded ? " open" : ""}`}
+          title="Working Plan metrics"
+          onClick={onToggleExpand}
+          style={{ marginLeft: 4 }}
+        >
+          <ChevronDown size={13} />
+        </button>
       </div>
+    </div>
+    {isExpanded && <WpMetricsPanel skuId={sku.sku} />}
     </div>
   );
 }
@@ -177,6 +231,11 @@ export default function StoreCuration({ onNavigate, user }) {
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState("store");
 
+  const [expandedSkus, setExpandedSkus] = useState(new Set());
+  const toggleExpandSku = useCallback((skuId) =>
+    setExpandedSkus((prev) => { const n = new Set(prev); n.has(skuId) ? n.delete(skuId) : n.add(skuId); return n; }),
+  []);
+
   const key = (sid, skuId) => `${sid}:${skuId}`;
   const setDecision = (skuId, val) =>
     setDecisions((prev) => {
@@ -208,6 +267,7 @@ export default function StoreCuration({ onNavigate, user }) {
 
   const filterRows = (rows) => deptFilter === "All" ? rows : rows.filter((r) => r.sku.dept === deptFilter);
 
+  const totalKeeps = Object.entries(decisions).filter(([k, v]) => k.startsWith(`${storeId}:`) && v === "keep").length;
   const totalAdds  = Object.entries(decisions).filter(([k, v]) => k.startsWith(`${storeId}:`) && v === "add").length;
   const totalDrops = Object.entries(decisions).filter(([k, v]) => k.startsWith(`${storeId}:`) && v === "drop").length;
 
@@ -254,6 +314,8 @@ export default function StoreCuration({ onNavigate, user }) {
       localPrice={localPrices[key(storeId, r.sku.sku)]}
       onDecision={(val) => setDecision(r.sku.sku, val)}
       onPrice={(val) => setPrice(r.sku.sku, val)}
+      isExpanded={expandedSkus.has(r.sku.sku)}
+      onToggleExpand={() => toggleExpandSku(r.sku.sku)}
     />
   );
 
@@ -311,13 +373,17 @@ export default function StoreCuration({ onNavigate, user }) {
             <Badge variant="subtle" size="small" color={VEL_BADGE[store.velocity] || "default"} label={`Vel ${store.velocity}`} />
           </div>
           <div className="sc-decision-counters">
-            <div className="sc-counter sc-counter--drop">
-              <span className="sc-counter-num">{totalDrops}</span>
-              <span className="sc-counter-lbl">Drops</span>
+            <div className="sc-counter sc-counter--keep">
+              <span className="sc-counter-num">{totalKeeps}</span>
+              <span className="sc-counter-lbl">Keeps</span>
             </div>
             <div className="sc-counter sc-counter--add">
               <span className="sc-counter-num">{totalAdds}</span>
               <span className="sc-counter-lbl">Adds</span>
+            </div>
+            <div className="sc-counter sc-counter--drop">
+              <span className="sc-counter-num">{totalDrops}</span>
+              <span className="sc-counter-lbl">Drops</span>
             </div>
           </div>
         </div>
@@ -359,7 +425,8 @@ export default function StoreCuration({ onNavigate, user }) {
       <div className="sc-col-header">
         <span className="sc-col-identity">SKU / Description</span>
         <span className="sc-col-stats">Dept · Sub-dept · Size · Price · R13</span>
-        <span className="sc-col-actions">Local Price · Decision</span>
+        <span className="sc-col-agent-hdr">Agent Rec</span>
+        <span className="sc-col-actions">Local Price · Override</span>
       </div>
 
       {/* ── Tiered sections ─────────────────────────────────────────────── */}
@@ -375,7 +442,7 @@ export default function StoreCuration({ onNavigate, user }) {
       )}
       <Card sx={panelSx}>
         <Stack direction="row" align="center" justify="space-between" gap={3} wrap>
-          <Text variant="caption" tone="muted">{totalAdds} adds · {totalDrops} drops · review in Summary Roll-up before submitting</Text>
+          <Text variant="caption" tone="muted">{totalKeeps} keeps · {totalAdds} adds · {totalDrops} drops · review in Summary Roll-up before submitting</Text>
           <Stack direction="row" gap={2}>
             <Button variant="secondary" size="medium" onClick={() => setView("summary")}>View Summary →</Button>
             <Button variant="primary" size="medium" onClick={() => setSubmitted(true)}>Submit decisions</Button>

@@ -25,6 +25,8 @@ import PlrCalendar from "./views/PlrCalendar.jsx";
 import Clustering from "./views/Clustering.jsx";
 import LeadTime from "./views/LeadTime.jsx";
 import PeerIntelligence from "./views/PeerIntelligence.jsx";
+import PlanningRules from "./views/PlanningRules.jsx";
+import UsersRoles from "./views/UsersRoles.jsx";
 
 /*
  * App root — renders the Login screen when no user is authenticated,
@@ -58,6 +60,8 @@ const VIEWS = {
   clustering: ({ navigate }) => <Clustering onNavigate={navigate} />,
   "lead-time": () => <LeadTime />,
   "peer-intel": () => <PeerIntelligence />,
+  "planning-rules": () => <PlanningRules />,
+  "users-roles": () => <UsersRoles />,
 };
 
 function AccessDenied() {

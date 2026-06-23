@@ -1,35 +1,154 @@
-/* ──────────────────────────────────────────────────────────────────────────
-   Like-Item Forecast — view-specific accents only.
-   Layout (Stack/Grid), typography (Text), tabular + interactive chrome all come
-   from the shared primitives and Impact UI components. This file only holds the
-   scrollable SKU list and its selection accent (no component equivalent).
-   ────────────────────────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* Like-Item Forecast                                                          */
+/* ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.lif-hero {
+  background: linear-gradient(135deg, #0a1640 0%, #0d4878 55%, #1e3a8a 100%);
+  border-radius: var(--r);
+  padding: var(--sp-7) var(--sp-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(10,22,64,.22);
+}
+.lif-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 85% 30%, rgba(37,99,235,.38) 0%, transparent 55%),
+    radial-gradient(ellipse at 5% 90%, rgba(11,122,108,.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+.lif-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.lif-hero > * { position: relative; z-index: 1; }
+
+.lif-hero-overline {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.5);
+  margin-bottom: var(--sp-2);
+}
+.lif-hero-title {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-extrabold);
+  color: #fff;
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 var(--sp-2);
+  line-height: 1.1;
+}
+.lif-hero-subtitle {
+  font-size: var(--fs-caption);
+  color: rgba(255,255,255,.6);
+  line-height: 1.65;
+  margin: 0 0 var(--sp-5);
+  max-width: 500px;
+}
+.lif-hero-kpis { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.lif-hero-kpi {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: var(--r2);
+  padding: var(--sp-3) var(--sp-4);
+  backdrop-filter: blur(8px);
+  min-width: 100px;
+}
+.lif-hero-kpi-val {
+  font-size: 24px;
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 4px;
+}
+.lif-hero-kpi-lbl {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: rgba(255,255,255,.5);
+}
+
+/* Progress ring visual */
+.lif-hero-progress { flex-shrink: 0; }
+.lif-hero-progress-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: conic-gradient(
+    rgba(110,237,184,.7) 0% var(--pct, 0%),
+    rgba(255,255,255,.12) var(--pct, 0%) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+}
+.lif-hero-progress-ring::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  background: #0a1640;
+  border-radius: 50%;
+}
+.lif-hero-progress-ring > * { position: relative; z-index: 1; }
+.lif-hero-progress-val {
+  font-size: 20px;
+  font-weight: var(--fw-extrabold);
+  color: #6EE7B7;
+  line-height: 1;
+}
+.lif-hero-progress-lbl {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: rgba(255,255,255,.45);
+  margin-top: 3px;
+}
+
+/* ── Left rail SKU list ─────────────────────────────────────────────────── */
 .lif-list {
   max-height: 560px;
   overflow-y: auto;
 }
 
-/* Selectable SKU card in the left rail */
+/* Selectable SKU card */
 .lif-card {
   border: 1px solid var(--color-border);
   border-radius: var(--r2);
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background .12s, border-color .12s, box-shadow .12s;
   background: var(--color-surface-alt);
 }
 .lif-card:hover {
   border-color: var(--color-border-strong);
+  box-shadow: var(--sh-card, var(--sh));
 }
 .lif-card.is-active {
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
+  box-shadow: 0 0 0 2px rgba(37,99,235,.15);
 }
 
-/* Numbered step marker (decorative circle) */
+/* Numbered step marker */
 .lif-step-dot {
-  width: 24px;
-  height: 24px;
+  width: 28px; height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
 }

@@ -26,6 +26,8 @@ import {
   PeerIntelIcon,
   SettingsIcon,
   AssortIntelIcon,
+  PlanningRulesIcon,
+  UsersRolesIcon,
 } from "./navIcons.jsx";
 
 /*
@@ -42,6 +44,15 @@ import {
  * All leaf `value` keys are IDENTICAL to the legacy goModule() keys used
  * in VIEWS (App.jsx) and RBAC (users.js) — only the parent grouping changes.
  */
+/*
+ * VISIBILITY RULES
+ * ─────────────────
+ * `hidden: true` on a group   → entire group hidden from sidebar
+ * `hidden: true` on a child   → that child hidden from sidebar
+ * Hidden items are still registered in VIEWS / MODULE_LABELS so all
+ * programmatic navigation (tile links, wizard "next" buttons, etc.) keeps
+ * working exactly as before.
+ */
 export const routes = [
 
   /* ── Today ─────────────────────────────────────────────────────────────── */
@@ -53,45 +64,57 @@ export const routes = [
     children: [],
   },
 
-  /* ── Range Build ────────────────────────────────────────────────────────── */
+  /* ── PLR Status — top-level shortcut ───────────────────────────────────── */
+  {
+    value: "approval",
+    label: "PLR Status",
+    icon: <ApprovalIcon />,
+    link: "/approval",
+    children: [],
+  },
+
+  /* ── Range Build — hidden; accessible via programmatic navigation ──────── */
   {
     value: "range-build",
     label: "Range Build",
     icon: <RangeBuildIcon />,
     link: "#range-build",
+    hidden: true,
     children: [
-      { value: "portfolio",  label: "Portfolio Build",      icon: <PortfolioIcon />,  link: "/portfolio"  },
-      { value: "forecast",   label: "Like-Item Forecast",   icon: <ForecastIcon />,   link: "/forecast"   },
-      { value: "catalogue",  label: "Catalogue",            icon: <CatalogueIcon />,  link: "/catalogue"  },
+      { value: "portfolio",  label: "Portfolio Build",    icon: <PortfolioIcon />, link: "/portfolio" },
+      { value: "forecast",   label: "Like-Item Forecast", icon: <ForecastIcon />,  link: "/forecast"  },
+      { value: "catalogue",  label: "Catalogue",          icon: <CatalogueIcon />, link: "/catalogue" },
     ],
   },
 
-  /* ── My Workspace ───────────────────────────────────────────────────────── */
+  /* ── My Workspace — hidden ─────────────────────────────────────────────── */
   {
     value: "workspace-group",
     label: "My Workspace",
     icon: <WorkspaceIcon />,
     link: "#workspace-group",
+    hidden: true,
     children: [
       { value: "workspace", label: "My Workspace", icon: <WorkspaceIcon />, link: "/workspace", badge: "Plans" },
     ],
   },
 
-  /* ── Assortment Curation ────────────────────────────────────────────────── */
+  /* ── Assortment Curation — hidden ──────────────────────────────────────── */
   {
     value: "curation",
     label: "Assortment Curation",
     icon: <CurationIcon />,
     link: "#curation",
+    hidden: true,
     children: [
-      { value: "national",       label: "National Core",    icon: <NationalIcon />,  link: "/national"       },
-      { value: "regional",       label: "Regional Review",  icon: <RegionalIcon />,  link: "/regional"       },
-      { value: "store-curation", label: "Store Curation",   icon: <CurationIcon />,  link: "/store-curation" },
-      { value: "mpi",            label: "NPI",              icon: <MpiIcon />,       link: "/mpi"            },
+      { value: "national",       label: "National Core",   icon: <NationalIcon />, link: "/national"       },
+      { value: "regional",       label: "Regional Review", icon: <RegionalIcon />, link: "/regional"       },
+      { value: "store-curation", label: "Store Curation",  icon: <CurationIcon />, link: "/store-curation" },
+      { value: "mpi",            label: "NPI",             icon: <MpiIcon />,      link: "/mpi"            },
     ],
   },
 
-  /* ── Intelligence ───────────────────────────────────────────────────────── */
+  /* ── Intelligence — only Market Intelligence visible ───────────────────── */
   {
     value: "intelligence",
     label: "Intelligence",
@@ -99,9 +122,8 @@ export const routes = [
     link: "#intelligence",
     children: [
       { value: "intel",      label: "Market Intelligence", icon: <MarketIntelIcon />, link: "/intel"      },
-      { value: "hindsight",  label: "Hindsight",           icon: <HindsightIcon />,   link: "/hindsight"  },
-      { value: "peer-intel", label: "Peer Intelligence",   icon: <PeerIntelIcon />,   link: "/peer-intel" },
-      { value: "approval",   label: "PLR Status",          icon: <ApprovalIcon />,    link: "/approval"   },
+      { value: "hindsight",  label: "Hindsight",           icon: <HindsightIcon />,   link: "/hindsight",  hidden: true },
+      { value: "peer-intel", label: "Peer Intelligence",   icon: <PeerIntelIcon />,   link: "/peer-intel", hidden: true },
     ],
   },
 
@@ -112,14 +134,16 @@ export const routes = [
     icon: <AdminIcon />,
     link: "#admin",
     children: [
-      { value: "admin-planning",  label: "Planning Admin",          icon: <PlanningAdminIcon />,  link: "/admin-planning"  },
-      { value: "assort-periods",  label: "Assortment Periods",      icon: <AssortPeriodsIcon />,  link: "/assort-periods"  },
-      { value: "periods",         label: "PLR Calendar",            icon: <CalendarIcon />,       link: "/periods"         },
-      { value: "clustering",      label: "Location Clustering",     icon: <ClusteringIcon />,     link: "/clustering"      },
+      { value: "admin-planning",  label: "Planning Admin",      icon: <PlanningAdminIcon />, link: "/admin-planning"  },
+      { value: "assort-periods",  label: "Define Assort Period", icon: <AssortPeriodsIcon />, link: "/assort-periods"  },
+      { value: "periods",         label: "PLR Calendar",         icon: <CalendarIcon />,      link: "/periods",         hidden: true },
+      { value: "clustering",      label: "Location Clustering",  icon: <ClusteringIcon />,    link: "/clustering"      },
+      { value: "planning-rules",  label: "Planning Rules",       icon: <PlanningRulesIcon />, link: "/planning-rules"  },
+      { value: "users-roles",     label: "Users & Roles",        icon: <UsersRolesIcon />,    link: "/users-roles"     },
     ],
   },
 
-  /* ── Others (present in app but not in the v6 HTML prototype) ───────────── */
+  /* ── Others — all hidden; accessible only via programmatic navigation ───── */
   {
     value: "others",
     label: "Others",
@@ -155,18 +179,21 @@ export const actionRoutes = [
  */
 export function filterRoutesByAccess(tree, allowed) {
   return tree.reduce((acc, route) => {
-    // Groups marked hidden: true are never rendered in the sidebar
+    // Groups/leaves marked hidden:true are never rendered in the sidebar,
+    // but their module values remain accessible via programmatic navigation.
     if (route.hidden) return acc;
-    if (allowed !== "ALL" && !route.children?.length) {
-      // Leaf (e.g. "today")
-      if (allowed.includes(route.value)) acc.push(route);
-    } else if (!route.children?.length) {
-      acc.push(route);
+
+    if (!route.children?.length) {
+      // Standalone leaf (e.g. "today", "approval")
+      if (allowed === "ALL" || allowed.includes(route.value)) {
+        acc.push(route);
+      }
     } else {
-      // Group parent — keep only accessible children
-      const visibleChildren = allowed === "ALL"
-        ? route.children
-        : route.children.filter((c) => allowed.includes(c.value));
+      // Group parent — filter out hidden children AND unauthorised children
+      const visibleChildren = route.children.filter((c) => {
+        if (c.hidden) return false;
+        return allowed === "ALL" || allowed.includes(c.value);
+      });
       if (visibleChildren.length > 0) {
         acc.push({ ...route, children: visibleChildren });
       }
@@ -193,11 +220,13 @@ export const MODULE_LABELS = {
   feedback:                 "Feedback Loop",
   approval:                 "PLR Status",
   "admin-planning":         "Planning Admin",
-  "assort-periods":         "Assortment Periods",
+  "assort-periods":         "Define Assort Period",
   periods:                  "PLR Calendar",
   clustering:               "Location Clustering",
   "lead-time":              "Lead Time & Oracle",
   "peer-intel":             "Peer Intelligence",
+  "planning-rules":         "Planning Rules",
+  "users-roles":            "Users & Roles",
   settings:                 "Settings",
 };
 

@@ -227,21 +227,35 @@ export default function AssortmentIntelligence({ onNavigate }) {
       headerClass: "ag-center-aligned-header" },
   ], []);
 
+  const highScore   = scores.filter((s) => s.composite >= 75).length;
+  const needsAttn   = scores.filter((s) => s.composite < 40).length;
+  const avgScore    = scores.length ? Math.round(scores.reduce((a, s) => a + s.composite, 0) / scores.length) : 0;
+
   return (
     <div className="ai-root">
-      {/* Header */}
-      <div className="ai-header">
-        <div className="ai-header-left">
-          <Text variant="title" as="h1" className="ai-title">Assortment Intelligence</Text>
-          <Badge variant="subtle" label={`SS 2026 · ${scores.length} SKUs`} className="ai-season-badge" />
-        </div>
-        <div className="ai-header-right">
-          {intelCount > 0 && (
-            <span className="ai-intel-count">
-              <span className="ai-intel-dot" />
-              {intelCount} SKUs with intel signals
-            </span>
-          )}
+      {/* ── Premium dark hero ─────────────────────────────────────────── */}
+      <div className="ai-hero">
+        <div>
+          <div className="ai-hero-overline">SS 2026 · AI-Powered Analysis</div>
+          <h1 className="ai-hero-title">Assortment Intelligence</h1>
+          <p className="ai-hero-subtitle">
+            Composite scoring: R13 performance × like-item forecast × intel signals.
+            Click any SKU to view the full score breakdown.
+          </p>
+          <div className="ai-hero-kpis">
+            {[
+              { v: scores.length, lbl: "Total SKUs",         color: "#93C5FD" },
+              { v: avgScore,      lbl: "Avg composite score", color: "#6EE7B7" },
+              { v: highScore,     lbl: "High performers",     color: "#6EE7B7" },
+              { v: intelCount,    lbl: "With intel signals",  color: intelCount ? "#FCD34D" : "#6EE7B7" },
+              { v: needsAttn,     lbl: "Need attention",      color: needsAttn ? "#FCA5A5" : "#6EE7B7" },
+            ].map((k) => (
+              <div key={k.lbl} className="ai-hero-kpi">
+                <div className="ai-hero-kpi-val" style={{ color: k.color }}>{k.v}</div>
+                <div className="ai-hero-kpi-lbl">{k.lbl}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

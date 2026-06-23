@@ -1,6 +1,14 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Card, Button, Badge, Input, TextArea, Chips, FiltersStrip, FilterPanel, EmptyState } from "impact-ui";
-import { Bot, ClipboardList, X, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import {
+  Bot, ClipboardList, X,
+  Swords, MapPin, Users, PackageSearch, Truck, TrendingUp,
+  TrendingDown, ArrowUpRight,
+  Zap, Calendar, CalendarCheck, Eye,
+  Store, TreePine, Layers, Hexagon,
+  MessageSquare, UsersRound, ShieldCheck,
+  Building2,
+} from "lucide-react";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
@@ -26,8 +34,11 @@ import { panelSx, softSx } from "../styles/panelSx.js";
 
 const EMPTY_LOG = {
   type: null, direction: null, urgency: null, scope: null,
+  dept: null,
   title: "", body: "", skus: [], confidence: null, skuPick: "", submitted: false,
 };
+
+const DEPT_OPTIONS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
 
 const TYPE_TINT = {
   competitive: { bg: "var(--color-error-soft)", fg: "var(--color-error)" },
@@ -277,7 +288,8 @@ export default function MarketIntel() {
       modelInstruction: log.skus.length
         ? `Signal logged: ${log.type} / ${log.direction}. Affects ${log.skus.join(", ")}. Pending merchant review before model update.`
         : null,
-      feedsModel: !!log.skus.length, status: "new", author: "Lisa T.", authorRole: "Store Manager",
+      dept: log.dept || null,
+      feedsModel: !!(log.skus.length || log.dept), status: "new", author: "Lisa T.", authorRole: "Store Manager",
       date: "Jun 3, 2025", escalated: false, merchantNote: "",
     };
     setIntel((prev) => [entry, ...prev]);
@@ -663,150 +675,361 @@ export default function MarketIntel() {
   );
 
   /* ═══════════════ LOG FORM ═══════════════ */
-  const ChoiceGrid = ({ field, options, columns }) => (
-    <Grid columns={columns} gap={2}>
-      {options.map((o) => (
-        <Stack
-          key={o.id}
-          className={`mi-choice${log[field] === o.id ? " is-selected" : ""}`}
-          direction="column" gap={0}
-          onClick={() => setLogField(field, o.id)}
-        >
-          <Text variant="caption" tone="strong">{o.label}</Text>
-          {o.desc ? <Text variant="micro" tone="subtle">{o.desc}</Text> : null}
-        </Stack>
-      ))}
-    </Grid>
+
+  /* Per-type icon + accent color — Lucide icons */
+  const TYPE_META = {
+    competitive:  { icon: <Swords     size={20} />, accent: "#DC2626", soft: "#FEF2F2", border: "#FECACA" },
+    market:       { icon: <MapPin     size={20} />, accent: "#2563EB", soft: "#EFF6FF", border: "#BFDBFE" },
+    customer:     { icon: <Users      size={20} />, accent: "#059669", soft: "#ECFDF5", border: "#6EE7B7" },
+    product:      { icon: <PackageSearch size={20} />, accent: "#D97706", soft: "#FFFBEB", border: "#FDE68A" },
+    supply:       { icon: <Truck      size={20} />, accent: "#EA580C", soft: "#FFF7ED", border: "#FDBA74" },
+    trend:        { icon: <TrendingUp size={20} />, accent: "#7C3AED", soft: "#F5F3FF", border: "#DDD6FE" },
+  };
+  const DIR_META = {
+    threat:       { icon: <TrendingDown size={26} />, accent: "#DC2626", soft: "#FEF2F2", border: "#FECACA" },
+    opportunity:  { icon: <ArrowUpRight size={26} />, accent: "#059669", soft: "#ECFDF5", border: "#6EE7B7" },
+  };
+  const URG_META = {
+    immediate:    { icon: <Zap          size={18} />, accent: "#DC2626" },
+    season:       { icon: <Calendar     size={18} />, accent: "#D97706" },
+    next:         { icon: <CalendarCheck size={18} />, accent: "#2563EB" },
+    watch:        { icon: <Eye          size={18} />, accent: "#6B7280" },
+  };
+  const CONF_META = {
+    anecdotal:           { icon: <MessageSquare size={20} /> },
+    "multiple customers":{ icon: <UsersRound   size={20} /> },
+    confirmed:           { icon: <ShieldCheck  size={20} /> },
+  };
+  const DEPT_META = {
+    All:              { icon: <Building2 size={20} />, accent: "#2563EB", soft: "#EFF6FF" },
+    Wood:             { icon: <TreePine  size={20} />, accent: "#B45309", soft: "#FEF3C7" },
+    Tile:             { icon: <Hexagon   size={20} />, accent: "#0B7A6C", soft: "#E6F7F4" },
+    "Laminate & Vinyl":{ icon: <Layers   size={20} />, accent: "#6D28D9", soft: "#F5F3FF" },
+  };
+
+  /* Reusable section label */
+  const SectionLabel = ({ label, required, step }) => (
+    <div className="mi-form-section-label">
+      {step && <span className="mi-form-step-num">{step}</span>}
+      <span className="mi-form-label-text">{label}</span>
+      {required && <span className="mi-form-required">required</span>}
+    </div>
   );
 
-  const FormSection = ({ label, required, children }) => (
-    <Stack direction="column" gap={2}>
-      <Text variant="caption" tone="muted" style={{ fontWeight: 600 }}>
-        {label}
-        {required ? <Text as="span" variant="caption" tone="error"> *</Text> : null}
-      </Text>
-      {children}
-    </Stack>
-  );
-
-  const feedsModelPreview = log.type && log.direction && log.skus.length > 0;
+  const feedsModelPreview = log.type && log.direction && (log.skus.length > 0 || log.dept);
 
   const logForm = log.submitted ? (
-    <Card sx={{ ...softSx, maxWidth: 560, margin: "0 auto" }}>
-      <Stack direction="column" gap={4} align="center" paddingY={6}>
-        <div className="mi-log-success-icon">✓</div>
-        <Text variant="heading" tone="strong">Intel logged</Text>
-        <Text variant="caption" tone="muted" style={{ textAlign: "center" }}>
-          Your signal is in the merchant inbox. Structured tags will feed the agent model at the next refresh.
+    /* ── Success state ── */
+    <div className="mi-log-success-wrap">
+      <div className="mi-log-success-card">
+        <div className="mi-log-success-circle">✓</div>
+        <Text variant="heading" tone="strong">Intel logged successfully</Text>
+        <Text variant="caption" tone="muted" style={{ textAlign: "center", lineHeight: 1.6 }}>
+          Your signal is in the merchant inbox.<br />Structured tags will feed the agent model at the next refresh.
         </Text>
-        <Stack direction="row" gap={2}>
-          <Button variant="primary" size="medium" onClick={() => setLog(EMPTY_LOG)}>Log another signal</Button>
-          <Button variant="secondary" size="medium" onClick={() => { setView("inbox"); setLog(EMPTY_LOG); }}>
+        <Stack direction="row" gap={3}>
+          <Button variant="primary" size="large" onClick={() => setLog(EMPTY_LOG)}>Log another signal</Button>
+          <Button variant="secondary" size="large" onClick={() => { setView("inbox"); setLog(EMPTY_LOG); }}>
             Back to inbox
           </Button>
         </Stack>
-      </Stack>
-    </Card>
+      </div>
+    </div>
   ) : (
-    <Grid columns="1fr 340px" gap={4}>
-      <Card sx={softSx}>
-        <Stack direction="column" gap={4}>
-          <FormSection label="Signal type" required><ChoiceGrid field="type" options={TYPE_OPTIONS} columns={2} /></FormSection>
-          <FormSection label="Direction" required><ChoiceGrid field="direction" options={DIRECTION_OPTIONS} columns={2} /></FormSection>
-          <FormSection label="Urgency"><ChoiceGrid field="urgency" options={URGENCY_OPTIONS} columns={4} /></FormSection>
-          <FormSection label="Scope"><ChoiceGrid field="scope" options={SCOPE_OPTIONS} columns={4} /></FormSection>
-          <FormSection label="Title" required>
-            <Input
-              placeholder="One-line description — e.g. Competitor opening 2 blocks away Q3"
-              value={log.title}
-              onChange={(e) => setLog((p) => ({ ...p, title: e.target.value }))}
-              fullWidth
-            />
-          </FormSection>
-          <FormSection label="What you observed" required>
-            <TextArea
-              placeholder="The full picture — who, what, where, when. Free text stays human-read only."
-              value={log.body}
-              onChange={(e) => setLog((p) => ({ ...p, body: e.target.value }))}
-              width="100%" height="110px"
-            />
-          </FormSection>
-          <FormSection label="Affected SKUs (optional)">
-            {log.skus.length ? (
-              <Stack direction="row" gap={1} wrap>
-                {log.skus.map((s) => (
-                  <Stack key={s} direction="row" align="center" gap={1} paddingX={2}
-                    style={{ border: "1px solid var(--color-accent)", borderRadius: "var(--r2)" }}>
-                    <Text variant="micro" mono style={{ color: "var(--color-accent)" }}>{s}</Text>
-                    <Text variant="micro" tone="subtle" style={{ cursor: "pointer" }} onClick={() => removeSku(s)}>×</Text>
-                  </Stack>
-                ))}
-              </Stack>
-            ) : null}
-            <Stack direction="row" gap={2} align="flex-end">
-              <FdSelect
-                value={log.skuPick}
-                options={[
-                  { value: "", label: "Select a catalogue SKU…" },
-                  ...CATALOGUE_SKUS.filter((s) => !log.skus.includes(s.id)).map((s) => ({ value: s.id, label: s.name })),
-                ]}
-                onChange={(v) => setLog((p) => ({ ...p, skuPick: v }))}
-                width={360}
+    <div className="mi-log-layout">
+      {/* ── Left: Form ── */}
+      <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
+        {/* Form header strip */}
+        <div className="mi-log-form-header">
+          <div>
+            <Text variant="body-strong" style={{ color: "#fff", fontWeight: 800 }}>Log market intelligence</Text>
+            <Text variant="micro" style={{ color: "rgba(255,255,255,.6)", marginTop: 2, display: "block" }}>
+              Raw intel goes to the merchant inbox. Structured tags feed the agent model.
+            </Text>
+          </div>
+          <div className="mi-log-step-track">
+            {["Signal", "Direction", "Context", "Details"].map((s, i) => (
+              <div key={s} className={`mi-log-step-dot${
+                (i === 0 && log.type) || (i === 1 && log.direction) || (i === 2 && (log.urgency || log.scope)) || (i === 3 && (log.title || log.body)) ? " is-done" : ""
+              }`} title={s} />
+            ))}
+          </div>
+        </div>
+
+        <div className="mi-log-form-body">
+          {/* ① Signal type */}
+          <div className="mi-form-section">
+            <SectionLabel label="Signal type" required step="①" />
+            <div className="mi-choice-type-grid">
+              {TYPE_OPTIONS.map((o) => {
+                const m = TYPE_META[o.id] || {};
+                const on = log.type === o.id;
+                return (
+                  <div key={o.id} className={`mi-choice-type${on ? " is-on" : ""}`}
+                    style={on ? { borderColor: m.accent, background: m.soft } : {}}
+                    onClick={() => setLogField("type", o.id)}>
+                    <div className="mi-choice-type-top">
+                      <div className="mi-choice-type-icon-wrap" style={{ background: on ? m.accent : `${m.accent}15`, color: on ? "#fff" : m.accent }}>
+                        {m.icon}
+                      </div>
+                      <div className={`mi-choice-check${on ? " is-on" : ""}`} style={on ? { background: m.accent, borderColor: m.accent } : {}}>
+                        {on && <span>✓</span>}
+                      </div>
+                    </div>
+                    <div className="mi-choice-type-label" style={on ? { color: m.accent } : {}}>{o.label}</div>
+                    <div className="mi-choice-type-desc">{o.desc}</div>
+                    {on && <div className="mi-choice-type-accent" style={{ background: m.accent }} />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ② Direction */}
+          <div className="mi-form-section">
+            <SectionLabel label="Direction" required step="②" />
+            <div className="mi-choice-dir-grid">
+              {DIRECTION_OPTIONS.map((o) => {
+                const m = DIR_META[o.id] || {};
+                const on = log.direction === o.id;
+                return (
+                  <div key={o.id} className={`mi-choice-dir${on ? " is-on" : ""}`}
+                    style={on ? { borderColor: m.accent, background: m.soft, boxShadow: `0 0 0 3px ${m.accent}1A` } : {}}
+                    onClick={() => setLogField("direction", o.id)}>
+                    <div className="mi-choice-dir-icon-wrap" style={{ background: on ? m.accent : `${m.accent}15`, color: on ? "#fff" : m.accent }}>
+                      {m.icon}
+                    </div>
+                    <div>
+                      <div className="mi-choice-dir-label" style={on ? { color: m.accent } : {}}>{o.label}</div>
+                      <div className="mi-choice-dir-desc">{o.desc}</div>
+                    </div>
+                    {on && <div className="mi-choice-dir-check" style={{ background: m.accent }}>✓</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ③ Urgency + Scope row */}
+          <div className="mi-form-section mi-form-two-col">
+            <div>
+              <SectionLabel label="Urgency" step="③" />
+              <div className="mi-choice-urg-grid">
+                {URGENCY_OPTIONS.map((o) => {
+                  const m = URG_META[o.id] || {};
+                  const on = log.urgency === o.id;
+                  return (
+                    <div key={o.id} className={`mi-choice-compact${on ? " is-on" : ""}`}
+                      style={on ? { borderColor: m.accent, background: `${m.accent}10` } : {}}
+                      onClick={() => setLogField("urgency", o.id)}>
+                      <div className="mi-compact-icon-wrap" style={{ color: on ? m.accent : "var(--color-text-muted)" }}>{m.icon}</div>
+                      <div className="mi-choice-compact-label" style={on ? { color: m.accent } : {}}>{o.label}</div>
+                      <div className="mi-choice-compact-desc">{o.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <SectionLabel label="Scope" />
+              <div className="mi-choice-urg-grid">
+                {SCOPE_OPTIONS.map((o) => {
+                  const on = log.scope === o.id;
+                  return (
+                    <div key={o.id} className={`mi-choice-compact${on ? " is-on" : ""}`}
+                      onClick={() => setLogField("scope", o.id)}>
+                      <div className="mi-choice-compact-label" style={on ? { color: "var(--color-primary)" } : {}}>{o.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Department */}
+          <div className="mi-form-section">
+            <SectionLabel label="Department (optional)" />
+            <div className="mi-choice-dept-grid">
+              {DEPT_OPTIONS.map((d) => {
+                const m = DEPT_META[d] || {};
+                const on = log.dept === d;
+                return (
+                  <div key={d} className={`mi-choice-dept${on ? " is-on" : ""}`}
+                    style={on ? { borderColor: m.accent, background: m.soft } : {}}
+                    onClick={() => setLog((p) => ({ ...p, dept: p.dept === d ? null : d }))}>
+                    <div className="mi-dept-icon-wrap" style={{ background: on ? m.accent : `${m.accent}15`, color: on ? "#fff" : m.accent }}>{m.icon}</div>
+                    <div className="mi-choice-compact-label" style={on ? { color: m.accent } : {}}>{d}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <Text variant="micro" tone="subtle">Dept-level signal applies to all SKUs in that department. Required if no specific SKUs selected.</Text>
+          </div>
+
+          {/* Title */}
+          <div className="mi-form-section">
+            <SectionLabel label="Title" required step="④" />
+            <div className="mi-field-wrap">
+              <input
+                className="mi-field-input"
+                type="text"
+                placeholder="One-line description — e.g. Competitor opening 2 blocks away Q3"
+                value={log.title}
+                onChange={(e) => setLog((p) => ({ ...p, title: e.target.value }))}
               />
-              <Button variant="secondary" size="medium" onClick={addSku}>Add</Button>
-            </Stack>
-            <Text variant="micro" tone="subtle">SKU references enable per-product confidence score updates.</Text>
-          </FormSection>
-          <FormSection label="Confidence level">
-            <ChoiceGrid field="confidence" options={CONFIDENCE_OPTIONS} columns={3} />
-          </FormSection>
-          <Stack direction="row" gap={2}>
-            <Button variant="primary" size="medium" onClick={submitLog} style={{ flex: 1 }}>Log intelligence →</Button>
+            </div>
+          </div>
+
+          {/* What you observed */}
+          <div className="mi-form-section">
+            <SectionLabel label="What you observed" required />
+            <div className="mi-field-wrap">
+              <textarea
+                className="mi-field-textarea"
+                placeholder="The full picture — who, what, where, when. Free text stays human-read only; only the structured tags above feed the agent model."
+                value={log.body}
+                onChange={(e) => setLog((p) => ({ ...p, body: e.target.value }))}
+                rows={5}
+              />
+            </div>
+            <Text variant="micro" tone="subtle" style={{ marginTop: 6 }}>Free text is human-read only — it never feeds the agent model directly.</Text>
+          </div>
+
+          {/* Affected SKUs */}
+          <div className="mi-form-section">
+            <SectionLabel label="Affected SKUs (optional)" step="⑤" />
+            {log.skus.length > 0 && (
+              <div className="mi-sku-tag-list">
+                {log.skus.map((s) => (
+                  <div key={s} className="mi-sku-tag">
+                    <Text variant="micro" mono style={{ color: "var(--color-accent)" }}>{s}</Text>
+                    <span className="mi-sku-remove" onClick={() => removeSku(s)}>×</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mi-sku-pick-row">
+              <div className="mi-field-wrap" style={{ flex: 1 }}>
+                <select
+                  className="mi-field-select"
+                  value={log.skuPick}
+                  onChange={(e) => setLog((p) => ({ ...p, skuPick: e.target.value }))}
+                >
+                  <option value="">Select a catalogue SKU…</option>
+                  {CATALOGUE_SKUS.filter((s) => !log.skus.includes(s.id)).map((s) => (
+                    <option key={s.id} value={s.id}>{s.id} · {s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <button className="mi-add-sku-btn" onClick={addSku}>+ Add SKU</button>
+            </div>
+            <Text variant="micro" tone="subtle" style={{ marginTop: 6 }}>
+              SKU references let the agent update confidence scores for specific products. Leave blank for general market / trend signals.
+            </Text>
+          </div>
+
+          {/* Confidence */}
+          <div className="mi-form-section">
+            <SectionLabel label="Confidence level" />
+            <div className="mi-choice-conf-grid">
+              {CONFIDENCE_OPTIONS.map((o) => {
+                const m = CONF_META[o.id] || {};
+                const on = log.confidence === o.id;
+                return (
+                  <div key={o.id} className={`mi-choice-conf${on ? " is-on" : ""}`}
+                    onClick={() => setLogField("confidence", o.id)}>
+                    <div className="mi-choice-conf-icon" style={{ color: on ? "var(--color-primary)" : "var(--color-text-muted)" }}>{m.icon}</div>
+                    <div className="mi-choice-compact-label" style={on ? { color: "var(--color-primary)" } : {}}>{o.label}</div>
+                    <div className="mi-choice-compact-desc">{o.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Submit */}
+          <div className="mi-log-submit-row">
+            <button className="mi-log-submit-btn" onClick={submitLog}>
+              Log intelligence →
+            </button>
             <Button variant="secondary" size="medium" onClick={() => setView("inbox")}>Cancel</Button>
-          </Stack>
-        </Stack>
+          </div>
+        </div>
       </Card>
 
-      {/* Preview panel */}
-      <div style={{ position: "sticky", top: 0 }}>
-        <Card sx={softSx}>
-          <Stack direction="column" gap={3}>
-            <Text variant="caption" tone="muted" style={{ fontWeight: 700 }}>Entry preview</Text>
+      {/* ── Right: Preview panel ── */}
+      <div style={{ position: "sticky", top: 0, alignSelf: "flex-start" }}>
+        <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
+          {/* Preview header */}
+          <div className="mi-preview-header">
+            <span style={{ fontSize: 14 }}>📋</span>
+            <Text variant="caption" style={{ color: "#fff", fontWeight: 700 }}>Entry preview</Text>
+          </div>
+          <div className="mi-preview-body">
             {!log.type && !log.direction ? (
-              <Text variant="micro" tone="subtle" style={{ textAlign: "center", padding: "20px 0" }}>
-                Start filling in the form to preview your entry
-              </Text>
+              <div className="mi-preview-empty">
+                <div style={{ fontSize: 32, marginBottom: 10 }}>📝</div>
+                <Text variant="caption" tone="muted">Start filling in the form to preview your entry</Text>
+              </div>
             ) : (
-              <Stack direction="column" gap={2}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {/* Tag row */}
                 <Stack direction="row" gap={1} wrap>
-                  {log.type ? <Badge variant="subtle" size="small" color={TYPE_BADGE[log.type]} label={log.type} /> : null}
-                  {log.direction ? <Badge variant="subtle" size="small" color={DIR_BADGE[log.direction]} label={log.direction} /> : null}
+                  {log.type ? (
+                    <span className="mi-preview-tag" style={{ background: (TYPE_META[log.type]?.soft || "#f3f4f6"), color: (TYPE_META[log.type]?.accent || "#374151"), border: `1px solid ${TYPE_META[log.type]?.border || "#d1d5db"}` }}>
+                      {TYPE_META[log.type]?.icon} {log.type}
+                    </span>
+                  ) : null}
+                  {log.direction ? (
+                    <span className="mi-preview-tag mi-preview-tag--dir" style={{ background: (DIR_META[log.direction]?.soft || "#f3f4f6"), color: (DIR_META[log.direction]?.accent || "#374151"), border: `1px solid ${DIR_META[log.direction]?.border || "#d1d5db"}` }}>
+                      {DIR_META[log.direction]?.icon} {log.direction}
+                    </span>
+                  ) : null}
                   {log.urgency ? <Badge variant="subtle" size="small" color={URGENCY_BADGE[log.urgency]} label={log.urgency} /> : null}
-                  {log.scope ? <Badge variant="subtle" size="small" color="default" label={log.scope} /> : null}
+                  {log.scope ? <span className="mi-preview-scope">{log.scope}</span> : null}
                 </Stack>
-                {log.title ? <Text variant="caption" tone="strong">{log.title}</Text> : null}
-                {log.body ? (
-                  <Text variant="micro" tone="muted" style={{ lineHeight: 1.5 }}>
+                {log.title && <div className="mi-preview-title">{log.title}</div>}
+                {log.body && (
+                  <div className="mi-preview-body-text">
                     {log.body.slice(0, 200)}{log.body.length > 200 ? "…" : ""}
-                  </Text>
-                ) : null}
-                {log.skus.length ? (
+                  </div>
+                )}
+                {log.skus.length > 0 && (
                   <Stack direction="row" gap={1} wrap>
                     {log.skus.map((s) => <SkuChip key={s}>{s}</SkuChip>)}
                   </Stack>
-                ) : null}
-              </Stack>
+                )}
+              </div>
             )}
-            {feedsModelPreview ? (
-              <NoteBox tone="accent" label="Model tags">
-                {log.direction === "threat" ? "Reduce" : "Boost"} confidence for{" "}
-                {log.skus.join(", ")} at {log.scope || "specified"} level.
-              </NoteBox>
-            ) : null}
-          </Stack>
+
+            {/* Model impact section */}
+            <div className="mi-preview-model-section">
+              <div className="mi-preview-model-label">🤖 Model impact</div>
+              {feedsModelPreview ? (
+                <div className="mi-preview-model-active">
+                  <strong>Will feed agent:</strong><br />
+                  {log.direction === "threat" ? "Drop" : "Boost"} confidence for{" "}
+                  {log.skus.length > 0
+                    ? log.skus.join(", ")
+                    : (log.dept && log.dept !== "All" ? `all ${log.dept} SKUs` : "all SKUs (national)")
+                  } at {log.scope || "specified"} scope.<br />
+                  Signal: {log.type} · urgency: {log.urgency || "unset"}.<br />
+                  Affects: Portfolio Build gaps, assortment recommendations, NPI analysis.
+                </div>
+              ) : (
+                <div className="mi-preview-model-inactive">
+                  {!log.type && <div>• Select a signal type to enable model tagging</div>}
+                  {log.type && !log.skus.length && !log.dept && <div>• Add at least one SKU to enable confidence score updates</div>}
+                  {log.type && (log.skus.length > 0 || log.dept) && (
+                    <div>✓ Free text stays human-read. Structured tags will feed model on submit.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </Card>
       </div>
-    </Grid>
+    </div>
   );
 
   /* ═══════════════ SHELL ═══════════════ */
