@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Card, Badge, Button } from "impact-ui";
 import {
   BarChart3, Package, Layers, TrendingDown, Send, Eye,
   ChevronDown, ChevronUp, ChevronRight, ArrowLeft,
   CheckCircle2, Bot, Plus, RefreshCw, Sparkles,
   TreePine, Grid2x2, Mountain, Star, CheckCheck,
-  Lock,
+  Lock, ArrowRight,
 } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
@@ -14,6 +14,8 @@ import {
   FD_PLR_CALENDAR, ASSORT_PERIODS, plrCalcOptionCount,
 } from "../data/plr.js";
 import { FD_CLUST_SCENARIOS } from "../data/clustering.js";
+import { FD_SKUS } from "../data/skus.js";
+import { FD_ASSORTMENT } from "../data/assortment.js";
 import { panelSx } from "../styles/panelSx.js";
 import "./Approval.css";
 
@@ -208,6 +210,56 @@ const STAGE_BADGE = {
   locked:  { color: "neutral", label: "Locked"      },
 };
 
+/* ─── Hindsight helpers ────────────────────────────────────────────────────── */
+const fmtD = (n) => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `$${Math.round(n / 1_000)}k` : `$${n}`;
+const fmtU = (n) => n >= 1_000 ? `${Math.round(n / 1_000)}k sqft` : `${Math.round(n)} sqft`;
+
+function useHindsightData(dept) {
+  return useMemo(() => {
+    const skuSet  = new Set(FD_SKUS.filter((s) => s.dept === dept).map((s) => s.sku));
+    const rows    = FD_ASSORTMENT.filter((r) => skuSet.has(r.sku));
+    if (!rows.length) return null;
+
+    const salesU  = rows.reduce((a, r) => a + r.r13Sqft, 0);
+    const salesD  = rows.reduce((a, r) => a + r.r13Sqft * r.menuPrice, 0);
+    const oh      = rows.reduce((a, r) => a + r.onHand, 0);
+    const gmD     = rows.reduce((a, r) => a + r.r13Sqft * (r.menuPrice - r.menuPrice * 0.55), 0);
+    const gmPct   = salesD > 0 ? Math.round(gmD / salesD * 100 * 10) / 10 : 0;
+    const stPct   = salesU + oh > 0 ? Math.round(salesU / (salesU + oh) * 100 * 10) / 10 : 0;
+    const uniqSku = new Set(rows.map((r) => r.sku)).size;
+    const uniqSt  = new Set(rows.map((r) => r.storeId)).size;
+    const ros     = uniqSku > 0 && uniqSt > 0 ? salesU / (13 * uniqSku * uniqSt) : 0;
+
+    /* Velocity buckets */
+    const velTot  = { A: 0, B: 0, C: 0, D: 0 };
+    rows.forEach((r) => { if (velTot[r.velocity] !== undefined) velTot[r.velocity] += r.r13Sqft; });
+    const velSum  = Object.values(velTot).reduce((a, v) => a + v, 0) || 1;
+
+    /* Per-SKU aggregation */
+    const skuAgg  = {};
+    rows.forEach((r) => {
+      if (!skuAgg[r.sku]) skuAgg[r.sku] = { sku: r.sku, su: 0, sd: 0, oh: 0, gmD: 0, stores: new Set() };
+      const ag = skuAgg[r.sku];
+      ag.su    += r.r13Sqft;
+      ag.sd    += r.r13Sqft * r.menuPrice;
+      ag.oh    += r.onHand;
+      ag.gmD   += r.r13Sqft * (r.menuPrice - r.menuPrice * 0.55);
+      ag.stores.add(r.storeId);
+    });
+
+    const skuRows = Object.values(skuAgg).map((ag) => {
+      const meta = FD_SKUS.find((s) => s.sku === ag.sku) || {};
+      const st2  = ag.su + ag.oh > 0 ? Math.round(ag.su / (ag.su + ag.oh) * 100 * 10) / 10 : 0;
+      const gm   = ag.sd > 0 ? Math.round(ag.gmD / ag.sd * 100) : 0;
+      const sts  = ag.stores.size;
+      const ros2 = sts > 0 ? ag.su / (13 * sts) : 0;
+      return { sku: ag.sku, desc: meta.desc || String(ag.sku), subDept: meta.subDept || "—", su: ag.su, sd: ag.sd, gm, st: st2, ros: ros2, stores: sts };
+    }).sort((a, b) => b.su - a.su);
+
+    return { salesU, salesD, gmPct, stPct, ros, velTot, velSum, skuRows };
+  }, [dept]);
+}
+
 /* ─── Stage Card ──────────────────────────────────────────────────────────── */
 function StageCard({
   stage, plan, st, isExpanded, onToggle,
@@ -222,6 +274,10 @@ function StageCard({
   const badge     = STAGE_BADGE[st] || STAGE_BADGE.locked;
   const metrics   = stage.metrics(plan, st);
   const agentText = stage.agentFn(st, plan);
+  const isSetup   = stage.key === "setup";
+
+  /* Hindsight data (computed only for Stage 1) */
+  const hsData = useHindsightData(isSetup ? (plan?.dept || "") : "");
 
   const actSx = {
     fontSize: "var(--fs-xs)",
@@ -239,8 +295,6 @@ function StageCard({
           : "var(--color-text-muted)",
     opacity: isLocked ? 0.5 : 1,
   };
-
-  const isSetup = stage.key === "setup";
 
   return (
     <div className={`plr-stage-card plr-stage-card--${st}`}>
@@ -291,78 +345,98 @@ function StageCard({
             </div>
           )}
 
-          {/* ── Options sub-step (setup only) ─────────────────────────── */}
-          {isSetup && s1SubStep === "options" ? (
-            <div className="plr-option-panel">
-              {plan.optionCalc ? (
-                <>
-                  {/* Result header */}
-                  <div className="plr-option-result-hd">
-                    <div>
-                      <div className="plr-option-total">{plan.optionCalc.total}</div>
-                      <div className="plr-option-total-lbl">Recommended options</div>
+          {/* ── Hindsight sub-step (setup only) ─────────────────────────── */}
+          {isSetup && s1SubStep === "hindsight" ? (
+            hsData ? (
+              <div className="plr-hs-root">
+                {/* 5 KPI tiles */}
+                <div className="plr-hs-kpis">
+                  {[
+                    { l: "Sales U",    v: fmtU(hsData.salesU),          sub: "Sqft R13",         c: "var(--color-text-strong)" },
+                    { l: "Sales $",    v: fmtD(hsData.salesD),          sub: "Revenue R13",      c: "var(--color-text-strong)" },
+                    { l: "GM %",       v: `${hsData.gmPct}%`,           sub: "Gross margin",     c: hsData.gmPct > 42 ? "var(--color-success)" : "var(--color-warning)" },
+                    { l: "Sell-thru",  v: `${hsData.stPct}%`,           sub: "Sold / (sold+OH)", c: hsData.stPct < 10 ? "var(--color-warning)" : hsData.stPct < 20 ? "var(--color-primary)" : "var(--color-success)" },
+                    { l: "ROS",        v: hsData.ros.toFixed(2),        sub: "sqft/SKU/wk/store",c: "var(--color-text-strong)" },
+                  ].map((k) => (
+                    <div key={k.l} className="plr-hs-kpi-tile">
+                      <div className="plr-hs-kpi-lbl">{k.l}</div>
+                      <div className="plr-hs-kpi-val" style={{ color: k.c }}>{k.v}</div>
+                      <div className="plr-hs-kpi-sub">{k.sub}</div>
                     </div>
-                    <button
-                      type="button"
-                      className="plr-option-rerun-btn"
-                      onClick={onOptionRec}
-                    >
-                      <RefreshCw size={11} style={{ marginRight: 5 }} />
-                      Recalculate
-                    </button>
-                  </div>
-
-                  {/* Formula */}
-                  <div className="plr-option-formula">
-                    {plan.optionCalc.formula}
-                  </div>
-
-                  {/* Tier split */}
-                  <div className="plr-option-tiers">
-                    <div className="plr-option-tier">
-                      <div className="plr-option-tier-val">{plan.optionCalc.national}</div>
-                      <div className="plr-option-tier-lbl">National</div>
-                    </div>
-                    <div className="plr-option-tier">
-                      <div className="plr-option-tier-val">{plan.optionCalc.regional}</div>
-                      <div className="plr-option-tier-lbl">Regional</div>
-                    </div>
-                    <div className="plr-option-tier">
-                      <div className="plr-option-tier-val">{plan.optionCalc.store}</div>
-                      <div className="plr-option-tier-lbl">Store</div>
-                    </div>
-                  </div>
-
-                  {/* Per-cluster table */}
-                  {plan.optionCalc.clusterBreakdown?.length > 0 && (
-                    <div className="plr-cluster-table">
-                      <div className="plr-cluster-table-head">
-                        <span>Cluster</span>
-                        <span>Stores</span>
-                        <span>Options</span>
-                      </div>
-                      {plan.optionCalc.clusterBreakdown.map((row) => (
-                        <div key={row.id} className="plr-cluster-table-row">
-                          <span>{row.label}</span>
-                          <span>{row.stores}</span>
-                          <span className="plr-cluster-opts">{row.options}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="plr-option-empty">
-                  <Sparkles size={22} style={{ color: "var(--color-primary)", opacity: 0.7 }} />
-                  <Text variant="body-strong" tone="muted">Option count not yet calculated</Text>
-                  <Text variant="caption" tone="subtle">Run the agent to determine the recommended option count based on assortment period and cluster scenario.</Text>
-                  <button type="button" className="plr-option-run-btn" onClick={onOptionRec}>
-                    <Sparkles size={12} style={{ marginRight: 6 }} />
-                    Run option recommendation
-                  </button>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                {/* Velocity bar */}
+                <div className="plr-hs-vel">
+                  <div className="plr-hs-vel-title">Sales contribution by store velocity</div>
+                  <div className="plr-hs-vel-bar">
+                    {["A","B","C","D"].map((v) => {
+                      const pct = Math.round(hsData.velTot[v] / hsData.velSum * 100);
+                      const vc  = { A: "#059669", B: "#2563eb", C: "#d97706", D: "#dc2626" }[v];
+                      return pct > 0 ? (
+                        <div key={v} className="plr-hs-vel-seg" style={{ flex: pct, background: vc }}>
+                          {pct > 8 && <span>{pct}%</span>}
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                  <div className="plr-hs-vel-legend">
+                    {["A","B","C","D"].map((v) => {
+                      const pct = Math.round(hsData.velTot[v] / hsData.velSum * 100);
+                      const vc  = { A: "#059669", B: "#2563eb", C: "#d97706", D: "#dc2626" }[v];
+                      return <span key={v} className="plr-hs-vel-lbl"><span className="plr-hs-vel-dot" style={{ background: vc }} />Vel {v} {pct}%</span>;
+                    })}
+                  </div>
+                </div>
+
+                {/* SKU pivot table */}
+                <div className="plr-hs-table-wrap">
+                  <div className="plr-hs-table-title">SKU performance</div>
+                  <div className="plr-hs-table-scroll">
+                    <table className="plr-hs-table">
+                      <thead>
+                        <tr>
+                          {["SKU","Description","Sub-dept","Sales U","Sales $","GM%","Sell-thru","ROS","Stores"].map((h) => (
+                            <th key={h}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hsData.skuRows.map((r, i) => (
+                          <tr key={r.sku} className={i % 2 === 0 ? "plr-hs-tr-even" : ""}>
+                            <td className="plr-hs-td-mono">{r.sku}</td>
+                            <td className="plr-hs-td-strong">{r.desc.slice(0, 26)}</td>
+                            <td>{r.subDept}</td>
+                            <td className="plr-hs-td-r">{fmtU(r.su)}</td>
+                            <td className="plr-hs-td-r">{fmtD(r.sd)}</td>
+                            <td className="plr-hs-td-r" style={{ color: r.gm > 42 ? "#059669" : "#d97706" }}>{r.gm}%</td>
+                            <td className="plr-hs-td-r" style={{ color: r.st < 10 ? "#d97706" : "inherit" }}>{r.st}%</td>
+                            <td className="plr-hs-td-r plr-hs-td-mono">{r.ros.toFixed(2)}</td>
+                            <td className="plr-hs-td-r plr-hs-td-muted">{r.stores}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="plr-hs-cta">
+                  <Button variant="primary" size="small" onClick={() => onS1SubStep("options")}>
+                    Option Planning <ArrowRight size={12} style={{ marginLeft: 4 }} />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="plr-option-empty">
+                <Text variant="caption" tone="muted">No hindsight data available for this department.</Text>
+              </div>
+            )
+
+          /* ── Options sub-step (setup only) ─────────────────────────── */
+          ) : isSetup && s1SubStep === "options" ? (
+            <OptionsPanel plan={plan} onOptionRec={onOptionRec} />
+
           ) : (
             /* ── Default stage body (agent + metrics + actions) ─────────── */
             <>
@@ -443,6 +517,117 @@ function StageCard({
   );
 }
 
+/* ─── Options Panel (extracted to use useEffect cleanly) ──────────────────── */
+function OptionsPanel({ plan, onOptionRec }) {
+  /* Auto-compute on mount if not yet calculated */
+  useEffect(() => {
+    if (!plan?.optionCalc) {
+      const periodId = plan?.assortPeriodId
+        || ASSORT_PERIODS.find((p) => p.dept === plan?.dept)?.id;
+      if (periodId) {
+        const calc = plrCalcOptionCount(
+          plan.dept, periodId, plan.clustScenario || "B",
+          FD_CLUST_SCENARIOS, FD_SKUS, FD_ASSORTMENT,
+        );
+        if (calc) onOptionRec(plan.id, calc);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan?.id]);
+
+  const calc = plan?.optionCalc;
+
+  if (!calc) {
+    return (
+      <div className="plr-option-panel">
+        <div className="plr-option-empty">
+          <Sparkles size={22} style={{ color: "var(--color-primary)", opacity: 0.7 }} />
+          <Text variant="body-strong" tone="muted">Calculating option recommendation…</Text>
+          <Text variant="caption" tone="subtle">Agent is computing based on assortment period and cluster scenario.</Text>
+        </div>
+      </div>
+    );
+  }
+
+  const total   = calc.total;
+  const natPct  = total > 0 ? Math.round(calc.national  / total * 100) : 0;
+  const regPct  = total > 0 ? Math.round(calc.regional  / total * 100) : 0;
+  const stoPct  = total > 0 ? Math.round(calc.store     / total * 100) : 0;
+
+  return (
+    <div className="plr-option-panel">
+      {/* Result header */}
+      <div className="plr-option-result-hd">
+        <div>
+          <div className="plr-option-total">{total}</div>
+          <div className="plr-option-total-lbl">Recommended options</div>
+        </div>
+        <button type="button" className="plr-option-rerun-btn" onClick={() => onOptionRec(plan.id, null)}>
+          <RefreshCw size={11} style={{ marginRight: 5 }} />
+          Recalculate
+        </button>
+      </div>
+
+      {/* Formula + stats */}
+      <div className="plr-option-formula">{calc.formula}</div>
+      <div className="plr-opt-stats">
+        <span>ROS: <strong>{calc.ros}</strong></span>
+        <span>{calc.weeks} weeks</span>
+        <span>{calc.totalPositions || calc.positions} positions</span>
+      </div>
+
+      {/* 3-tier split */}
+      <div className="plr-opt-tiers-grid">
+        {[
+          { l: "National core",     n: calc.national, pct: natPct, c: "#059669", bg: "rgba(16,185,129,.08)", desc: "Same across all stores"  },
+          { l: "Regional / cluster",n: calc.regional, pct: regPct, c: "#2563eb", bg: "rgba(37,99,235,.08)",  desc: "Varies by cluster"       },
+          { l: "Store curated",     n: calc.store,    pct: stoPct, c: "#d97706", bg: "rgba(217,119,6,.08)",  desc: "Store-level picks"       },
+        ].map((t) => (
+          <div key={t.l} className="plr-opt-tier-box" style={{ background: t.bg }}>
+            <div className="plr-opt-tier-lbl" style={{ color: t.c }}>{t.l}</div>
+            <div className="plr-opt-tier-val" style={{ color: t.c }}>{t.n}</div>
+            <div className="plr-opt-tier-pct" style={{ color: t.c }}>{t.pct}% of total</div>
+            <div className="plr-opt-tier-desc" style={{ color: t.c }}>{t.desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Per-cluster table — 7 columns */}
+      {calc.clusterBreakdown?.length > 0 && (
+        <div className="plr-cluster-table">
+          <div className="plr-cluster-table-head">
+            <span>Cluster</span>
+            <span className="plr-cl-r">Stores</span>
+            <span className="plr-cl-r">ROS</span>
+            <span className="plr-cl-r">Total opts</span>
+            <span className="plr-cl-r">National</span>
+            <span className="plr-cl-r">Regional</span>
+            <span className="plr-cl-r">Store</span>
+          </div>
+          {calc.clusterBreakdown.map((row, ci) => {
+            const colors = ["#2d6a2d", "#2563eb", "#7c3aed", "#d97706"];
+            const c = colors[ci % colors.length];
+            return (
+              <div key={row.id} className="plr-cluster-table-row">
+                <span className="plr-cl-label">
+                  <span className="plr-cl-dot" style={{ background: c }} />
+                  {row.label}
+                </span>
+                <span className="plr-cl-r">{row.stores}</span>
+                <span className="plr-cl-r plr-cl-mono">{typeof row.ros === "number" ? row.ros.toFixed(2) : row.ros}</span>
+                <span className="plr-cl-r plr-cluster-opts" style={{ color: c }}>{row.opts ?? row.options}</span>
+                <span className="plr-cl-r plr-cl-nat">{row.national}</span>
+                <span className="plr-cl-r plr-cl-reg">{row.regional}</span>
+                <span className="plr-cl-r plr-cl-sto">{row.store}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── PLR List ────────────────────────────────────────────────────────────── */
 function PLRList({ plans, localPlrCal, onSelectPlr, onCreatePlr }) {
   const openCount = localPlrCal.filter((p) => p.status === "Open").length;
@@ -472,6 +657,12 @@ function PLRList({ plans, localPlrCal, onSelectPlr, onCreatePlr }) {
           const urgent    = !isClosed && days >= 0 && days <= 14;
           const deptColor = DEPT_STRIPE[plr.dept] || "var(--color-border)";
 
+          /* Active stage label */
+          const activeVer        = versions.find((v) => v.status === "in-progress" || v.status === "review") || versions[0];
+          const activeStageLbl   = activeVer
+            ? STAGES.find((s) => s.key === (activeVer.activeStage || activeVer.stagesCompleted?.slice(-1)[0]))?.label
+            : null;
+
           return (
             <div
               key={plr.id}
@@ -498,6 +689,12 @@ function PLRList({ plans, localPlrCal, onSelectPlr, onCreatePlr }) {
                     <>
                       <span className="plr-bullet">·</span>
                       <Text variant="caption" tone="muted">Pres: {plr.presDate}</Text>
+                    </>
+                  )}
+                  {!isClosed && activeStageLbl && (
+                    <>
+                      <span className="plr-bullet">·</span>
+                      <Text variant="caption" style={{ color: "var(--color-primary)", fontWeight: 600 }}>{activeStageLbl}</Text>
                     </>
                   )}
                 </Stack>
@@ -595,18 +792,25 @@ function PLRDetail({
     setTimeout(() => setRerunning((prev) => ({ ...prev, [stageKey]: false })), 1600);
   }, []);
 
-  const handleOptionRec = useCallback(() => {
-    if (!activeVersion) return;
-    const periodId = activeVersion.assortPeriodId
-      || ASSORT_PERIODS.find((p) => p.dept === activeVersion.dept)?.id;
-    const calc = plrCalcOptionCount(
-      activeVersion.dept,
-      periodId,
-      activeVersion.clustScenario || "B",
-      FD_CLUST_SCENARIOS,
-    );
-    if (calc) onOptionRec(activeVersion.id, calc);
-  }, [activeVersion, onOptionRec]);
+  const handleOptionRec = useCallback((planIdOrId, calcOrNull) => {
+    // If calcOrNull is null, it means "recalculate"
+    const planId = planIdOrId;
+    if (calcOrNull === null) {
+      // Trigger recalculation
+      const ver = versions.find((v) => v.id === planId) || activeVersion;
+      if (!ver) return;
+      const periodId = ver.assortPeriodId
+        || ASSORT_PERIODS.find((p) => p.dept === ver.dept)?.id;
+      const newCalc = plrCalcOptionCount(
+        ver.dept, periodId, ver.clustScenario || "B",
+        FD_CLUST_SCENARIOS, FD_SKUS, FD_ASSORTMENT,
+      );
+      if (newCalc) onOptionRec(planId, newCalc);
+    } else {
+      onOptionRec(planId, calcOrNull);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVersion, versions, onOptionRec]);
 
   if (!plrRow) return null;
 
@@ -715,7 +919,7 @@ function PLRDetail({
               isRerunning={!!rerunning[stage.key]}
               s1SubStep={s1SubStep}
               onS1SubStep={setS1SubStep}
-              onOptionRec={handleOptionRec}
+              onOptionRec={(id, calc) => handleOptionRec(id ?? activeVersion.id, calc)}
             />
           ))}
         </div>
@@ -800,6 +1004,8 @@ export default function Approval({ onNavigate }) {
       createWiz.assortPeriodId,
       createWiz.clustScenario || "B",
       FD_CLUST_SCENARIOS,
+      FD_SKUS,
+      FD_ASSORTMENT,
     );
     if (calc) setCreateWiz((prev) => ({ ...prev, optionCalc: calc }));
   }, [createWiz]);
@@ -937,22 +1143,36 @@ export default function Approval({ onNavigate }) {
                       key={p.id}
                       type="button"
                       className={`plr-period-row${createWiz.assortPeriodId === p.id ? " plr-period-row--selected" : ""}`}
-                      onClick={() => setCreateWiz((prev) => ({ ...prev, assortPeriodId: p.id, step: 3 }))}
+                      onClick={() => setCreateWiz((prev) => ({ ...prev, assortPeriodId: p.id }))}
                     >
                       <div>
                         <div className="plr-period-season">{p.season}</div>
-                        <div className="plr-period-dates">W{p.startWeek?.replace("W", "") || "01"}–W{p.endWeek?.replace("W", "") || "26"} · Pres: {p.presDate}</div>
+                        <div className="plr-period-dates">{p.startWeek} – {p.endWeek} · Pres: {p.presDate} · Due: {p.dueDate}</div>
                       </div>
                       <Badge
                         variant="subtle" size="small"
                         color={p.status === "active" ? "success" : "neutral"}
                         label={p.status === "active" ? "Active" : "Planned"}
                       />
-                      <ChevronRight size={14} style={{ color: "var(--color-text-muted)" }} />
+                      {createWiz.assortPeriodId === p.id && (
+                        <CheckCircle2 size={16} style={{ color: "var(--color-success)", flexShrink: 0 }} />
+                      )}
                     </button>
                   ))}
                 </div>
               )}
+
+              {/* Navigation buttons */}
+              <div className="plr-wiz-nav">
+                <Button variant="secondary" size="small" onClick={() => setCreateWiz((prev) => ({ ...prev, step: 1 }))}>
+                  ← Back
+                </Button>
+                {createWiz.assortPeriodId && (
+                  <Button variant="primary" size="small" onClick={() => setCreateWiz((prev) => ({ ...prev, step: 3 }))}>
+                    Continue <ArrowRight size={12} style={{ marginLeft: 4 }} />
+                  </Button>
+                )}
+              </div>
             </>
           )}
 

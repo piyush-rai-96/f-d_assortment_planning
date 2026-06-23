@@ -100,8 +100,12 @@ const DEPT_PARAMS = {
 /**
  * Calculates recommended option count from assortment period + cluster scenario.
  * Formula: Sales (period sqft) ÷ (Weeks × Positions × ROS)
+ *
+ * When `skus` and `assortment` are provided the ROS is computed live from actual
+ * FD_ASSORTMENT records (matching the HTML reference). Otherwise falls back to
+ * hardcoded DEPT_PARAMS (used in the wizard before data is available).
  */
-export function plrCalcOptionCount(dept, assortPeriodId, clustScenario, clustScenarios) {
+export function plrCalcOptionCount(dept, assortPeriodId, clustScenario, clustScenarios, skus, assortment) {
   const period = ASSORT_PERIODS.find((p) => p.id === assortPeriodId);
   if (!period) return null;
 
@@ -109,29 +113,96 @@ export function plrCalcOptionCount(dept, assortPeriodId, clustScenario, clustSce
   const endW   = parseInt((period.endWeek   || "W26").replace("W", "")) || 26;
   const weeks  = Math.max(1, endW - startW + 1);
 
-  const params = DEPT_PARAMS[dept] || { positions: 30, ros: 1.2, salesU: 12000 };
-  const { positions, ros, salesU } = params;
-  const salesUPeriod = Math.round(salesU * (weeks / 26));
-  const total = Math.max(1, Math.round(salesUPeriod / (weeks * positions * ros)));
-
-  const national  = Math.round(total * 0.40);
-  const regional  = Math.round(total * 0.35);
-  const storeTier = Math.max(0, total - national - regional);
-
   const sc       = clustScenarios?.[clustScenario || "B"];
   const clusters = sc?.clusters || [];
+
+  /* ── Data-driven path (when FD_ASSORTMENT + FD_SKUS passed) ──────────── */
+  if (skus && assortment && assortment.length > 0) {
+    const deptSkuSet  = new Set(skus.filter((s) => s.dept === dept).map((s) => s.sku));
+    const deptRows    = assortment.filter((r) => deptSkuSet.has(r.sku));
+    if (!deptRows.length) return null;
+
+    const totalPositions = clusters.reduce((a, cl) => a + cl.stores.length, 0) || 1;
+    const salesU13       = deptRows.reduce((a, r) => a + r.r13Sqft, 0);
+    const salesUPeriod   = Math.round(salesU13 * (weeks / 13));
+    const uniqueSkuCount = new Set(deptRows.map((r) => r.sku)).size;
+    const uniqueStoreCount = new Set(deptRows.map((r) => r.storeId)).size;
+
+    const ros = uniqueSkuCount > 0 && uniqueStoreCount > 0
+      ? salesU13 / (13 * uniqueSkuCount * uniqueStoreCount)
+      : 0;
+    if (ros <= 0) return null;
+
+    const nationalOpts = salesUPeriod / (weeks * totalPositions * ros);
+    const total        = Math.max(1, Math.round(nationalOpts));
+
+    const split   = { national: 40, regional: 30, store: 30 };
+    const natOpts = Math.round(total * split.national / 100);
+    const regOpts = Math.round(total * split.regional / 100);
+    const stoOpts = total - natOpts - regOpts;
+
+    /* Per-cluster ROS */
+    const clRosData = clusters.map((cl) => {
+      const clRows       = deptRows.filter((r) => cl.stores.includes(r.storeId));
+      if (!clRows.length) return { id: cl.id, ros, salesU: 0, stores: cl.stores.length };
+      const clSalesU13   = clRows.reduce((a, r) => a + r.r13Sqft, 0);
+      const clUniqueSkus = new Set(clRows.map((r) => r.sku)).size;
+      const clRos        = clSalesU13 / (13 * clUniqueSkus * cl.stores.length);
+      return { id: cl.id, ros: clRos, salesU: Math.round(clSalesU13 * (weeks / 13)), stores: cl.stores.length };
+    });
+
+    const rosSum = clRosData.reduce((a, cl) => a + cl.ros, 0) || 1;
+    const clusterBreakdown = clusters.map((cl, i) => {
+      const clData      = clRosData[i];
+      const rosWeight   = clData.ros / rosSum;
+      const clRegional  = Math.round(regOpts * rosWeight);
+      const clStore     = Math.round(stoOpts * rosWeight);
+      const clTotal     = natOpts + clRegional + clStore;
+      return {
+        id: cl.id, label: cl.label, stores: cl.stores.length,
+        opts: clTotal,
+        national: natOpts, regional: clRegional, store: clStore,
+        ros: parseFloat(clData.ros.toFixed(2)),
+        salesU: clData.salesU,
+        /* legacy field — kept for backward compat */
+        options: clTotal,
+      };
+    });
+
+    return {
+      total, national: natOpts, regional: regOpts, store: stoOpts,
+      ros: parseFloat(ros.toFixed(2)),
+      salesUPeriod,
+      weeks, totalPositions,
+      formula: `${salesUPeriod.toLocaleString()} sqft ÷ (${weeks} wks × ${totalPositions} positions × ${parseFloat(ros.toFixed(2))} ROS)`,
+      clusterBreakdown,
+    };
+  }
+
+  /* ── Fallback: hardcoded DEPT_PARAMS (wizard / no data) ──────────────── */
+  const params    = DEPT_PARAMS[dept] || { positions: 30, ros: 1.2, salesU: 12000 };
+  const { positions, ros, salesU } = params;
+  const salesUPeriod = Math.round(salesU * (weeks / 26));
+  const total        = Math.max(1, Math.round(salesUPeriod / (weeks * positions * ros)));
+
+  const natOpts = Math.round(total * 0.40);
+  const regOpts = Math.round(total * 0.35);
+  const stoOpts = Math.max(0, total - natOpts - regOpts);
+
   const clusterBreakdown = clusters.map((c, i) => ({
-    id: c.id,
-    label: c.label,
-    stores: c.stores.length,
-    options: i < storeTier % clusters.length
-      ? Math.ceil(storeTier / clusters.length)
-      : Math.floor(storeTier / clusters.length),
+    id: c.id, label: c.label, stores: c.stores.length,
+    opts:     i < stoOpts % clusters.length ? Math.ceil(stoOpts / clusters.length) : Math.floor(stoOpts / clusters.length),
+    national: natOpts,
+    regional: Math.round(regOpts / (clusters.length || 1)),
+    store:    i < stoOpts % clusters.length ? Math.ceil(stoOpts / clusters.length) : Math.floor(stoOpts / clusters.length),
+    ros:      parseFloat(ros.toFixed(2)),
+    salesU:   0,
+    options:  i < stoOpts % clusters.length ? Math.ceil(stoOpts / clusters.length) : Math.floor(stoOpts / clusters.length),
   }));
 
   return {
-    total, national, regional, store: storeTier,
-    weeks, positions,
+    total, national: natOpts, regional: regOpts, store: stoOpts,
+    weeks, positions, totalPositions: positions,
     ros: parseFloat(ros.toFixed(2)),
     salesUPeriod,
     formula: `${salesUPeriod.toLocaleString()} sqft ÷ (${weeks} wks × ${positions} pos × ${ros} ROS)`,
