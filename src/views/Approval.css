@@ -304,6 +304,72 @@
   flex-wrap: wrap;
 }
 
+/* ── Agent pipeline simulation log ───────────────────────────────────────────── */
+.plr-sim-log {
+  margin: var(--sp-3) var(--sp-5) 0;
+  border-radius: var(--r2);
+  border: 1px solid rgba(110,231,183,0.25);
+  background: #0b1e14;
+  overflow: hidden;
+  animation: plrFadeIn 0.25s ease;
+  flex-shrink: 0;
+}
+.plr-sim-log-hd {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid rgba(110,231,183,0.12);
+  background: rgba(110,231,183,0.06);
+}
+.plr-sim-log-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6ee7b7;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.plr-sim-log-dismiss {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(110,231,183,0.5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 6px;
+  border-radius: var(--r-xs, 4px);
+  transition: color 0.1s;
+}
+.plr-sim-log-dismiss:hover { color: #6ee7b7; }
+.plr-sim-log-body {
+  padding: var(--sp-2) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.plr-sim-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.plr-sim-ts {
+  color: rgba(110,231,183,0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.plr-sim-text { color: rgba(203,213,225,0.8); }
+.plr-sim-line--active  .plr-sim-text { color: #93c5fd; font-weight: 700; }
+.plr-sim-line--success .plr-sim-text { color: #6ee7b7; font-weight: 700; }
+.plr-sim-line--done    .plr-sim-text { color: rgba(203,213,225,0.45); font-style: italic; }
+.plr-sim-line--sub     .plr-sim-text { color: rgba(203,213,225,0.55); padding-left: 8px; }
+
 /* ── Per-stage Re-run agent button ───────────────────────────────────────────── */
 .plr-rerun-btn {
   display: inline-flex;

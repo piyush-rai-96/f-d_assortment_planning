@@ -537,9 +537,34 @@ function PLRList({ plans, localPlrCal, onSelectPlr, onCreatePlr }) {
 }
 
 /* ─── PLR Detail ──────────────────────────────────────────────────────────── */
+/* ─── Agent simulation log line builder ───────────────────────────────────── */
+function buildSimLogLines(plan) {
+  if (!plan) return [];
+  const ts = new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const sc  = plan.clustScenario || "B";
+  const calc = plan.optionCalc;
+  const lines = [
+    { t: ts, text: `PLR scope submitted — ${plan.dept} · ${plan.season}`, type: "info" },
+    { t: ts, text: `Assortment period: ${plan.assortPeriodId || "auto-detected"}`, type: "info" },
+    { t: ts, text: `Cluster scenario: ${sc}`, type: "info" },
+    { t: ts, text: "Stage 1 ▶ Calculating option count recommendation", type: "active" },
+  ];
+  if (calc) {
+    lines.push({ t: ts, text: `Sales U: ${calc.salesUPeriod?.toLocaleString() || "—"} sqft over ${calc.weeks || 26} weeks`, type: "info" });
+    lines.push({ t: ts, text: `ROS: ${calc.ros || "—"} sqft/SKU/wk/store across ${calc.positions || "—"} positions`, type: "info" });
+    lines.push({ t: ts, text: `Recommended: ${calc.total} total options → National ${calc.national} · Cluster ${calc.regional} · Store ${calc.store}`, type: "success" });
+    (calc.clusterBreakdown || []).slice(0, 4).forEach((row) => {
+      lines.push({ t: ts, text: `  ${row.id} (${row.stores} stores): ${row.options} options · ROS ${(calc.ros * 2 / (row.stores || 1)).toFixed(2)}`, type: "sub" });
+    });
+  }
+  lines.push({ t: ts, text: "Agent pipeline complete — review stages below", type: "done" });
+  return lines;
+}
+
 function PLRDetail({
   plrId, plans, localPlrCal, pipeOverrides,
   onBack, onNavigate, onMarkDone, onReopen, onNewVersion, onPublish, onOptionRec,
+  showSimLog, onDismissSimLog,
 }) {
   const plrRow    = localPlrCal.find((p) => p.id === plrId);
   const versions  = getVersions(plrId, plans);
@@ -650,6 +675,27 @@ function PLRDetail({
         </div>
       </div>
 
+      {/* ── Agent pipeline log (shown after creation) ─────────────────────── */}
+      {showSimLog && activeVersion && (
+        <div className="plr-sim-log">
+          <div className="plr-sim-log-hd">
+            <Bot size={13} style={{ color: "#6ee7b7", flexShrink: 0 }} />
+            <span className="plr-sim-log-title">Agent pipeline log</span>
+            <button type="button" className="plr-sim-log-dismiss" onClick={onDismissSimLog}>
+              × Dismiss
+            </button>
+          </div>
+          <div className="plr-sim-log-body">
+            {buildSimLogLines(activeVersion).map((line, i) => (
+              <div key={i} className={`plr-sim-line plr-sim-line--${line.type}`}>
+                <span className="plr-sim-ts">[{line.t}]</span>
+                <span className="plr-sim-text">{line.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Stage accordion list */}
       {activeVersion ? (
         <div className="plr-stage-list">
@@ -694,6 +740,7 @@ export default function Approval({ onNavigate }) {
   const [localPlans,    setLocalPlans]    = useState(PLANS);
   const [localPlrCal,   setLocalPlrCal]   = useState(FD_PLR_CALENDAR);
   const [pipeOverrides, setPipeOverrides] = useState({});
+  const [showSimLog,    setShowSimLog]    = useState(false);   // show agent log after creation
   const [createWiz,     setCreateWiz]     = useState({
     step: 1, dept: null, assortPeriodId: null, clustScenario: null, optionCalc: null,
   });
@@ -796,6 +843,7 @@ export default function Approval({ onNavigate }) {
     }]);
     setActivePlrId(newId);
     setView("detail");
+    setShowSimLog(true);
     setCreateWiz({ step: 1, dept: null, assortPeriodId: null, clustScenario: null, optionCalc: null });
   }, [createWiz, localPlrCal]);
 
@@ -1007,13 +1055,15 @@ export default function Approval({ onNavigate }) {
         plans={localPlans}
         localPlrCal={localPlrCal}
         pipeOverrides={pipeOverrides}
-        onBack={handleBack}
+        onBack={() => { setShowSimLog(false); handleBack(); }}
         onNavigate={onNavigate}
         onMarkDone={handleMarkDone}
         onReopen={handleReopen}
         onNewVersion={handleNewVersion}
         onPublish={handlePublish}
         onOptionRec={handleOptionRec}
+        showSimLog={showSimLog}
+        onDismissSimLog={() => setShowSimLog(false)}
       />
     );
   }
