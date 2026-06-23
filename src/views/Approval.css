@@ -303,3 +303,385 @@
   gap: var(--sp-2);
   flex-wrap: wrap;
 }
+
+/* ── Per-stage Re-run agent button ───────────────────────────────────────────── */
+.plr-rerun-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--r-xs, 4px);
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.plr-rerun-btn:hover { background: var(--color-surface-alt); color: var(--color-text); }
+.plr-rerun-btn--loading { opacity: 0.6; cursor: not-allowed; }
+
+@keyframes plrSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── Stage 1 sub-tabs ─────────────────────────────────────────────────────────── */
+.plr-s1-tabs {
+  display: flex;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-1);
+}
+.plr-s1-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: var(--r-xs, 4px);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.plr-s1-tab:hover { background: var(--color-surface-alt); color: var(--color-text); }
+.plr-s1-tab--active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* ── Option planning panel ────────────────────────────────────────────────────── */
+.plr-option-panel {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  padding: var(--sp-4);
+}
+.plr-option-result-hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+.plr-option-total {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.plr-option-total-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+.plr-option-rerun-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--r-xs, 4px);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.plr-option-rerun-btn:hover { background: var(--color-surface-alt); color: var(--color-text); }
+.plr-option-formula {
+  background: var(--color-primary-soft, #eff6ff);
+  border: 1px solid var(--color-primary-border, #93c5fd);
+  border-radius: var(--r);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  margin-bottom: var(--sp-3);
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.plr-option-tiers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.plr-option-tier {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r);
+  padding: var(--sp-3);
+  text-align: center;
+}
+.plr-option-tier-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text-strong);
+  line-height: 1;
+  margin-bottom: 3px;
+  letter-spacing: -0.01em;
+}
+.plr-option-tier-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+/* Per-cluster table */
+.plr-cluster-table {
+  border: 1px solid var(--color-border);
+  border-radius: var(--r);
+  overflow: hidden;
+  font-size: 12px;
+}
+.plr-cluster-table-head {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-subtle);
+}
+.plr-cluster-table-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+}
+.plr-cluster-table-row:last-child { border-bottom: none; }
+.plr-cluster-table-row:nth-child(even) { background: var(--color-surface-alt); }
+.plr-cluster-opts { font-weight: 700; color: var(--color-primary); }
+/* Empty state */
+.plr-option-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-6) var(--sp-4);
+  text-align: center;
+}
+.plr-option-run-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.12s;
+}
+.plr-option-run-btn:hover { opacity: 0.88; }
+
+/* ── Create PLR Wizard ─────────────────────────────────────────────────────────── */
+/* Step indicator */
+.plr-wizard-steps {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-4) var(--sp-6);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  gap: 0;
+}
+.plr-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+.plr-wizard-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border);
+  color: var(--color-text-subtle);
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.plr-wizard-step--active  .plr-wizard-step-num { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-soft, #eff6ff); }
+.plr-wizard-step--done    .plr-wizard-step-num { border-color: var(--color-success); color: var(--color-success); background: var(--color-success-soft); }
+.plr-wizard-step-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+}
+.plr-wizard-step--active  .plr-wizard-step-lbl { color: var(--color-primary); font-weight: 700; }
+.plr-wizard-step--done    .plr-wizard-step-lbl { color: var(--color-success); }
+.plr-wizard-connector {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+  margin: 0 var(--sp-2);
+  min-width: var(--sp-4);
+  transition: background 0.2s;
+}
+.plr-wizard-connector--done { background: var(--color-success); }
+
+/* Wizard scrollable body */
+.plr-wizard-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-5) var(--sp-6);
+}
+
+/* ── Step 1: Dept grid ─────────────────────────────────────────────────────────── */
+.plr-dept-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+}
+@media (max-width: 640px) { .plr-dept-grid { grid-template-columns: repeat(2, 1fr); } }
+.plr-dept-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--r2);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+  text-align: center;
+}
+.plr-dept-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(37,99,235,.08));
+  background: var(--color-surface-alt);
+}
+.plr-dept-card--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft, #eff6ff);
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(37,99,235,.12));
+}
+.plr-dept-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.plr-dept-card-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+  line-height: 1.3;
+}
+
+/* ── Step 2: Period list ──────────────────────────────────────────────────────── */
+.plr-period-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.plr-period-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r2);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+}
+.plr-period-row:hover { border-color: var(--color-primary); background: var(--color-surface-alt); }
+.plr-period-row--selected { border-color: var(--color-primary); background: var(--color-primary-soft, #eff6ff); }
+.plr-period-row > div:first-child { flex: 1; min-width: 0; }
+.plr-period-season { font-size: 13px; font-weight: 700; color: var(--color-text-strong); }
+.plr-period-dates  { font-size: 11px; color: var(--color-text-subtle); margin-top: 2px; }
+.plr-period-empty  { padding: var(--sp-6); text-align: center; }
+
+.plr-back-step {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.plr-back-step:hover { color: var(--color-text); }
+
+/* ── Step 3: Cluster cards ─────────────────────────────────────────────────────── */
+.plr-clust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+@media (max-width: 640px) { .plr-clust-grid { grid-template-columns: 1fr; } }
+.plr-clust-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r2);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.plr-clust-card:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-alt);
+}
+.plr-clust-card--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft, #eff6ff);
+  box-shadow: 0 0 0 3px var(--color-primary-soft, rgba(37,99,235,.08));
+}
+.plr-clust-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.plr-clust-id {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+}
+.plr-clust-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+  line-height: 1.4;
+}
+.plr-clust-meta {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}

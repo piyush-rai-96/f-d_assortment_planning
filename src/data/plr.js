@@ -74,6 +74,71 @@ export function buildWeeks(month, year) {
   return weeks;
 }
 
+/* ── Pre-seeded assortment periods per dept + season ─────────────────────── */
+export const ASSORT_PERIODS = [
+  { id: "ap-tile-ss26",   dept: "Tile",                   season: "SS 2026", startWeek: "W01", endWeek: "W26", presDate: "2026-04-21", dueDate: "2026-04-14", status: "active"  },
+  { id: "ap-wood-ss26",   dept: "Wood",                   season: "SS 2026", startWeek: "W01", endWeek: "W26", presDate: "2026-04-28", dueDate: "2026-04-21", status: "active"  },
+  { id: "ap-lvp-ss26",    dept: "Laminate & Vinyl",       season: "SS 2026", startWeek: "W01", endWeek: "W26", presDate: "2026-05-05", dueDate: "2026-04-28", status: "active"  },
+  { id: "ap-stone-ss26",  dept: "Stone",                  season: "SS 2026", startWeek: "W01", endWeek: "W26", presDate: "2026-05-05", dueDate: "2026-04-28", status: "active"  },
+  { id: "ap-dec-ss26",    dept: "Decorative Accessories", season: "SS 2026", startWeek: "W01", endWeek: "W26", presDate: "2026-05-12", dueDate: "2026-05-05", status: "active"  },
+  { id: "ap-tile-fw26",   dept: "Tile",                   season: "FW 2026", startWeek: "W27", endWeek: "W52", presDate: "2026-10-21", dueDate: "2026-10-14", status: "planned" },
+  { id: "ap-wood-fw26",   dept: "Wood",                   season: "FW 2026", startWeek: "W27", endWeek: "W52", presDate: "2026-10-28", dueDate: "2026-10-21", status: "planned" },
+  { id: "ap-lvp-fw26",    dept: "Laminate & Vinyl",       season: "FW 2026", startWeek: "W27", endWeek: "W52", presDate: "2026-11-05", dueDate: "2026-10-28", status: "planned" },
+  { id: "ap-stone-fw26",  dept: "Stone",                  season: "FW 2026", startWeek: "W27", endWeek: "W52", presDate: "2026-11-05", dueDate: "2026-10-28", status: "planned" },
+  { id: "ap-dec-fw26",    dept: "Decorative Accessories", season: "FW 2026", startWeek: "W27", endWeek: "W52", presDate: "2026-11-12", dueDate: "2026-11-05", status: "planned" },
+];
+
+/* ── Option count formula ─────────────────────────────────────────────────── */
+const DEPT_PARAMS = {
+  "Tile":                   { positions: 42, ros: 1.4, salesU: 18600 },
+  "Wood":                   { positions: 38, ros: 1.2, salesU: 15200 },
+  "Laminate & Vinyl":       { positions: 30, ros: 1.3, salesU: 12400 },
+  "Stone":                  { positions: 18, ros: 0.9, salesU:  7200 },
+  "Decorative Accessories": { positions: 22, ros: 1.1, salesU:  8800 },
+};
+
+/**
+ * Calculates recommended option count from assortment period + cluster scenario.
+ * Formula: Sales (period sqft) ÷ (Weeks × Positions × ROS)
+ */
+export function plrCalcOptionCount(dept, assortPeriodId, clustScenario, clustScenarios) {
+  const period = ASSORT_PERIODS.find((p) => p.id === assortPeriodId);
+  if (!period) return null;
+
+  const startW = parseInt((period.startWeek || "W01").replace("W", "")) || 1;
+  const endW   = parseInt((period.endWeek   || "W26").replace("W", "")) || 26;
+  const weeks  = Math.max(1, endW - startW + 1);
+
+  const params = DEPT_PARAMS[dept] || { positions: 30, ros: 1.2, salesU: 12000 };
+  const { positions, ros, salesU } = params;
+  const salesUPeriod = Math.round(salesU * (weeks / 26));
+  const total = Math.max(1, Math.round(salesUPeriod / (weeks * positions * ros)));
+
+  const national  = Math.round(total * 0.40);
+  const regional  = Math.round(total * 0.35);
+  const storeTier = Math.max(0, total - national - regional);
+
+  const sc       = clustScenarios?.[clustScenario || "B"];
+  const clusters = sc?.clusters || [];
+  const clusterBreakdown = clusters.map((c, i) => ({
+    id: c.id,
+    label: c.label,
+    stores: c.stores.length,
+    options: i < storeTier % clusters.length
+      ? Math.ceil(storeTier / clusters.length)
+      : Math.floor(storeTier / clusters.length),
+  }));
+
+  return {
+    total, national, regional, store: storeTier,
+    weeks, positions,
+    ros: parseFloat(ros.toFixed(2)),
+    salesUPeriod,
+    formula: `${salesUPeriod.toLocaleString()} sqft ÷ (${weeks} wks × ${positions} pos × ${ros} ROS)`,
+    clusterBreakdown,
+  };
+}
+
 /* Seed the working PLR map (id → item with flows). */
 export function seedPlrItems() {
   const map = {};
