@@ -334,20 +334,20 @@
   margin: var(--sp-4) 0 var(--sp-3);
 }
 
-/* ── 4. Bottom row: Quick access + Intel ──────────────────────────────────── */
-.today-bottom-row {
+/* ── 4. Market Intelligence full-width grid ───────────────────────────────── */
+.today-intel-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-5);
-  padding-bottom: var(--sp-6);
-}
-.today-bottom-left,
-.today-bottom-right {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
 }
 
-/* ── Plan cards ──────────────────────────────────────────────────────────── */
+/* ── Intel signal cards ───────────────────────────────────────────────────── */
+.today-intel-card:hover {
+  box-shadow: 0 2px 10px var(--color-text-tint-10) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 .today-plan-card:hover {
   border-color: var(--color-primary) !important;
   box-shadow: 0 4px 16px var(--color-primary-tint-12) !important;
@@ -372,27 +372,12 @@
   box-shadow: 0 2px 8px var(--color-teal-tint-15, rgba(0,150,136,0.15)) !important;
 }
 
-/* ── Quick access grid ────────────────────────────────────────────────────── */
-.today-quick-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-2);
-}
-.today-quick-card:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: var(--sh) !important;
-  border-color: var(--color-border) !important;
-}
 .today-quick-icon { flex-shrink: 0; }
-
-/* ── Intel signal cards ───────────────────────────────────────────────────── */
-.today-intel-card:hover {
-  box-shadow: 0 2px 10px var(--color-text-tint-10) !important;
-}
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .today-main-grid { grid-template-columns: 1fr 1fr; }
+  .today-intel-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 900px) {
@@ -400,12 +385,11 @@
   .today-hero-kpi:nth-child(2) { border-right: none; }
   .today-hero-kpi:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.08); }
   .today-main-grid { grid-template-columns: 1fr; }
-  .today-bottom-row { grid-template-columns: 1fr; }
+  .today-intel-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
   .today-hero-card { padding: var(--sp-4) var(--sp-4) 0; }
   .today-hero-kpis { grid-template-columns: repeat(2, 1fr); }
   .today-dec-tiles { grid-template-columns: repeat(2, 1fr); }
-  .today-quick-grid { grid-template-columns: 1fr; }
 }

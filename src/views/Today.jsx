@@ -1,14 +1,13 @@
 import React, { useMemo } from "react";
 import { Card, Badge, Button, EmptyState, Tooltip } from "impact-ui";
 import {
-  ClipboardList, Search, Home, TrendingUp, TrendingDown, BarChart2,
-  Folder, Bot, CheckCircle2, Brain, Tag, AlertTriangle, AlertCircle,
+  ClipboardList, Search, TrendingUp, TrendingDown, BarChart2,
+  Bot, CheckCircle2, Tag, AlertTriangle, AlertCircle,
   Info, ChevronRight, Sparkles, DollarSign, Percent, Package,
   Activity,
 } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
-import { FD_CLUST_SCENARIOS, CLUSTER_ACCEPTANCE } from "../data/clustering.js";
 import { FD_PLR_CALENDAR } from "../data/plr.js";
 import { PLANS, PIPE_STAGES, PLAN_STATUS } from "../data/workspace.js";
 import { INTEL_SEED } from "../data/intel.js";
@@ -22,15 +21,6 @@ import "./Today.css";
 
 /* ── View-local constants ─────────────────────────────────────────────────── */
 
-const QUICK_ACCESS = [
-  { Icon: ClipboardList, label: "Store Curation", mod: "store-curation", bg: "var(--color-warning-soft)",  iconColor: "var(--color-warning)" },
-  { Icon: Search,        label: "Market Intel",   mod: "intel",          bg: "var(--color-error-soft)",    iconColor: "var(--color-error)"   },
-  { Icon: Home,          label: "National Core",  mod: "national",       bg: "var(--color-success-soft)",  iconColor: "var(--color-success)" },
-  { Icon: TrendingUp,    label: "Forecast",       mod: "forecast",       bg: "var(--color-info-soft)",     iconColor: "var(--color-info)"    },
-  { Icon: BarChart2,     label: "Hindsight",      mod: "hindsight",      bg: "var(--color-accent-soft)",   iconColor: "var(--color-accent)"  },
-  { Icon: Folder,        label: "PLR Status",     mod: "approval",       bg: "var(--color-teal-soft)",     iconColor: "var(--color-teal)"    },
-];
-
 const URGENCY_COLOR = {
   immediate: "var(--color-error)",
   season:    "var(--color-warning)",
@@ -38,10 +28,7 @@ const URGENCY_COLOR = {
   watch:     "var(--color-success)",
 };
 
-const SCENARIO_NAMES = { B: "Behavioural", A: "Performance + Demographics", C: "Product Attributes" };
-const SCENARIO_ICONS = { B: Brain, A: TrendingUp, C: Tag };
-const TIER_COLOR     = { high: "success", mid: "warning", low: "error" };
-const STATUS_COLOR   = { "in-progress": "info", review: "warning", draft: "default", approved: "success" };
+const STATUS_COLOR = { "in-progress": "info", review: "warning", draft: "default", approved: "success" };
 
 const SEV_ICON  = { error: AlertCircle, warning: AlertTriangle, success: CheckCircle2, info: Info };
 const SEV_COLOR = {
@@ -293,28 +280,28 @@ export default function Today({ onNavigate }) {
                          || NEEDS_ATTENTION[0]?.title
                          || "Review pending items";
 
-    /* 4-tile hero KPIs matching HTML reference */
+    /* 4-tile hero KPIs — first 3 navigate to approval (PLR Status) per HTML reference */
     const heroKpis = [
       {
         label:    "Open PLRs",
         val:      openPLRs,
         sub:      overduePLRs > 0 ? `${overduePLRs} overdue` : "All on track",
         subWarn:  overduePLRs > 0,
-        mod:      "plr-calendar",
+        mod:      "approval",
       },
       {
         label:    "Active Plans",
         val:      openPlans,
         sub:      `${inProgressPlans} in progress`,
         subWarn:  false,
-        mod:      "workspace",
+        mod:      "approval",
       },
       {
         label:    "Awaiting You",
         val:      NEEDS_ATTENTION.length,
         sub:      awaitingSub,
         subWarn:  agentUrgent > 0,
-        mod:      "store-curation",
+        mod:      "approval",
       },
       {
         label:    "New Intel Signals",
@@ -334,10 +321,6 @@ export default function Today({ onNavigate }) {
       heroKpis, activePlans, openPLRList, recentSignals,
     };
   }, [user]);
-
-  /* Cluster state */
-  const { acceptedScenario, acceptedScope } = CLUSTER_ACCEPTANCE;
-  const activeScenario = acceptedScenario ? FD_CLUST_SCENARIOS[acceptedScenario] : null;
 
   return (
     <div className="today-shell">
@@ -505,97 +488,54 @@ export default function Today({ onNavigate }) {
 
       </div>
 
-      {/* ── 4. Bottom row: Cluster summary + Quick access + Intel signals ───── */}
-      <div className="today-bottom-row">
-
-        {/* Cluster summary (compact) */}
-        <div className="today-bottom-left">
-          {activeScenario ? (
-            <Card size="small" sx={{ ...panelSx, padding: "var(--sp-3) var(--sp-4)", marginBottom: "var(--sp-4)" }}>
-              <Stack direction="row" align="center" justify="space-between">
-                <Stack direction="row" align="center" gap={2}>
-                  {(() => { const Icon = SCENARIO_ICONS[acceptedScenario] || Brain; return <Icon size={15} color="var(--color-primary)" />; })()}
-                  <Stack direction="column" gap={0}>
-                    <Text variant="caption" tone="strong">{SCENARIO_NAMES[acceptedScenario] || acceptedScenario}</Text>
-                    <Text variant="micro" tone="subtle">
-                      {activeScenario.clusters.length} clusters&nbsp;·&nbsp;{acceptedScope?.channel}&nbsp;·&nbsp;{acceptedScope?.season}
-                    </Text>
-                  </Stack>
-                </Stack>
-                <Button variant="ghost" size="small" onClick={() => go("clustering")}>Manage →</Button>
-              </Stack>
-            </Card>
-          ) : (
-            <Card size="small" sx={{ ...panelSx, padding: "var(--sp-3) var(--sp-4)", marginBottom: "var(--sp-4)" }}>
-              <Stack direction="row" align="center" justify="space-between">
-                <Text variant="caption" tone="muted">No active cluster model</Text>
-                <Button variant="ghost" size="small" onClick={() => go("clustering")}>Set up →</Button>
-              </Stack>
-            </Card>
-          )}
-
-          {/* Quick access grid */}
-          <Text variant="overline" tone="subtle" as="div" style={{ marginBottom: "var(--sp-2)" }}>Quick access</Text>
-          <div className="today-quick-grid">
-            {QUICK_ACCESS.map((btn) => (
-              <Card
-                key={btn.mod}
-                size="small"
-                sx={{ ...panelSx, padding: "var(--sp-3)", cursor: "pointer", background: btn.bg, boxShadow: "none", border: "1px solid transparent", transition: "transform 0.12s, box-shadow 0.12s, border-color 0.12s" }}
-                onClick={() => go(btn.mod)}
-                className="today-quick-card"
-                tabIndex={0}
-              >
-                <Stack direction="row" align="center" gap={2}>
-                  <btn.Icon size={16} aria-hidden="true" className="today-quick-icon" style={{ color: btn.iconColor, flexShrink: 0 }} />
-                  <Text variant="caption" tone="strong">{btn.label}</Text>
-                </Stack>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Intel signals */}
-        <div className="today-bottom-right">
-          <Stack direction="row" align="center" justify="space-between" style={{ marginBottom: "var(--sp-2)" }}>
+      {/* ── 4. Market Intelligence — full-width signal strip ──────────────────── */}
+      <Card size="small" sx={{ ...panelSx, padding: "var(--sp-4) var(--sp-5)", marginBottom: "var(--sp-2)" }}>
+        <Stack direction="row" align="center" justify="space-between" style={{ marginBottom: "var(--sp-3)" }}>
+          <Stack direction="row" align="center" gap={2}>
+            <Search size={14} color="var(--color-warning)" />
             <Text variant="overline" tone="subtle">Market Intelligence</Text>
-            <Badge variant="subtle" color="warning" label={`${INTEL_SEED.filter((s) => s.status === "new").length} new`} />
           </Stack>
-          {model.recentSignals.length > 0 ? (
-            <>
-              {model.recentSignals.map((sig) => (
-                <Card
-                  key={sig.id}
-                  size="small"
-                  className="today-intel-card"
-                  sx={{ ...intelCardSx, borderLeft: `var(--border-accent-width) solid ${URGENCY_COLOR[sig.urgency] || "var(--color-border-strong)"}` }}
-                  onClick={() => go("intel")}
-                  tabIndex={0}
-                >
-                  <Stack direction="row" align="center" gap={2} style={{ marginBottom: "var(--sp-1)" }}>
-                    <Badge
-                      variant="subtle"
-                      color={sig.direction === "opportunity" ? "success" : "error"}
-                      label={sig.direction ? sig.direction.toUpperCase() : "SIGNAL"}
-                    />
-                    <Text variant="caption" tone="strong" truncate as="div">
-                      {sig.title}
-                    </Text>
-                  </Stack>
-                  <Text variant="micro" tone="subtle">
-                    {sig.categories?.[0] || sig.type}&nbsp;·&nbsp;{sig.status}
-                  </Text>
-                </Card>
-              ))}
-              <Button variant="ghost" size="small" onClick={() => go("intel")} sx={{ width: "100%", marginTop: "var(--sp-2)" }}>
-                View all signals →
-              </Button>
-            </>
-          ) : (
-            <EmptyState heading="No signals yet" />
-          )}
+          <Stack direction="row" align="center" gap={3}>
+            <Badge variant="subtle" color="warning" label={`${INTEL_SEED.filter((s) => s.status === "new").length} new`} />
+            <Button variant="ghost" size="small" onClick={() => go("intel")}>View all →</Button>
+          </Stack>
+        </Stack>
+
+        <div className="today-intel-grid">
+          {model.recentSignals.map((sig) => (
+            <Card
+              key={sig.id}
+              size="small"
+              className="today-intel-card"
+              sx={{
+                ...panelSx,
+                padding: "var(--sp-3) var(--sp-4)",
+                cursor: "pointer",
+                background: "var(--color-surface-alt)",
+                boxShadow: "none",
+                borderLeft: `var(--border-accent-width) solid ${URGENCY_COLOR[sig.urgency] || "var(--color-border-strong)"}`,
+                transition: "box-shadow 0.12s",
+              }}
+              onClick={() => go("intel")}
+              tabIndex={0}
+            >
+              <Stack direction="row" align="center" gap={2} style={{ marginBottom: "var(--sp-1)" }}>
+                <Badge
+                  variant="subtle"
+                  color={sig.direction === "opportunity" ? "success" : "error"}
+                  label={sig.direction ? sig.direction.toUpperCase() : "SIGNAL"}
+                />
+                <Text variant="caption" tone="strong" truncate as="div">
+                  {sig.title}
+                </Text>
+              </Stack>
+              <Text variant="micro" tone="subtle">
+                {sig.categories?.[0] || sig.type}&nbsp;·&nbsp;{sig.status}
+              </Text>
+            </Card>
+          ))}
         </div>
-      </div>
+      </Card>
 
     </div>
   );
