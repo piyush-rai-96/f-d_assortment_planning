@@ -278,35 +278,66 @@ export default function Today({ onNavigate }) {
   const { user } = useAuth();
 
   const model = useMemo(() => {
-    const now        = new Date();
-    const greeting   = greetingFor(now.getHours());
-    const firstName  = (user?.name || "there").split(" ")[0];
-    const dateStr    = formatDate(now);
+    const now       = new Date();
+    const greeting  = greetingFor(now.getHours());
+    const firstName = (user?.name || "there").split(" ")[0];
+    const dateStr   = formatDate(now);
+    const role      = user?.role || "Floor & Decor Assortment Planning";
 
-    const openPlans    = PLANS.filter((p) => p.status === "in-progress").length;
-    const openIntel    = INTEL_SEED.filter((s) => s.status === "new").length;
-    const openPLRs     = FD_PLR_CALENDAR.filter((p) => p.status === "Open").length;
-    const openDrops    = MPI_DROPS.length;
-    const awaitingAppr = PLANS.filter((p) => p.status === "review").length;
-    const openNotifs   = TODAY_SEED.openNotifications ?? 0;
+    const inProgressPlans = PLANS.filter((p) => p.status === "in-progress").length;
+    const openPlans       = PLANS.filter((p) => p.status === "in-progress" || p.status === "review").length;
+    const openIntel       = INTEL_SEED.filter((s) => s.status === "new").length;
+    const openPLRs        = FD_PLR_CALENDAR.filter((p) => p.status === "Open").length;
+    const openNotifs      = TODAY_SEED.openNotifications ?? 0;
+
+    /* Overdue = Open PLRs whose dueDate is before today */
+    const todayStr    = now.toISOString().slice(0, 10);
+    const overduePLRs = FD_PLR_CALENDAR.filter((p) => p.status === "Open" && p.dueDate < todayStr).length;
+
+    const agentUrgent  = NEEDS_ATTENTION.filter((n) => n.severity === "error" || n.severity === "warning").length;
+    const awaitingSub  = NEEDS_ATTENTION.find((n) => n.severity === "error" || n.severity === "warning")?.title
+                         || NEEDS_ATTENTION[0]?.title
+                         || "Review pending items";
+
+    /* 4-tile hero KPIs matching HTML reference */
+    const heroKpis = [
+      {
+        label:    "Open PLRs",
+        val:      openPLRs,
+        sub:      overduePLRs > 0 ? `${overduePLRs} overdue` : "All on track",
+        subWarn:  overduePLRs > 0,
+        mod:      "plr-calendar",
+      },
+      {
+        label:    "Active Plans",
+        val:      openPlans,
+        sub:      `${inProgressPlans} in progress`,
+        subWarn:  false,
+        mod:      "workspace",
+      },
+      {
+        label:    "Awaiting You",
+        val:      NEEDS_ATTENTION.length,
+        sub:      awaitingSub,
+        subWarn:  agentUrgent > 0,
+        mod:      "store-curation",
+      },
+      {
+        label:    "New Intel Signals",
+        val:      openIntel,
+        sub:      "4 actioned this session",
+        subWarn:  false,
+        mod:      "intel",
+      },
+    ];
 
     const activePlans   = PLANS.filter((p) => p.status === "in-progress" || p.status === "review").slice(0, 4);
     const openPLRList   = FD_PLR_CALENDAR.filter((p) => p.status === "Open").slice(0, 4);
     const recentSignals = INTEL_SEED.slice(0, 4);
 
-    const agentUrgent = NEEDS_ATTENTION.filter((n) => n.severity === "error" || n.severity === "warning").length;
-
-    const statStrip = [
-      { Icon: Bot,           label: "Plans active",      val: openPlans,    color: "var(--color-info)",    bg: "var(--color-info-soft)",    mod: "workspace"   },
-      { Icon: Search,        label: "New intel signals",  val: openIntel,    color: "var(--color-warning)", bg: "var(--color-warning-soft)", mod: "intel"       },
-      { Icon: ClipboardList, label: "Open PLRs",          val: openPLRs,     color: "var(--color-teal)",    bg: "var(--color-teal-soft)",    mod: "plr-calendar"},
-      { Icon: TrendingDown,  label: "NPI drop items",     val: openDrops,    color: "var(--color-error)",   bg: "var(--color-error-soft)",   mod: "mpi"         },
-      { Icon: CheckCircle2,  label: "Awaiting approval",  val: awaitingAppr, color: "var(--color-success)", bg: "var(--color-success-soft)", mod: "approval"    },
-    ];
-
     return {
-      greeting, firstName, dateStr, openNotifs, agentUrgent,
-      statStrip, activePlans, openPLRList, recentSignals,
+      greeting, firstName, dateStr, role, openNotifs, agentUrgent,
+      heroKpis, activePlans, openPLRList, recentSignals,
     };
   }, [user]);
 
@@ -317,56 +348,52 @@ export default function Today({ onNavigate }) {
   return (
     <div className="today-shell">
 
-      {/* ── 1. Page header ──────────────────────────────────────────────────── */}
-      <Card size="small" sx={{ ...panelSx, flexShrink: 0 }}>
-        <Stack direction="row" align="center" justify="space-between" gap={4}>
-          <Stack direction="column" gap={1}>
-            <Text variant="overline" tone="success">
+      {/* ── 1. Premium dark hero card ────────────────────────────────────────── */}
+      <div className="today-hero-card">
+        {/* Top: greeting + agent pill */}
+        <div className="today-hero-top">
+          <div>
+            <div className="today-hero-overline">
               {model.dateStr}&nbsp;·&nbsp;FW 2025 curation window open
-            </Text>
-            <Stack direction="row" align="center" gap={3}>
-              <Text variant="title" as="h1">
-                {model.greeting}, {model.firstName}
-              </Text>
-              {/* Agent-active pill */}
-              <div className="today-agent-pill">
-                <div className="today-agent-pill-dot" />
-                <Sparkles size={11} color="var(--color-primary)" />
-                <span className="today-agent-pill-text">Agent active</span>
-                {model.agentUrgent > 0 && (
-                  <span className="today-agent-pill-badge">{model.agentUrgent}</span>
-                )}
-              </div>
-            </Stack>
-            {user?.greeting && (
-              <Text variant="caption" tone="muted">{user.greeting}</Text>
-            )}
-          </Stack>
-          <button type="button" className="today-hero-notifs" onClick={() => go("workspace")}>
-            <div className="today-hero-notifs-count" aria-live="polite">{model.openNotifs}</div>
-            <Text variant="overline" as="div" className="today-hero-notifs-label">open notifications</Text>
-          </button>
-        </Stack>
-      </Card>
-
-      {/* ── 2. Quick-stat strip ─────────────────────────────────────────────── */}
-      <div className="today-stat-strip">
-        {model.statStrip.map((stat) => (
-          <button
-            key={stat.mod}
-            type="button"
-            className="today-stat-cell"
-            style={{ "--stat-color": stat.color, "--stat-bg": stat.bg }}
-            onClick={() => go(stat.mod)}
-            aria-label={`${stat.val} ${stat.label}`}
-          >
-            <div className="today-stat-icon-wrap" style={{ background: stat.bg }}>
-              <stat.Icon size={18} aria-hidden="true" style={{ color: stat.color }} />
             </div>
-            <div className="today-stat-val" style={{ color: stat.color }}>{stat.val}</div>
-            <Text variant="overline" tone="subtle" as="div" className="today-stat-label">{stat.label}</Text>
-          </button>
-        ))}
+            <h1 className="today-hero-title">
+              {model.greeting}, {model.firstName}
+            </h1>
+            <p className="today-hero-subtitle">
+              {model.role}&nbsp;·&nbsp;Floor &amp; Decor Assortment Planning
+            </p>
+          </div>
+          {/* Agent active pill */}
+          <div className="today-agent-pill-hero">
+            <div className="today-agent-pill-dot" />
+            <Sparkles size={12} />
+            <span>Agent active</span>
+            {model.agentUrgent > 0 && (
+              <span className="today-agent-pill-badge-hero">{model.agentUrgent} awaiting</span>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom: 4 KPI tiles */}
+        <div className="today-hero-kpis">
+          {model.heroKpis.map((kpi) => (
+            <button
+              key={kpi.mod}
+              type="button"
+              className="today-hero-kpi"
+              onClick={() => go(kpi.mod)}
+            >
+              <div className="today-hero-kpi-val">{kpi.val}</div>
+              <div className="today-hero-kpi-label">{kpi.label}</div>
+              <div
+                className="today-hero-kpi-sub"
+                style={{ color: kpi.subWarn ? "var(--color-warning-on-dark, #f6c344)" : "rgba(255,255,255,0.5)" }}
+              >
+                {kpi.sub}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── 3. Main 3×2 grid ────────────────────────────────────────────────── */}

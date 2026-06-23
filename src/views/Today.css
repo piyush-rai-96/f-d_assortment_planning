@@ -12,49 +12,144 @@
   gap: var(--sp-4);
 }
 
-/* ── 1. Page header — notification widget ─────────────────────────────────── */
+/* ── 1. Premium dark hero card ────────────────────────────────────────────── */
 
-.today-hero-notifs {
-  background: var(--color-primary-tint-12);
-  border: 1px solid var(--color-primary-tint-28);
-  border-radius: var(--r);
-  padding: var(--sp-3) var(--sp-5);
-  text-align: center;
-  min-width: 130px;
-  cursor: pointer;
-  transition: opacity 0.15s, background 0.15s;
+.today-hero-card {
+  background: linear-gradient(135deg, #0d1f40 0%, #16346b 55%, #0d4878 100%);
+  border-radius: var(--r2);
+  padding: var(--sp-5) var(--sp-6) 0;
   flex-shrink: 0;
-  font-family: inherit;
-  color: inherit;
+  overflow: hidden;
+  position: relative;
 }
-.today-hero-notifs:hover { background: var(--color-primary-tint-20); }
 
-.today-hero-notifs-count {
-  font-size: var(--fs-kpi);
-  font-weight: var(--fw-bold);
-  color: var(--color-primary);
-  line-height: 1;
+/* Subtle radial glow for depth */
+.today-hero-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99, 179, 237, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.today-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--sp-5);
+}
+
+.today-hero-overline {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
   margin-bottom: var(--sp-1);
 }
-.today-hero-notifs-label { color: var(--color-text-subtle); }
 
-/* ── Agent-active pill ────────────────────────────────────────────────────── */
-.today-agent-pill {
+.today-hero-title {
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  margin: 0 0 var(--sp-1);
+  letter-spacing: -0.02em;
+}
+
+.today-hero-subtitle {
+  font-size: var(--fs-sm, 12px);
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Agent active pill (dark hero version) */
+.today-agent-pill-hero {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: var(--color-primary-tint-12);
-  border: 1px solid var(--color-primary-tint-28);
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 100px;
-  padding: 3px 10px 3px 6px;
-  cursor: default;
+  padding: 6px 12px 6px 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 600;
   flex-shrink: 0;
+  backdrop-filter: blur(4px);
 }
+.today-agent-pill-badge-hero {
+  background: rgba(250, 100, 70, 0.9);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 100px;
+  padding: 2px 7px;
+  line-height: 1.4;
+  margin-left: 2px;
+}
+
+/* 4-KPI tile row at bottom of hero */
+.today-hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: var(--sp-1);
+}
+
+.today-hero-kpi {
+  padding: var(--sp-4) var(--sp-4) var(--sp-4);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.today-hero-kpi:last-child { border-right: none; }
+.today-hero-kpi:hover { background: rgba(255, 255, 255, 0.06); }
+
+.today-hero-kpi-val {
+  font-size: var(--fs-kpi, 32px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: var(--sp-1);
+  letter-spacing: -0.02em;
+}
+
+.today-hero-kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 4px;
+}
+
+.today-hero-kpi-sub {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* Pulsing agent-active dot (shared) */
 .today-agent-pill-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--color-success);
+  background: #4ade80;
   animation: pulse-dot 1.8s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -62,67 +157,6 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.8); }
 }
-.today-agent-pill-text {
-  font-size: var(--fs-xs, 11px);
-  font-weight: 600;
-  color: var(--color-primary);
-  letter-spacing: 0.01em;
-}
-.today-agent-pill-badge {
-  background: var(--color-error);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 100px;
-  padding: 1px 5px;
-  line-height: 1.4;
-}
-
-/* ── 2. Quick-stat strip ──────────────────────────────────────────────────── */
-.today-stat-strip {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  border: 1px solid var(--color-border);
-  border-radius: var(--r2);
-  flex-shrink: 0;
-  background: var(--color-surface);
-  overflow: hidden;
-}
-
-.today-stat-cell {
-  padding: var(--sp-5) var(--sp-5) var(--sp-4);
-  cursor: pointer;
-  border-right: 1px solid var(--color-border);
-  transition: background 0.15s;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  background: transparent;
-  border-top: none;
-  border-bottom: none;
-  border-left: none;
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
-}
-.today-stat-cell:last-child { border-right: none; }
-.today-stat-cell:hover { background: var(--stat-bg, var(--color-surface-alt)); }
-
-.today-stat-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.today-stat-val {
-  font-size: var(--fs-kpi);
-  font-weight: var(--fw-bold);
-  line-height: 1;
-}
-.today-stat-label { color: var(--color-text-subtle); }
 
 /* ── 3. Main 3×2 grid ────────────────────────────────────────────────────── */
 .today-main-grid {
@@ -364,16 +398,16 @@
 }
 
 @media (max-width: 900px) {
-  .today-stat-strip { grid-template-columns: repeat(3, 1fr); }
-  .today-stat-cell:nth-child(4),
-  .today-stat-cell:nth-child(5) { border-top: 1px solid var(--color-border); }
+  .today-hero-kpis { grid-template-columns: repeat(2, 1fr); }
+  .today-hero-kpi:nth-child(2) { border-right: none; }
+  .today-hero-kpi:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.08); }
   .today-main-grid { grid-template-columns: 1fr; }
   .today-bottom-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
-  .today-stat-strip { grid-template-columns: 1fr 1fr; }
-  .today-stat-cell:last-child { grid-column: span 2; border-right: none; }
+  .today-hero-card { padding: var(--sp-4) var(--sp-4) 0; }
+  .today-hero-kpis { grid-template-columns: repeat(2, 1fr); }
   .today-dec-tiles { grid-template-columns: repeat(2, 1fr); }
   .today-quick-grid { grid-template-columns: 1fr; }
 }
