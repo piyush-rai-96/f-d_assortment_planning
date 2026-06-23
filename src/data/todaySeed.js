@@ -90,11 +90,10 @@ export const PRIORITY_ACTIONS = [
 
 // "Needs attention" state-derived cards (max 4 shown in V3)
 export const NEEDS_ATTENTION = [
-  { severity: "error", title: "8 stores not started", sub: "Gulf cluster · auto-closes Sep 20", mod: "store-curation" },
-  { severity: "warning", title: "Agent not run yet", sub: "Run in Catalogue to unlock tiers", mod: "catalogue", hideWhenAgentRan: true },
-  { severity: "warning", title: "{pending} stores pending", sub: "Curation window closes in 9 days", mod: "store-curation" },
-  { severity: "success", title: "Regional review open", sub: "6/8 clusters submitted", mod: "regional" },
-  { severity: "info", title: "7 intel signals", sub: "2 competitor threats · 1 opportunity", mod: "intel" },
+  { severity: "error",   title: "170 SKUs need national decision",     sub: "→ National Core",       mod: "national"   },
+  { severity: "warning", title: "No cluster scenario accepted",         sub: "→ Location Clustering", mod: "clustering" },
+  { severity: "warning", title: "333 cluster decisions pending",        sub: "→ Regional Review",     mod: "regional"   },
+  { severity: "info",    title: "3 intel signals awaiting model apply", sub: "→ Market Intelligence", mod: "intel"      },
 ];
 
 export const RECENT_ACTIVITY = [
@@ -109,20 +108,15 @@ export const RECENT_ACTIVITY = [
 
 /* National keep/add/drop/pending counts — used by CurationDecisionsCard */
 export const CURATION_DECISIONS = {
-  keep: 18, add: 7, drop: 4, pending: 6,
-  total: 35,
+  keep: 49, add: 0, drop: 5, pending: 170, total: 224,
 };
 
 /* R13 range performance KPIs — used by RangePerformanceCard */
 export const RANGE_PERFORMANCE = {
-  salesDollars: "$2.4M",
-  gmPct:        46,
-  units:        "38.2K",
-  sellThruPct:  71,
-  gmTrend:      "+2pp",
-  salesTrend:   "+8%",
-  unitsTrend:   "+5%",
-  stTrend:      "+3pp",
+  salesDollars: "$2.7M",    salesSub:  "R13 revenue",
+  gmPct:        45,         gmSub:     "Gross margin",
+  units:        "324k sqft", unitsSub: "Sqft sold R13",
+  sellThruPct:  "6.3",      stSub:     "Sold / (sold+OH)",
 };
 
 export const QUICK_ACTIONS = [

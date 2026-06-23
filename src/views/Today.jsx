@@ -4,7 +4,7 @@ import {
   ClipboardList, Search, Home, TrendingUp, TrendingDown, BarChart2,
   Folder, Bot, CheckCircle2, Brain, Tag, AlertTriangle, AlertCircle,
   Info, ChevronRight, Sparkles, DollarSign, Percent, Package,
-  ArrowUpRight, Activity,
+  Activity,
 } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
@@ -125,7 +125,7 @@ function CurationDecisionsCard({ go }) {
 
       {/* Footer */}
       <Text variant="micro" tone="subtle">
-        {decided}/{total} SKUs decided&nbsp;·&nbsp;<span style={{ color: "var(--color-success)", fontWeight: 700 }}>{decidedPct}% complete</span>
+        {total} SKUs in scope&nbsp;·&nbsp;<span style={{ color: "var(--color-success)", fontWeight: 700 }}>{decidedPct}% decided</span>
       </Text>
     </Card>
   );
@@ -133,7 +133,6 @@ function CurationDecisionsCard({ go }) {
 
 /* ── Card: Agent Awaiting You ─────────────────────────────────────────────── */
 function AgentAwaitingCard({ go }) {
-  const urgentCount = NEEDS_ATTENTION.filter((n) => n.severity === "error" || n.severity === "warning").length;
   return (
     <Card size="small" sx={cardSx} className="today-grid-card">
       {/* Header */}
@@ -142,9 +141,7 @@ function AgentAwaitingCard({ go }) {
           <Sparkles size={14} color="var(--color-primary)" />
           <Text variant="overline" tone="subtle">Agent Awaiting You</Text>
         </Stack>
-        {urgentCount > 0 && (
-          <Badge variant="subtle" color="error" label={`${urgentCount} urgent`} />
-        )}
+        <Badge variant="subtle" color="info" label={`${NEEDS_ATTENTION.length}`} />
       </Stack>
 
       {/* Awaiting items */}
@@ -175,12 +172,12 @@ function AgentAwaitingCard({ go }) {
 
 /* ── Card: Range Performance ──────────────────────────────────────────────── */
 function RangePerformanceCard({ go }) {
-  const { salesDollars, gmPct, units, sellThruPct, gmTrend, salesTrend, unitsTrend, stTrend } = RANGE_PERFORMANCE;
+  const { salesDollars, salesSub, gmPct, gmSub, units, unitsSub, sellThruPct, stSub } = RANGE_PERFORMANCE;
   const metrics = [
-    { Icon: DollarSign, label: "Sales (R13)", val: salesDollars, trend: salesTrend, color: "var(--color-success)",   bg: "var(--color-success-soft)"  },
-    { Icon: Percent,    label: "Gross Margin", val: `${gmPct}%`,  trend: gmTrend,    color: "var(--color-info)",      bg: "var(--color-info-soft)"     },
-    { Icon: Package,    label: "Units Sold",   val: units,        trend: unitsTrend, color: "var(--color-accent)",    bg: "var(--color-accent-soft)"   },
-    { Icon: Activity,   label: "Sell-thru %",  val: `${sellThruPct}%`, trend: stTrend, color: "var(--color-warning)", bg: "var(--color-warning-soft)"  },
+    { Icon: DollarSign, label: "Sales $",     val: salesDollars,      sub: salesSub,  color: "var(--color-success)",  bg: "var(--color-success-soft)"  },
+    { Icon: Percent,    label: "GM %",        val: `${gmPct}%`,       sub: gmSub,     color: "var(--color-info)",     bg: "var(--color-info-soft)"     },
+    { Icon: Package,    label: "Sales Units", val: units,             sub: unitsSub,  color: "var(--color-accent)",   bg: "var(--color-accent-soft)"   },
+    { Icon: Activity,   label: "Sell Thru",   val: `${sellThruPct}%`, sub: stSub,     color: "var(--color-warning)",  bg: "var(--color-warning-soft)"  },
   ];
   return (
     <Card size="small" sx={cardClickSx} onClick={() => go("hindsight")} className="today-grid-card" tabIndex={0}>
@@ -195,23 +192,20 @@ function RangePerformanceCard({ go }) {
 
       {/* 2×2 KPI tiles */}
       <div className="today-metric-2x2">
-        {metrics.map(({ Icon, label, val, trend, color, bg }) => (
+        {metrics.map(({ Icon, label, val, sub, color, bg }) => (
           <div key={label} className="today-metric-tile" style={{ background: bg }}>
             <Stack direction="row" align="center" gap={1} style={{ marginBottom: "var(--sp-1)" }}>
               <Icon size={12} color={color} />
               <span className="today-metric-lbl">{label}</span>
             </Stack>
             <div className="today-metric-val" style={{ color }}>{val}</div>
-            <div className="today-metric-trend">
-              <ArrowUpRight size={10} color={color} />
-              <span style={{ color }}>{trend}</span>
-            </div>
+            <div className="today-metric-sub" style={{ color }}>{sub}</div>
           </div>
         ))}
       </div>
 
       <Text variant="micro" tone="subtle" style={{ marginTop: "var(--sp-2)" }}>
-        R13 rolling · SS 2026 · All departments
+        R13 rolling · all depts
       </Text>
     </Card>
   );
@@ -332,11 +326,11 @@ export default function Today({ onNavigate }) {
     ];
 
     const activePlans   = PLANS.filter((p) => p.status === "in-progress" || p.status === "review").slice(0, 4);
-    const openPLRList   = FD_PLR_CALENDAR.filter((p) => p.status === "Open").slice(0, 4);
+    const openPLRList   = FD_PLR_CALENDAR.filter((p) => p.status === "Open").slice(0, 5);
     const recentSignals = INTEL_SEED.slice(0, 4);
 
     return {
-      greeting, firstName, dateStr, role, openNotifs, agentUrgent,
+      greeting, firstName, dateStr, role, openNotifs, agentUrgent, todayStr,
       heroKpis, activePlans, openPLRList, recentSignals,
     };
   }, [user]);
@@ -409,27 +403,37 @@ export default function Today({ onNavigate }) {
               <ClipboardList size={14} color="var(--color-teal)" />
               <Text variant="overline" tone="subtle">Open PLRs</Text>
             </Stack>
-            <Text variant="micro" tone="primary" style={{ cursor: "pointer", fontWeight: 700 }} onClick={() => go("plr-calendar")}>All PLRs →</Text>
+            <Text variant="micro" tone="primary" style={{ cursor: "pointer", fontWeight: 700 }} onClick={() => go("approval")}>All PLRs →</Text>
           </Stack>
           {model.openPLRList.length ? (
-            model.openPLRList.map((plr) => (
-              <Card
-                key={plr.id}
-                size="small"
-                sx={plrCardSx}
-                onClick={() => go("plr-calendar")}
-                className="today-plr-card"
-                tabIndex={0}
-              >
-                <Stack direction="row" align="center" justify="space-between" gap={2}>
-                  <Stack direction="column" gap={0} style={{ flex: 1, minWidth: 0 }}>
-                    <Text variant="caption" tone="strong" truncate style={{ marginBottom: "var(--sp-1)" }}>{plr.name}</Text>
-                    <Text variant="micro" tone="subtle">{plr.presDate}&nbsp;·&nbsp;{plr.dueDate}</Text>
+            model.openPLRList.map((plr) => {
+              const isOverdue = plr.presDate < model.todayStr;
+              const daysTo = isOverdue ? 0 : Math.round(
+                (new Date(plr.presDate) - new Date(model.todayStr)) / 86400000
+              );
+              const vLabel = plr.versions === 1 ? "1 version" : `${plr.versions ?? 0} versions`;
+              return (
+                <Card
+                  key={plr.id}
+                  size="small"
+                  sx={plrCardSx}
+                  onClick={() => go("approval")}
+                  className="today-plr-card"
+                  tabIndex={0}
+                >
+                  <Stack direction="row" align="center" justify="space-between" gap={2}>
+                    <Stack direction="column" gap={0} style={{ flex: 1, minWidth: 0 }}>
+                      <Text variant="caption" tone="strong" truncate style={{ marginBottom: "var(--sp-1)" }}>{plr.name}</Text>
+                      <Text variant="micro" tone="subtle">{vLabel}&nbsp;·&nbsp;{plr.dept}</Text>
+                    </Stack>
+                    {isOverdue
+                      ? <Badge variant="subtle" color="error"   label="Overdue" />
+                      : <Badge variant="subtle" color="info"    label={`${daysTo}d to pres`} />
+                    }
                   </Stack>
-                  <Badge variant="subtle" color="success" label="Open" />
-                </Stack>
-              </Card>
-            ))
+                </Card>
+              );
+            })
           ) : (
             <EmptyState heading="No open PLRs" />
           )}
@@ -554,7 +558,7 @@ export default function Today({ onNavigate }) {
         {/* Intel signals */}
         <div className="today-bottom-right">
           <Stack direction="row" align="center" justify="space-between" style={{ marginBottom: "var(--sp-2)" }}>
-            <Text variant="overline" tone="subtle">Market Intel</Text>
+            <Text variant="overline" tone="subtle">Market Intelligence</Text>
             <Badge variant="subtle" color="warning" label={`${INTEL_SEED.filter((s) => s.status === "new").length} new`} />
           </Stack>
           {model.recentSignals.length > 0 ? (
@@ -568,10 +572,19 @@ export default function Today({ onNavigate }) {
                   onClick={() => go("intel")}
                   tabIndex={0}
                 >
-                  <Text variant="caption" tone="strong" truncate as="div" style={{ marginBottom: "var(--sp-1)" }}>
-                    {sig.title}
+                  <Stack direction="row" align="center" gap={2} style={{ marginBottom: "var(--sp-1)" }}>
+                    <Badge
+                      variant="subtle"
+                      color={sig.direction === "opportunity" ? "success" : "error"}
+                      label={sig.direction ? sig.direction.toUpperCase() : "SIGNAL"}
+                    />
+                    <Text variant="caption" tone="strong" truncate as="div">
+                      {sig.title}
+                    </Text>
+                  </Stack>
+                  <Text variant="micro" tone="subtle">
+                    {sig.categories?.[0] || sig.type}&nbsp;·&nbsp;{sig.status}
                   </Text>
-                  <Text variant="micro" tone="subtle">{sig.author}&nbsp;·&nbsp;{sig.date}</Text>
                 </Card>
               ))}
               <Button variant="ghost" size="small" onClick={() => go("intel")} sx={{ width: "100%", marginTop: "var(--sp-2)" }}>

@@ -8,11 +8,11 @@
 import { color } from "../styles/tokens.js";
 
 export const FD_PLR_CALENDAR = [
-  { name: "DECORATIVE ACCESSORIES APRIL - 2026", dept: "Decorative Accessories", id: 532, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open" },
-  { name: "TILE APRIL - 2026", dept: "Tile", id: 529, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open" },
-  { name: "WOOD APRIL - 2026", dept: "Wood", id: 523, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open" },
-  { name: "LAMINATE AND VINYL APRIL - 2026", dept: "Laminate & Vinyl", id: 531, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open" },
-  { name: "DECORATIVE ACCESSORIES MARCH - 2026", dept: "Decorative Accessories", id: 519, presDate: "2026-03-17", dueDate: "2026-03-19", status: "Open" },
+  { name: "DECORATIVE ACCESSORIES APRIL - 2026", dept: "Decorative Accessories", id: 532, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open",   versions: 0 },
+  { name: "TILE APRIL - 2026",                   dept: "Tile",                   id: 529, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open",   versions: 1 },
+  { name: "WOOD APRIL - 2026",                   dept: "Wood",                   id: 523, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open",   versions: 1 },
+  { name: "LAMINATE AND VINYL APRIL - 2026",     dept: "Laminate & Vinyl",       id: 531, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open",   versions: 1 },
+  { name: "DECORATIVE ACCESSORIES MARCH - 2026", dept: "Decorative Accessories", id: 519, presDate: "2026-03-17", dueDate: "2026-03-19", status: "Open",   versions: 0 },
   { name: "STONE JANUARY - 2026", dept: "Stone", id: 512, presDate: "2026-01-20", dueDate: "2026-01-22", status: "Closed" },
   { name: "DECORATIVE ACCESSORIES JANUARY - 2026", dept: "Decorative Accessories", id: 511, presDate: "2026-01-20", dueDate: "2026-01-22", status: "Closed" },
   { name: "DECORATIVE ACCESSORIES DECEMBER - 2025", dept: "Decorative Accessories", id: 503, presDate: "2025-12-15", dueDate: "2025-12-17", status: "Closed" },

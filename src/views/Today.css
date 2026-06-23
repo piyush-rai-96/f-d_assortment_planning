@@ -278,12 +278,10 @@
   line-height: 1.1;
   margin: var(--sp-1) 0 2px;
 }
-.today-metric-trend {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+.today-metric-sub {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
+  opacity: 0.75;
 }
 
 /* ── NPI Exposure card ────────────────────────────────────────────────────── */
