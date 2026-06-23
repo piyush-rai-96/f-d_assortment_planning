@@ -1,52 +1,336 @@
-/* National Core — agent-recommendation row accents.
-   Backgrounds stay neutral (surface-alt); the left border encodes the
-   merchant's decision state (approve = success, reject = error). */
-.nat-rec-row {
+/* ─────────────────────────────────────────────────────────────────────────────
+   National Core — premium redesign
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Dark hero header ─────────────────────────────────────────────────────── */
+.nat-hero {
+  background: linear-gradient(135deg, #0d1f40 0%, #16346b 55%, #0d4878 100%);
+  border-radius: var(--r2);
+  padding: var(--sp-5) var(--sp-6) 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+.nat-hero::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(99,179,237,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.nat-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.nat-hero-overline {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: var(--sp-1);
+}
+.nat-hero-title {
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  margin: 0 0 var(--sp-1);
+  letter-spacing: -0.02em;
+}
+.nat-hero-subtitle {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin: 0;
+  font-weight: 400;
+  max-width: 540px;
+  line-height: 1.5;
+}
+
+/* Dept filter pills */
+.nat-dept-pills {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+.nat-dept-pill {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 100px;
+  color: rgba(255,255,255,0.8);
+  padding: 5px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+.nat-dept-pill:hover { background: rgba(255,255,255,0.18); }
+.nat-dept-pill.active {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.55);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 5-stat summary row inside hero */
+.nat-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: var(--sp-2);
+}
+.nat-hero-stat {
+  padding: var(--sp-3) var(--sp-4);
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.nat-hero-stat:last-child { border-right: none; }
+.nat-hero-stat-val {
+  font-size: clamp(24px, 2.5vw, 34px);
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+.nat-hero-stat-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* ── OTB budget bar ───────────────────────────────────────────────────────── */
+.nat-otb-bar-track {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: var(--r2);
+  overflow: hidden;
+}
+.nat-otb-bar-fill {
+  height: 100%;
+  border-radius: var(--r2);
+  transition: width 0.35s ease;
+}
+
+/* ── Metrics tabs ─────────────────────────────────────────────────────────── */
+.nat-metrics-tabs {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+.nat-metrics-tab {
+  padding: 6px 16px;
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text-subtle);
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.nat-metrics-tab:hover { background: var(--color-surface-alt); color: var(--color-text); }
+.nat-metrics-tab.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+/* ── 6-KPI metrics strip ──────────────────────────────────────────────────── */
+.nat-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--sp-3);
+}
+.nat-metric-card {
+  border-radius: var(--r);
+  padding: var(--sp-3) var(--sp-3);
+}
+.nat-metric-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-subtle);
+  margin-bottom: var(--sp-1);
+}
+.nat-metric-val {
+  font-size: clamp(16px, 1.4vw, 22px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+.nat-metric-sub {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-weight: 500;
+}
+
+/* ── Unified SKU decision table ───────────────────────────────────────────── */
+.nat-table-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.nat-table-head > div {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-subtle);
+}
+.nat-table-body { display: flex; flex-direction: column; }
+.nat-table-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
   border-bottom: 1px solid var(--color-border);
   border-left: 3px solid transparent;
-  background: var(--color-surface-alt);
-  transition: border-color 0.12s, background 0.12s;
+  transition: background 0.1s, border-color 0.12s;
 }
-.nat-rec-row:last-child {
-  border-bottom: none;
+.nat-table-row:last-child { border-bottom: none; }
+.nat-table-row:hover { background: var(--color-surface-alt); }
+
+/* Row decision states */
+.nat-row-keep {
+  border-left-color: var(--color-success) !important;
+  background: rgba(16, 185, 129, 0.04);
 }
-.nat-rec-row:hover { background: var(--color-surface); }
-.nat-rec-row:focus-within {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+.nat-row-add {
+  border-left-color: var(--color-info) !important;
+  background: rgba(59, 130, 246, 0.04);
 }
-.nat-rec-row.is-approved {
-  border-left-color: var(--color-success);
-}
-.nat-rec-row.is-rejected {
-  border-left-color: var(--color-error);
+.nat-row-drop {
+  border-left-color: var(--color-error) !important;
+  background: rgba(239, 68, 68, 0.04);
 }
 
-/* ── OTB budget grid ─────────────────────────────────────────────────────── */
-.nat-otb-grid { display: flex; flex-direction: column; gap: var(--sp-3); }
-.nat-otb-dept { display: flex; flex-direction: column; gap: var(--sp-1); }
-.nat-otb-dept-header { display: flex; justify-content: space-between; align-items: center; }
-.nat-otb-dept-name { font-size: var(--fs-body); font-weight: var(--fw-bold); color: var(--color-text); }
-.nat-otb-dept-val { font-size: var(--fs-caption); font-weight: var(--fw-bold); color: var(--color-text-muted); }
-.nat-otb-dept-val.over { color: var(--color-error); }
-/* Shared OTB bar spec: 6px / var(--r2) — matches Regional and StoreCuration */
-.nat-otb-bar-track { height: 6px; background: var(--color-border); border-radius: var(--r2); overflow: hidden; }
-.nat-otb-bar-fill { height: 100%; border-radius: var(--r2); transition: width 0.3s; }
-.nat-otb-dept-pct { font-size: var(--fs-micro); color: var(--color-text-subtle); }
-.nat-otb-over { color: var(--color-error); font-weight: var(--fw-bold); }
+/* Column widths */
+.nat-col-sku      { flex: 2; min-width: 220px; }
+.nat-col-dept     { width: 120px; flex-shrink: 0; }
+.nat-col-price    { width: 76px; flex-shrink: 0; }
+.nat-col-vel      { width: 56px; flex-shrink: 0; }
+.nat-col-r13      { width: 88px; flex-shrink: 0; }
+.nat-col-stores   { width: 66px; flex-shrink: 0; }
+.nat-col-agent    { flex: 1.2; min-width: 160px; }
+.nat-col-override { width: 190px; flex-shrink: 0; }
 
-/* ── Intel delta badges ──────────────────────────────────────────────────── */
-.nat-intel-badge {
-  padding: 2px 8px; border-radius: var(--r2); font-size: var(--fs-micro); font-weight: var(--fw-bold);
+/* SKU cell internals */
+.nat-sku-desc {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.3;
 }
-.nat-intel-badge.pos { background: var(--color-success-soft); color: var(--color-success); }
-.nat-intel-badge.neg { background: var(--color-error-soft); color: var(--color-error); }
-
-.nat-flag-badge {
-  padding: 2px 8px; border-radius: var(--r2); font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+.nat-sku-id {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--color-text-subtle);
 }
-.nat-flag--supply { background: var(--color-error-soft); color: var(--color-error); }
-.nat-flag--quality { background: var(--color-warning-soft); color: var(--color-warning); }
+.nat-r13-val {
+  font-size: 12px;
+  font-weight: 500;
+}
+.nat-stores-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.nat-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text);
+}
+.nat-muted {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.nat-agent-reason {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  line-height: 1.3;
+  max-width: 150px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nat-mandatory {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-subtle);
+}
 
-/* ── SKU description truncation ─────────────────────────────────────────── */
-.nat-rec-row .ia-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Override decision buttons */
+.nat-dec-btn {
+  padding: 3px 10px;
+  border-radius: var(--r-xs, 4px);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+.nat-dec-btn:hover {
+  border-color: var(--color-border-strong, var(--color-border));
+  color: var(--color-text);
+}
+.nat-dec-keep.active {
+  background: var(--color-success);
+  color: #fff;
+  border-color: var(--color-success);
+}
+.nat-dec-add.active {
+  background: var(--color-info);
+  color: #fff;
+  border-color: var(--color-info);
+}
+.nat-dec-drop.active {
+  background: var(--color-error);
+  color: #fff;
+  border-color: var(--color-error);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .nat-metrics-strip { grid-template-columns: repeat(3, 1fr); }
+  .nat-col-vel, .nat-col-stores { display: none; }
+}
+@media (max-width: 900px) {
+  .nat-hero-stats { grid-template-columns: repeat(3, 1fr); }
+  .nat-col-dept { display: none; }
+}
+@media (max-width: 600px) {
+  .nat-hero-top { flex-direction: column; }
+  .nat-hero-stats { grid-template-columns: repeat(2, 1fr); }
+  .nat-metrics-strip { grid-template-columns: repeat(2, 1fr); }
+  .nat-col-r13 { display: none; }
+}

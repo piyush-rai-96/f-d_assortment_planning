@@ -1,351 +1,543 @@
 import React, { useMemo, useState } from "react";
-import { Card, Button, Badge, Table, ProgressBar, EmptyState } from "impact-ui";
-import { AlertTriangle, Bot, Lock, ChevronRight, Check } from "lucide-react";
+import { Card, Badge, Button, ProgressBar } from "impact-ui";
+import { Lock, ChevronRight, AlertTriangle } from "lucide-react";
 import Text from "../components/Text.jsx";
 import Stack from "../components/Stack.jsx";
-import Grid from "../components/Grid.jsx";
-import SkuSwatch from "../components/SkuSwatch.jsx";
 import SkuMedia from "../components/SkuMedia.jsx";
-import { color } from "../styles/tokens.js";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
-import { nationalStats, runCatalogueAgent, apIntelModifier } from "../data/catalogue.js";
-import { INTEL_SEED } from "../data/intel.js";
-import { FD_OTB_DEPTS, otbNationalConsumed, otbPct, fmtCurrency } from "../data/otb.js";
-import { CATALOGUE_SKUS } from "../data/catalogue.js";
+import { FD_ASSORTMENT } from "../data/assortment.js";
+import { FD_OTB_DEPTS, fmtCurrency } from "../data/otb.js";
+import { panelSx } from "../styles/panelSx.js";
 import "./National.css";
-import { panelSx, softSx } from "../styles/panelSx.js";
 
+const TOTAL_STORES = FD_STORES.length;
+const DEPT_FILTERS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
+const METRICS_TABS = [
+  { key: "full",    label: "Full range" },
+  { key: "kept",    label: "Kept only"  },
+  { key: "dropped", label: "Dropped"    },
+];
+const VEL_COLOR = { A: "success", B: "info", C: "warning", D: "error" };
 
-/* Agent reason tag → label + Impact UI Badge color (functional signal). */
-const REASON_BADGE = {
-  "high-carry-high-sqft": { label: "Strong — all stores", color: "success" },
-  "high-carry": { label: "Wide adoption", color: "info" },
-  "high-sqft": { label: "High performer", color: "warning" },
-  emerging: { label: "Emerging", color: "default" },
-};
-
-/* Core/BG SKUs are mandatory in every store and can never be removed. */
-const HARD_LOCKED = FD_SKUS.filter((s) => s.tag === "Core" || s.tag === "BG");
+function fmtSqft(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M sqft`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k sqft`;
+  return `${Math.round(n)} sqft`;
+}
+function fmtM(n) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${Math.round(n)}`;
+}
 
 export default function National({ onNavigate }) {
-  const [agentRun, setAgentRun] = useState(false);
-  const [plan, setPlan] = useState({ natDecisions: {}, agentNatRecs: [], agentRunAt: null });
+  const [deptFilter, setDeptFilter] = useState("All");
+  const [metricsTab, setMetricsTab] = useState("full");
+  const [natDecisions, setNatDecisions] = useState({});
 
-  const runAgent = () => {
-    const p = runCatalogueAgent();
-    setPlan({ natDecisions: p.natDecisions, agentNatRecs: p.agentNatRecs, agentRunAt: p.agentRunAt });
-    setAgentRun(true);
-  };
-  const reRun = () => {
-    setPlan({ natDecisions: {}, agentNatRecs: [], agentRunAt: null });
-    setAgentRun(false);
-  };
+  /* Per-SKU stats aggregated from FD_ASSORTMENT */
+  const skuStats = useMemo(() => {
+    const map = {};
+    FD_ASSORTMENT.forEach((row) => {
+      if (!map[row.sku]) {
+        map[row.sku] = { r13Sum: 0, onHandSum: 0, stores: new Set(), velocities: {} };
+      }
+      const s = map[row.sku];
+      s.r13Sum += row.r13Sqft;
+      s.onHandSum += row.onHand;
+      s.stores.add(row.storeId);
+      s.velocities[row.velocity] = (s.velocities[row.velocity] || 0) + 1;
+    });
+    const result = {};
+    Object.entries(map).forEach(([sku, d]) => {
+      const storeCount = d.stores.size;
+      const avgR13 = storeCount > 0 ? Math.round(d.r13Sum / storeCount) : 0;
+      const vel =
+        Object.entries(d.velocities).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+      result[Number(sku)] = {
+        avgR13,
+        storeCount,
+        carryPct: Math.round((storeCount / TOTAL_STORES) * 100),
+        velocity: vel,
+        r13Total: Math.round(d.r13Sum),
+        onHand: Math.round(d.onHandSum),
+      };
+    });
+    return result;
+  }, []);
 
-  /* Toggle a recommendation's decision; clicking the active decision clears it. */
-  const decide = (skuId, value) =>
-    setPlan((prev) => {
-      const nd = { ...prev.natDecisions };
-      if (nd[skuId] === value) delete nd[skuId];
-      else nd[skuId] = value;
-      return { ...prev, natDecisions: nd };
+  /* Agent rec per SKU — deterministic based on carry % and R13 */
+  const agentRecMap = useMemo(() => {
+    const map = {};
+    FD_SKUS.forEach((sku) => {
+      const id = sku.sku;
+      const isLocked = sku.tag === "Core" || sku.tag === "BG";
+      const isDisc = sku.status === "Discontinued";
+      const st = skuStats[id] || { avgR13: 0, carryPct: 0 };
+
+      if (isLocked) {
+        map[id] = { rec: "keep", reason: "Core/BG — mandatory", locked: true };
+      } else if (isDisc) {
+        map[id] = { rec: "drop", reason: "Discontinued", locked: false };
+      } else if (st.carryPct >= 80 && st.avgR13 >= 100) {
+        map[id] = {
+          rec: "keep",
+          reason: `National core — ${st.carryPct}% carry, R13 ${st.avgR13} sqft`,
+          locked: false,
+        };
+      } else if (st.avgR13 > 0 && st.avgR13 < 20) {
+        map[id] = {
+          rec: "drop",
+          reason: `Very low national R13 (${st.avgR13} sqft)`,
+          locked: false,
+        };
+      } else if (st.carryPct > 0 && st.carryPct < 30 && st.avgR13 < 55) {
+        map[id] = { rec: "drop", reason: "Low adoption + weak R13", locked: false };
+      } else if (st.storeCount === 0) {
+        map[id] = {
+          rec: "add",
+          reason: "Approved in Portfolio Build — add to national",
+          locked: false,
+        };
+      } else {
+        map[id] = {
+          rec: null,
+          reason: `Cluster decision — ${st.carryPct}% carry, R13 ${st.avgR13} sqft`,
+          locked: false,
+        };
+      }
+    });
+    return map;
+  }, [skuStats]);
+
+  /* Toggle decision; same value clicked again clears the override */
+  const decide = (id, value) =>
+    setNatDecisions((prev) => {
+      const next = { ...prev };
+      if (next[id] === value) delete next[id];
+      else next[id] = value;
+      return next;
     });
 
-  const agentRecs = plan.agentNatRecs;
-  const approvedRecs = agentRecs.filter((r) => plan.natDecisions[r.sku.sku] === "core").length;
-  const totalCore = HARD_LOCKED.length + approvedRecs;
+  /* Effective decision: user override ?? agent rec ?? null */
+  const effDec = (id) => natDecisions[id] ?? agentRecMap[id]?.rec ?? null;
 
-  /* Hard-locked table rows enriched with real national R13 footprint. */
-  const lockedRows = useMemo(
+  /* Filtered SKUs by dept */
+  const filteredSkus = useMemo(
     () =>
-      HARD_LOCKED.map((s) => {
-        const stat = nationalStats(s);
-        return {
-          name: s.desc,
-          sku: String(s.sku),
-          dept: s.dept,
-          subDept: s.subDept || "—",
-          price: s.price,
-          carry: stat.carryPct,
-          avg: stat.avgSqft,
-        };
-      }),
-    []
+      deptFilter === "All" ? FD_SKUS : FD_SKUS.filter((s) => s.dept === deptFilter),
+    [deptFilter]
   );
 
-  const lockedColumns = useMemo(
-    () => [
-      { headerName: "Image", colId: "image", width: 72, minWidth: 72, maxWidth: 72,
-        suppressSizeToFit: true, sortable: false, filter: false,
-        cellStyle: { display: "flex", alignItems: "center", justifyContent: "center" },
-        cellRenderer: ({ data }) => {
-          const skuObj = FD_SKUS.find((s) => String(s.sku) === data.sku);
-          return <SkuMedia sku={skuObj || { desc: data.name }} size={40} />;
-        },
-      },
-      {
-        field: "name", headerName: "SKU", minWidth: 280, flex: 1, filter: "agTextColumnFilter",
-        cellRenderer: ({ data }) => {
-          return (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span>{data.name}</span>
-            </div>
-          );
-        },
-      },
-      { field: "sku", headerName: "SKU", width: 120, filter: "agTextColumnFilter", cellStyle: () => ({ fontFamily: "var(--font-mono)", color: color.textMuted }) },
-      { field: "dept", headerName: "Dept", width: 150, filter: "agSetColumnFilter" },
-      { field: "subDept", headerName: "Sub-Dept", minWidth: 150, flex: 1, filter: "agSetColumnFilter" },
-      { field: "price", headerName: "Price", width: 100, filter: "agNumberColumnFilter", valueFormatter: (p) => `$${Number(p.value).toFixed(2)}` },
-      { field: "carry", headerName: "Carry", width: 100, filter: "agNumberColumnFilter", valueFormatter: (p) => `${p.value}%` },
-      {
-        field: "avg",
-        headerName: "Avg R13/Store",
-        width: 140,
-        valueFormatter: (p) => `${p.value} sqft`,
-        cellStyle: (p) => ({ fontWeight: p.value >= 100 ? 700 : 400, color: p.value >= 100 ? color.success : color.text }),
-      },
-    ],
-    []
+  /* 5 hero stats */
+  const heroStats = useMemo(() => {
+    const hardLocked = filteredSkus.filter((s) => agentRecMap[s.sku]?.locked).length;
+    const keepCount  = filteredSkus.filter((s) => effDec(s.sku) === "keep").length;
+    const addCount   = filteredSkus.filter((s) => effDec(s.sku) === "add").length;
+    const dropCount  = filteredSkus.filter((s) => effDec(s.sku) === "drop").length;
+    const overridden = filteredSkus.filter((s) => {
+      const ud = natDecisions[s.sku];
+      const ar = agentRecMap[s.sku]?.rec;
+      return ud && ar && ud !== ar;
+    }).length;
+    return [
+      { label: "Hard locked",  val: hardLocked, color: "#6EEDB8" },
+      { label: "Keep",         val: keepCount,  color: "#A3DDD6" },
+      { label: "Add",          val: addCount,   color: "#93C5FD" },
+      { label: "Drop → NPI",   val: dropCount,  color: "#FCA5A5" },
+      { label: "Overridden",   val: overridden, color: "#FCD34D" },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredSkus, natDecisions, agentRecMap]);
+
+  /* OTB national total */
+  const totalOTBBudget = Object.values(FD_OTB_DEPTS).reduce((s, v) => s + v, 0);
+  const otbConsumed = useMemo(
+    () =>
+      filteredSkus
+        .filter((s) => effDec(s.sku) === "keep" || effDec(s.sku) === "add")
+        .reduce((sum, s) => {
+          const st = skuStats[s.sku] || {};
+          return sum + (st.storeCount || 0) * s.price * (st.avgR13 || 0);
+        }, 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredSkus, natDecisions]
   );
 
-  const kpis = [
-    { l: "Total National Core", v: totalCore, sub: "Will be locked in all stores", tone: "success" },
-    { l: "Hard locked (Core/BG)", v: HARD_LOCKED.length, sub: "Cannot be changed", tone: "strong" },
-    { l: "Agent recommendations", v: agentRecs.length, sub: "Review and approve below", tone: "teal" },
-  ];
+  /* Metrics strip data */
+  const metricsData = useMemo(() => {
+    let rows =
+      deptFilter === "All"
+        ? FD_ASSORTMENT
+        : FD_ASSORTMENT.filter((r) => r.dept === deptFilter);
+    if (metricsTab === "kept") {
+      rows = rows.filter((r) => {
+        const d = effDec(r.sku);
+        return d === "keep" || d === "add";
+      });
+    } else if (metricsTab === "dropped") {
+      rows = rows.filter((r) => effDec(r.sku) === "drop");
+    }
+    const salesR13   = rows.reduce((s, r) => s + r.r13Sqft * r.menuPrice, 0);
+    const salesUnits = rows.reduce((s, r) => s + r.r13Sqft, 0);
+    const totalOH    = rows.reduce((s, r) => s + r.onHand, 0);
+    const stPct =
+      salesUnits + totalOH > 0
+        ? ((salesUnits / (salesUnits + totalOH)) * 100).toFixed(1)
+        : "0.0";
+    const gmDollars = salesR13 * 0.42;
+    return [
+      { label: "Sales $",     value: fmtM(salesR13),     sub: "R13 revenue",        color: "var(--color-success)",  bg: "var(--color-success-soft)" },
+      { label: "Sales Units", value: fmtSqft(salesUnits), sub: "R13 sqft sold",     color: "var(--color-info)",     bg: "var(--color-info-soft)"    },
+      { label: "Sell Thru",   value: `${stPct}%`,         sub: "Sold / (sold+OH)",  color: Number(stPct) >= 20 ? "var(--color-success)" : Number(stPct) >= 10 ? "var(--color-warning)" : "var(--color-error)", bg: "var(--color-surface-alt)" },
+      { label: "GM $",        value: fmtM(gmDollars),     sub: "Gross margin $",    color: "var(--color-primary)",  bg: "var(--color-primary-soft)" },
+      { label: "GM %",        value: "42%",               sub: "Per-SKU landed cost",color:"var(--color-teal, #0d9488)", bg: "var(--color-teal-soft, #f0fdfa)" },
+      { label: "On Hand",     value: fmtSqft(totalOH),    sub: "Units in stock",    color: "var(--color-warning)",  bg: "var(--color-warning-soft)" },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deptFilter, metricsTab, natDecisions]);
+
+  /* Unified SKU rows sorted: Add → Keep → null → Drop; within group by avgR13 desc */
+  const sortedSkus = useMemo(() => {
+    const order = { add: 0, keep: 1, drop: 3 };
+    return [...filteredSkus].sort((a, b) => {
+      const da = effDec(a.sku);
+      const db = effDec(b.sku);
+      const oa = da != null ? (order[da] ?? 2) : 2;
+      const ob = db != null ? (order[db] ?? 2) : 2;
+      if (oa !== ob) return oa - ob;
+      return (skuStats[b.sku]?.avgR13 ?? 0) - (skuStats[a.sku]?.avgR13 ?? 0);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredSkus, natDecisions]);
+
+  const totalCore = filteredSkus.filter(
+    (s) => effDec(s.sku) === "keep" || effDec(s.sku) === "add"
+  ).length;
+
+  const otbPctVal =
+    totalOTBBudget > 0 ? Math.round((otbConsumed / totalOTBBudget) * 100) : 0;
 
   return (
     <Stack direction="column" gap={4}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── 1. Dark premium hero header ─────────────────────────────────────── */}
+      <div className="nat-hero">
+        <div className="nat-hero-top">
+          <div>
+            <div className="nat-hero-overline">SS 2026 · Assortment Curation</div>
+            <h1 className="nat-hero-title">National Core</h1>
+            <p className="nat-hero-subtitle">
+              Agent recommends Keep / Add / Drop per SKU · override only where needed ·
+              decisions cascade to cluster &amp; store
+            </p>
+          </div>
+          <div className="nat-dept-pills">
+            {DEPT_FILTERS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                className={`nat-dept-pill${deptFilter === d ? " active" : ""}`}
+                onClick={() => setDeptFilter(d)}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* 5-stat summary row */}
+        <div className="nat-hero-stats">
+          {heroStats.map((stat) => (
+            <div key={stat.label} className="nat-hero-stat">
+              <div className="nat-hero-stat-val" style={{ color: stat.color }}>
+                {stat.val}
+              </div>
+              <div className="nat-hero-stat-lbl">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 2. OTB national budget bar ───────────────────────────────────────── */}
       <Card sx={panelSx}>
-        <Stack direction="row" justify="space-between" align="center" gap={4} wrap>
-          <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
-            <Text variant="title">National Core</Text>
+        <Stack direction="column" gap={3}>
+          <Stack direction="row" align="center" justify="space-between" wrap>
+            <Stack direction="row" align="center" gap={2}>
+              <Text variant="body-strong">OTB — National — all stores</Text>
+              {otbPctVal > 100 && (
+                <Badge variant="subtle" color="error" label="OVER BUDGET" />
+              )}
+              {otbPctVal > 85 && otbPctVal <= 100 && (
+                <Badge variant="subtle" color="warning" label="Near limit" />
+              )}
+            </Stack>
             <Text variant="caption" tone="muted">
-              Review agent recommendations · approve or reject · decisions here lock all {FD_STORES.length} stores
+              {fmtM(otbConsumed)} of {fmtM(totalOTBBudget)}
             </Text>
           </Stack>
-          {agentRun ? (
-            <Stack direction="row" gap={2} align="center" wrap justify="flex-end">
-              <Badge variant="subtle" size="small" color="success" label={`Agent applied · ${plan.agentRunAt}`} />
-              <Button variant="secondary" size="small" onClick={reRun}>Re-run</Button>
-            </Stack>
-          ) : null}
+          <div className="nat-otb-bar-track">
+            <div
+              className="nat-otb-bar-fill"
+              style={{
+                width: `${Math.min(100, otbPctVal)}%`,
+                background:
+                  otbPctVal > 100
+                    ? "var(--color-error)"
+                    : otbPctVal > 85
+                    ? "var(--color-warning)"
+                    : "var(--color-success)",
+              }}
+            />
+          </div>
+          <Text variant="micro" tone="subtle">
+            {otbPctVal}% of budget · {fmtM(totalOTBBudget - otbConsumed)} remaining
+          </Text>
         </Stack>
       </Card>
 
-      {/* ── Gate: agent must run first ─────────────────────────────────────── */}
-      {!agentRun ? (
-        <Card sx={panelSx}>
-          <Stack direction="row" gap={3} align="flex-start" wrap>
-            <Stack align="center" justify="center" style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--color-warning-soft)", flexShrink: 0 }}>
-              <AlertTriangle size={18} color="var(--color-warning)" strokeWidth={1.75} />
-            </Stack>
-            <Stack direction="column" gap={3} flex="1 1 auto" style={{ minWidth: 0 }}>
-              <Stack direction="column" gap={1}>
-                <Text variant="subheading" tone="warning">Agent hasn't run yet</Text>
-                <Text variant="caption" tone="muted">
-                  Run the assortment agent to score every Active SKU on R13 carry rate and average sqft, then recommend
-                  promotions to National Core. Recommendations apply as defaults — you approve or reject each below.
-                </Text>
-              </Stack>
-              <Stack direction="row" gap={3} align="center" wrap>
-                <Button variant="primary" size="medium" onClick={runAgent}>
-                  <Bot size={14} style={{ marginRight: 6 }} />
-                  Run agent recommendation
-                </Button>
-                {onNavigate ? (
-                  <Button variant="tertiary" size="medium" onClick={() => onNavigate("catalogue")}>Open Catalogue step →</Button>
-                ) : null}
-              </Stack>
-            </Stack>
-          </Stack>
-        </Card>
-      ) : null}
-
-      {/* ── KPI strip ──────────────────────────────────────────────────────── */}
-      <Grid columns={3} gap={3}>
-        {kpis.map((k) => (
-          <Card key={k.l} sx={panelSx}>
-            <Stack direction="column" gap={1}>
-              <Text variant="overline" tone="muted">{k.l}</Text>
-              <Text variant="kpi" tone={k.tone}>{k.v}</Text>
-              <Text variant="caption" tone="subtle">{k.sub}</Text>
-            </Stack>
-          </Card>
-        ))}
-      </Grid>
-
-      {/* ── Section 1: Hard-locked Core / BG ───────────────────────────────── */}
-      <Stack direction="column" gap={3}>
-        <Stack direction="row" align="center" gap={2} wrap>
-          <Lock size={14} color="var(--color-success)" strokeWidth={2} />
-          <Text variant="body-strong" tone="success">Always Mandatory — Core / BG</Text>
-          <Badge variant="subtle" size="small" color="success" label={`${HARD_LOCKED.length}`} />
-          <Text variant="caption" tone="muted">From the product catalogue — cannot be removed under any circumstance</Text>
-        </Stack>
-        <Table
-      defaultColDef={{ floatingFilter: true }}
-          cardContainer
-          rowHeight="compact"
-          tableHeader="Locked national core"
-          columnDefs={lockedColumns}
-          rowData={lockedRows}
-          domLayout="autoHeight"
-          hideTableSetting
-          hideTableActions
-          pagination={false}
-        />
-      </Stack>
-
-      {/* ── OTB Budget by Department ────────────────────────────────────────── */}
-      {agentRun && (
-        <Card sx={panelSx}>
-          <Stack direction="column" gap={3}>
-            <Stack direction="row" align="center" gap={2}>
-              <Text variant="body-strong" tone="strong">OTB Budget — National Core (SS 2026)</Text>
-              <Badge variant="subtle" size="small" color="info" label="By department" />
-            </Stack>
-            <div className="nat-otb-grid">
-              {Object.entries(FD_OTB_DEPTS).map(([dept, budget]) => {
-                const consumed = otbNationalConsumed(plan.natDecisions, CATALOGUE_SKUS)[dept] || 0;
-                const pct = otbPct(consumed, budget);
-                const over = consumed > budget;
-                return (
-                  <div key={dept} className="nat-otb-dept">
-                    <div className="nat-otb-dept-header">
-                      <span className="nat-otb-dept-name">{dept}</span>
-                      <span className={`nat-otb-dept-val ${over ? "over" : ""}`}>
-                        {fmtCurrency(consumed)} / {fmtCurrency(budget)}
-                      </span>
-                    </div>
-                    <div className="nat-otb-bar-track">
-                      <div className="nat-otb-bar-fill" style={{ width: `${Math.min(100, pct)}%`, background: over ? color.error : color.success }} />
-                    </div>
-                    <div className="nat-otb-dept-pct">
-                      {over
-                        ? <span className="nat-otb-over"><AlertTriangle size={11} style={{ marginRight: 3, verticalAlign: "middle" }} />Over budget by {fmtCurrency(consumed - budget)}</span>
-                        : <span>{pct}% of budget consumed</span>
-                      }
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Stack>
-        </Card>
-      )}
-
-      {/* ── Section 2: Agent recommendations (post-run) ────────────────────── */}
-      {agentRun ? (
+      {/* ── 3. Metrics tabs + 6-KPI strip ───────────────────────────────────── */}
+      <Card sx={panelSx}>
         <Stack direction="column" gap={3}>
-          <Stack direction="row" align="center" gap={2} wrap>
-            <Bot size={14} color="var(--color-teal)" strokeWidth={1.75} />
-            <Text variant="body-strong" tone="teal">Agent Recommended for National Core</Text>
-            <Badge variant="subtle" size="small" color="info" label={`${agentRecs.length}`} />
-            <Text variant="caption" tone="muted">Review each recommendation · approve or reject · approved items lock all stores</Text>
-          </Stack>
-
-          {agentRecs.length ? (
-            <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
-              {agentRecs.map((rec) => {
-                    const id = rec.sku.sku;
-                const dec = plan.natDecisions[id];
-                const approved = dec === "core";
-                const rejected = dec === "rejected";
-                const reason = REASON_BADGE[rec.reason] || REASON_BADGE.emerging;
-                const intelMod = apIntelModifier(id, INTEL_SEED);
-                return (
-                  <Stack
-                    key={id}
-                    className={`nat-rec-row${approved ? " is-approved" : ""}${rejected ? " is-rejected" : ""}`}
-                    direction="row"
-                    align="center"
-                    gap={4}
-                    wrap
-                    paddingX={4}
-                    paddingY={3}
-                  >
-                    {/* Identity */}
-                    <Stack direction="column" gap={1} flex="1 1 260px" style={{ minWidth: 0 }}>
-                      <Stack direction="row" align="center" gap={2} wrap>
-                        <Text variant="body-strong" tone="strong">{rec.sku.desc}</Text>
-                        <Badge variant="subtle" size="small" color={reason.color} label={reason.label} />
-                        {intelMod.delta !== 0 && (
-                          <Badge variant="subtle" size="small" color={intelMod.delta > 0 ? "success" : "error"}
-                            label={`Intel ${intelMod.delta > 0 ? "+" : ""}${intelMod.delta}pts`} />
-                        )}
-                        {intelMod.flags.includes("supply-constrained") && (
-                          <Badge variant="subtle" size="small" color="warning" label="Supply risk" />
-                        )}
-                        {intelMod.flags.includes("quality-hold") && (
-                          <Badge variant="subtle" size="small" color="error" label="Quality hold" />
-                        )}
-                      </Stack>
-                      <Stack direction="row" align="center" gap={2} wrap>
-                        <Text variant="micro" tone="subtle" mono>{id}</Text>
-                        <Badge variant="subtle" size="small" color="default" label={rec.sku.dept} />
-                        <Text variant="micro" tone="muted">{rec.sku.subDept}</Text>
-                      </Stack>
-                    </Stack>
-
-                    {/* Carry */}
-                    <Stack direction="column" gap={1} style={{ width: 140, flexShrink: 0 }}>
-                      <Text variant="micro" tone="muted">Carry rate</Text>
-                      <Text variant="body-strong" tone="strong">{rec.carryPct}%</Text>
-                      <ProgressBar value={rec.carryPct} status="completed" showTime={false} customLabel=" " />
-                    </Stack>
-
-                    {/* Avg R13 */}
-                    <Stack direction="column" gap={1} style={{ width: 110, flexShrink: 0 }}>
-                      <Text variant="micro" tone="muted">Avg R13/Store</Text>
-                      <Text variant="body-strong" tone={rec.avgSqft >= 100 ? "success" : "strong"}>{rec.avgSqft} sqft</Text>
-                    </Stack>
-
-                    {/* Price */}
-                    <Stack direction="column" gap={1} style={{ width: 80, flexShrink: 0 }}>
-                      <Text variant="micro" tone="muted">Price</Text>
-                      <Text variant="body-strong" tone="strong" mono>${rec.sku.price.toFixed(2)}</Text>
-                    </Stack>
-
-                    {/* Decision */}
-                    <Stack direction="row" gap={2} align="center" style={{ flexShrink: 0 }}>
-                      <Button variant={approved ? "primary" : "secondary"} size="small" onClick={() => decide(id, "core")}>
-                        {approved ? <><Check size={12} style={{ marginRight: 4 }} />Approved</> : "Approve"}
-                      </Button>
-                      <Button variant="secondary" size="small" type="destructive" onClick={() => decide(id, "rejected")}>
-                        {rejected ? "✕ Rejected" : "Reject"}
-                      </Button>
-                    </Stack>
-                  </Stack>
-                );
-              })}
-            </Card>
-          ) : (
-            <Card sx={softSx}>
-              <EmptyState
-                heading="No additional promotions"
-                description="The agent found no non-core SKUs meeting the ≥80% carry and high-sqft national threshold. Only the hard-locked Core / BG items will be national."
-              />
-            </Card>
-          )}
-        </Stack>
-      ) : null}
-
-      {/* ── Lock-status footer ─────────────────────────────────────────────── */}
-      <Card sx={{ ...panelSx, background: "var(--color-success-soft)", border: "1.5px solid var(--color-success)" }}>
-        <Stack direction="row" align="center" gap={3} wrap>
-          <Lock size={18} color="var(--color-success)" strokeWidth={1.75} style={{ flexShrink: 0 }} />
-          <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
-            <Text variant="body-strong" tone="success">{totalCore} SKUs will be locked as National Core</Text>
-            <Text variant="caption" tone="muted">
-              These appear pre-filled and locked in Regional Review and Store Curation. They cannot be removed by regional
-              managers or store teams.
+          <Stack direction="row" align="center" justify="space-between" wrap>
+            <div className="nat-metrics-tabs">
+              {METRICS_TABS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  className={`nat-metrics-tab${metricsTab === t.key ? " active" : ""}`}
+                  onClick={() => setMetricsTab(t.key)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <Text variant="micro" tone="subtle">
+              National · {deptFilter}
             </Text>
           </Stack>
-          <Button variant="primary" size="medium" onClick={() => onNavigate && onNavigate("regional")} style={{ flexShrink: 0 }}>
-            Advance to Regional Review <ChevronRight size={14} style={{ marginLeft: 4 }} />
+          <div className="nat-metrics-strip">
+            {metricsData.map((k) => (
+              <div
+                key={k.label}
+                className="nat-metric-card"
+                style={{ background: k.bg }}
+              >
+                <div className="nat-metric-lbl">{k.label}</div>
+                <div className="nat-metric-val" style={{ color: k.color }}>
+                  {k.value}
+                </div>
+                <div className="nat-metric-sub">{k.sub}</div>
+              </div>
+            ))}
+          </div>
+        </Stack>
+      </Card>
+
+      {/* ── 4. Unified SKU decision table ───────────────────────────────────── */}
+      <Card sx={{ ...panelSx, padding: 0, overflow: "hidden" }}>
+        {/* Column headers */}
+        <div className="nat-table-head">
+          <div className="nat-col-sku">SKU / Description</div>
+          <div className="nat-col-dept">Dept</div>
+          <div className="nat-col-price">Price</div>
+          <div className="nat-col-vel">Vel.</div>
+          <div className="nat-col-r13">Avg R13</div>
+          <div className="nat-col-stores">Stores</div>
+          <div className="nat-col-agent">Agent Rec</div>
+          <div className="nat-col-override">Override</div>
+        </div>
+
+        {/* Table body */}
+        <div className="nat-table-body">
+          {sortedSkus.map((sku) => {
+            const id      = sku.sku;
+            const dec     = effDec(id);
+            const userDec = natDecisions[id];
+            const agent   = agentRecMap[id] || { rec: null, reason: "", locked: false };
+            const st      = skuStats[id] || {};
+            const isNew   = !st.storeCount;
+            const rowClass =
+              dec === "keep"
+                ? "nat-row-keep"
+                : dec === "add"
+                ? "nat-row-add"
+                : dec === "drop"
+                ? "nat-row-drop"
+                : "";
+
+            return (
+              <div key={id} className={`nat-table-row ${rowClass}`}>
+                {/* SKU / Description */}
+                <div className="nat-col-sku">
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
+                    <SkuMedia sku={sku} size={36} disablePreview />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="nat-sku-desc">{sku.desc}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap", marginTop: 2 }}>
+                        <span className="nat-sku-id">{id}</span>
+                        {agent.locked && (
+                          <Badge variant="subtle" size="small" color="success" label={sku.tag} />
+                        )}
+                        {sku.status === "Discontinued" && (
+                          <Badge variant="subtle" size="small" color="error" label="Disc." />
+                        )}
+                        {isNew && (
+                          <Badge variant="subtle" size="small" color="info" label="New SKU" />
+                        )}
+                        {userDec && agent.rec && userDec !== agent.rec && (
+                          <Badge variant="subtle" size="small" color="warning" label="Overridden" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dept */}
+                <div className="nat-col-dept">
+                  <Badge variant="subtle" size="small" color="default" label={sku.dept} />
+                </div>
+
+                {/* Price */}
+                <div className="nat-col-price">
+                  <span className="nat-mono">${sku.price.toFixed(2)}</span>
+                </div>
+
+                {/* Velocity */}
+                <div className="nat-col-vel">
+                  {st.velocity && st.velocity !== "—" ? (
+                    <Badge
+                      variant="subtle"
+                      size="small"
+                      color={VEL_COLOR[st.velocity] || "default"}
+                      label={st.velocity}
+                    />
+                  ) : (
+                    <span className="nat-muted">—</span>
+                  )}
+                </div>
+
+                {/* Avg R13 */}
+                <div className="nat-col-r13">
+                  <span
+                    className="nat-r13-val"
+                    style={{
+                      color:
+                        (st.avgR13 || 0) >= 100
+                          ? "var(--color-success)"
+                          : (st.avgR13 || 0) <= 20
+                          ? "var(--color-error)"
+                          : "var(--color-text)",
+                      fontWeight: (st.avgR13 || 0) >= 100 ? 700 : 400,
+                    }}
+                  >
+                    {st.avgR13 || 0} sqft
+                  </span>
+                </div>
+
+                {/* Stores */}
+                <div className="nat-col-stores">
+                  <span className="nat-stores-val">
+                    {st.storeCount || 0}/{TOTAL_STORES}
+                  </span>
+                </div>
+
+                {/* Agent Rec */}
+                <div className="nat-col-agent">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {agent.rec ? (
+                      <Badge
+                        variant="subtle"
+                        size="small"
+                        color={
+                          agent.rec === "keep"
+                            ? "success"
+                            : agent.rec === "add"
+                            ? "info"
+                            : "error"
+                        }
+                        label={
+                          agent.rec === "keep"
+                            ? "✓ Keep"
+                            : agent.rec === "add"
+                            ? "+ Add"
+                            : "− Drop"
+                        }
+                      />
+                    ) : (
+                      <Badge variant="subtle" size="small" color="default" label="— Cluster" />
+                    )}
+                    <span className="nat-agent-reason">{agent.reason}</span>
+                  </div>
+                </div>
+
+                {/* Override */}
+                <div className="nat-col-override">
+                  {agent.locked ? (
+                    <span className="nat-mandatory">Mandatory</span>
+                  ) : (
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button
+                        type="button"
+                        className={`nat-dec-btn nat-dec-keep${userDec === "keep" ? " active" : ""}`}
+                        onClick={() => decide(id, "keep")}
+                      >
+                        Keep
+                      </button>
+                      <button
+                        type="button"
+                        className={`nat-dec-btn nat-dec-add${userDec === "add" ? " active" : ""}`}
+                        onClick={() => decide(id, "add")}
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        className={`nat-dec-btn nat-dec-drop${userDec === "drop" ? " active" : ""}`}
+                        onClick={() => decide(id, "drop")}
+                      >
+                        Drop
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* ── 5. Lock-status footer ───────────────────────────────────────────── */}
+      <Card
+        sx={{
+          ...panelSx,
+          background: "var(--color-success-soft)",
+          border: "1.5px solid var(--color-success)",
+        }}
+      >
+        <Stack direction="row" align="center" gap={3} wrap>
+          <Lock
+            size={18}
+            color="var(--color-success)"
+            strokeWidth={1.75}
+            style={{ flexShrink: 0 }}
+          />
+          <Stack direction="column" gap={1} flex="1 1 auto" style={{ minWidth: 0 }}>
+            <Text variant="body-strong" tone="success">
+              {totalCore} SKUs will be locked as National Core
+            </Text>
+            <Text variant="caption" tone="muted">
+              These appear pre-filled and locked in Regional Review and Store Curation.
+              They cannot be removed by regional managers or store teams.
+            </Text>
+          </Stack>
+          <Button
+            variant="primary"
+            size="medium"
+            onClick={() => onNavigate && onNavigate("regional")}
+            style={{ flexShrink: 0 }}
+          >
+            Advance to Regional Review{" "}
+            <ChevronRight size={14} style={{ marginLeft: 4 }} />
           </Button>
         </Stack>
       </Card>
