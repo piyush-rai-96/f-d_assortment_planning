@@ -1,8 +1,41 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, Component } from "react";
+
+/* ── Error Boundary — catches any runtime render errors ───────────────────── */
+class PlanningAdminErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    this.setState({ info });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 32 }}>
+          <div style={{ background: "var(--color-error-soft, #fef2f2)", border: "1px solid var(--color-error, #ef4444)", borderRadius: 8, padding: "20px 24px" }}>
+            <div style={{ fontWeight: 700, color: "var(--color-error, #ef4444)", marginBottom: 8, fontSize: 15 }}>
+              Planning Admin — Render Error
+            </div>
+            <pre style={{ fontSize: 12, color: "var(--color-text, #333)", whiteSpace: "pre-wrap", margin: 0 }}>
+              {this.state.error?.message}
+              {"\n\n"}
+              {this.state.info?.componentStack}
+            </pre>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { Card, Button, Badge, Table, Tabs, Checkbox, Input } from "impact-ui";
 import {
   LayoutDashboard, CalendarRange,
-  Plus, Trash2, ChevronLeft, CheckCircle2, Tag, Package
+  Plus, Trash2, ChevronLeft, CheckCircle2, Tag, Package, Pencil
 } from "lucide-react";
 import FdSelect from "../components/FdSelect.jsx";
 import Text from "../components/Text.jsx";
@@ -79,7 +112,7 @@ function FieldLabel({ children }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-export default function PlanningAdmin() {
+function PlanningAdminInner() {
   /* ── Section / view state ─────────────────────────────────────────────── */
   const [section, setSection] = useState("planning");
 
@@ -104,19 +137,14 @@ export default function PlanningAdmin() {
   const [apDraft, setApDraft] = useState(null);
 
   /* ── Scope wizard ─────────────────────────────────────────────────────── */
-  const [scopeConfirmed, setScopeConfirmed] = useState(() => {
-    try { return localStorage.getItem("pa_scope_confirmed") !== "0"; } catch { return true; }
-  });
+  const [scopeConfirmed, setScopeConfirmed] = useState(true);
   const [scopeStep, setScopeStep] = useState(0);
   const [scopeDepts, setScopeDepts] = useState(["Wood", "Tile", "Laminate & Vinyl"]);
   const [scopeChannels, setScopeChannels] = useState(["All Stores"]);
   const SCOPE_DEPT_OPTS = ["Wood", "Tile", "Laminate & Vinyl", "Natural Stone", "Accessories"];
   const SCOPE_CHANNEL_OPTS = ["All Stores", "Domestic Only", "High-volume only", "Southeast cluster"];
   const SCOPE_STEPS = ["Departments", "Channels", "Calendar"];
-  const confirmScope = () => {
-    try { localStorage.setItem("pa_scope_confirmed", "1"); } catch {}
-    setScopeConfirmed(true);
-  };
+  const confirmScope = () => setScopeConfirmed(true);
 
   /* ─────────────── PRODUCTS panel ─────────────────────────────────────── */
   const productRows = useMemo(
@@ -762,7 +790,7 @@ export default function PlanningAdmin() {
           </Stack>
           <Stack direction="row" gap={2} align="center">
             <Badge variant="subtle" size="small" color="warning" label="● Source system — read only" />
-            <Button variant="tertiary" size="small" onClick={() => { setScopeConfirmed(false); setScopeStep(0); try { localStorage.setItem("pa_scope_confirmed", "0"); } catch {} }}>
+            <Button variant="tertiary" size="small" onClick={() => { setScopeConfirmed(false); setScopeStep(0); }}>
               Reset scope
             </Button>
           </Stack>
@@ -807,5 +835,13 @@ export default function PlanningAdmin() {
         </div>
       </Stack>
     </Stack>
+  );
+}
+
+export default function PlanningAdmin() {
+  return (
+    <PlanningAdminErrorBoundary>
+      <PlanningAdminInner />
+    </PlanningAdminErrorBoundary>
   );
 }
