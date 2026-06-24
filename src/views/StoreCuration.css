@@ -131,6 +131,41 @@
 .sc-persona-badge--store { background: var(--color-warning-soft); color: var(--color-warning); }
 .sc-persona-badge--corp  { background: var(--color-primary-soft); color: var(--color-primary); }
 
+/* ── Store option target progress bar ───────────────────────────────────── */
+.sc-opt-target {
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+}
+.sc-opt-target-header {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  flex-wrap: wrap; margin-bottom: var(--sp-1);
+}
+.sc-opt-target-label {
+  font-size: var(--fs-micro);
+  color: var(--color-text-subtle);
+  letter-spacing: 0.02em;
+}
+.sc-opt-target-label strong { color: var(--color-text-strong); font-weight: 700; }
+.sc-opt-target-count {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sc-opt-bar-track {
+  height: 5px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sc-opt-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
 /* ── OTB Budget bar ──────────────────────────────────────────────────────── */
 .sc-otb {
   display: flex;

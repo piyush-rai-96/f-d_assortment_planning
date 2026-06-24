@@ -10,6 +10,8 @@ import SkuSwatch from "../components/SkuSwatch.jsx";
 import SkuMedia from "../components/SkuMedia.jsx";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
+import { FD_ASSORTMENT } from "../data/assortment.js";
+import { plrCalcOptionCount, ASSORT_PERIODS } from "../data/plr.js";
 import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
 import {
   CORE_IDS,
@@ -278,7 +280,7 @@ export default function Regional({ onNavigate }) {
 
         <Stack direction="column" gap={4} flex="1 1 460px" style={{ minWidth: 0 }}>
           {!activeCluster ? (
-            <ClusterOverview byDept={byDept} clusterDecisions={clusterDecisions} onReview={openCluster} onStore={openStore} />
+            <ClusterOverview byDept={byDept} deptFilter={deptFilter} clusterDecisions={clusterDecisions} onReview={openCluster} onStore={openStore} />
           ) : (
             <ClusterDetail
               clusterId={activeCluster}
@@ -313,7 +315,29 @@ export default function Regional({ onNavigate }) {
 }
 
 /* ════════════ ALL-CLUSTERS OVERVIEW ════════════ */
-function ClusterOverview({ byDept, clusterDecisions, onReview, onStore }) {
+const ACTIVE_DEPTS_RR = ["Wood", "Tile", "Laminate & Vinyl"];
+
+function ClusterOverview({ byDept, deptFilter, clusterDecisions, onReview, onStore }) {
+  /* Compute per-cluster option targets for the active dept(s) */
+  const clusterTargets = useMemo(() => {
+    const depts = deptFilter === "All" ? ACTIVE_DEPTS_RR : [deptFilter];
+    const map = {};
+    depts.forEach((dept) => {
+      const period = ASSORT_PERIODS.find((p) => p.dept === dept && p.status === "active");
+      if (!period) return;
+      const result = plrCalcOptionCount(dept, period.id, "B", FD_CLUST_SCENARIOS, FD_SKUS, FD_ASSORTMENT);
+      if (!result) return;
+      result.clusterBreakdown.forEach((cb) => {
+        if (!map[cb.id]) map[cb.id] = { national: 0, regional: 0, store: 0, opts: 0 };
+        map[cb.id].national  += cb.national;
+        map[cb.id].regional  += cb.regional;
+        map[cb.id].store     += cb.store;
+        map[cb.id].opts      += cb.opts;
+      });
+    });
+    return map;
+  }, [deptFilter]);
+
   return (
     <Stack direction="column" gap={3}>
       <Text variant="body-strong" tone="strong">Cluster assortment overview — open a cluster or store to drill in</Text>
@@ -326,6 +350,13 @@ function ClusterOverview({ byDept, clusterDecisions, onReview, onStore }) {
         const dropCount = Object.values(decs).filter((d) => d === "drop").length;
         const decCount  = Object.keys(decs).length;
         const storePickTotal = stores.reduce((a, s) => a + storeOnlySkus(s.id, cl).length, 0);
+        const tgt = clusterTargets[cl.id];
+        const curated = keepCount + addCount;
+        const tgtPct  = tgt?.opts > 0 ? Math.min(100, Math.round((curated / tgt.opts) * 100)) : null;
+        const tgtBarColor = tgtPct === null ? "var(--color-border)"
+          : tgtPct >= 100 ? "var(--color-success)"
+          : tgtPct >= 70  ? "var(--color-info)"
+          : "var(--color-warning)";
 
         return (
           <Card key={cl.id} sx={panelSx}>
@@ -364,6 +395,23 @@ function ClusterOverview({ byDept, clusterDecisions, onReview, onStore }) {
                   </Button>
                 ))}
               </Stack>
+
+              {/* Option target progress */}
+              {tgt && (
+                <div className="rr-opt-target">
+                  <div className="rr-opt-target-header">
+                    <span className="rr-opt-target-label">
+                      Option Target — Nat <strong>{tgt.national}</strong> · Reg <strong>{tgt.regional}</strong> · Store <strong>{tgt.store}</strong> = <strong>{tgt.opts}</strong> total
+                    </span>
+                    <span className="rr-opt-target-count" style={{ color: tgtBarColor }}>
+                      {curated} / {tgt.opts} curated{tgtPct !== null ? ` (${tgtPct}%)` : ""}
+                    </span>
+                  </div>
+                  <div className="rr-opt-bar-track">
+                    <div className="rr-opt-bar-fill" style={{ width: `${tgtPct ?? 0}%`, background: tgtBarColor }} />
+                  </div>
+                </div>
+              )}
 
               {/* OTB slot indicator */}
                 <div className="rr-otb-slot">

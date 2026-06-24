@@ -6,6 +6,7 @@
  * windows and optional phases/milestones.
  */
 import { color } from "../styles/tokens.js";
+import { PLANNING_DEPT_SPLITS, GLOBAL_OPTION_SPLIT } from "./admin.js";
 
 export const FD_PLR_CALENDAR = [
   { name: "DECORATIVE ACCESSORIES APRIL - 2026", dept: "Decorative Accessories", id: 532, presDate: "2026-04-21", dueDate: "2026-04-23", status: "Open",   versions: 0 },
@@ -136,10 +137,12 @@ export function plrCalcOptionCount(dept, assortPeriodId, clustScenario, clustSce
     const nationalOpts = salesUPeriod / (weeks * totalPositions * ros);
     const total        = Math.max(1, Math.round(nationalOpts));
 
-    const split   = { national: 40, regional: 30, store: 30 };
-    const natOpts = Math.round(total * split.national / 100);
-    const regOpts = Math.round(total * split.regional / 100);
-    const stoOpts = total - natOpts - regOpts;
+    /* Dept-specific split from Planning Rules; falls back to global default */
+    const deptRule = PLANNING_DEPT_SPLITS.find((d) => d.dept === dept) ?? GLOBAL_OPTION_SPLIT;
+    const split    = { national: deptRule.national, regional: deptRule.regional, store: deptRule.store };
+    const natOpts  = Math.round(total * split.national / 100);
+    const regOpts  = Math.round(total * split.regional / 100);
+    const stoOpts  = total - natOpts - regOpts;
 
     /* Per-cluster ROS */
     const clRosData = clusters.map((cl) => {
@@ -185,20 +188,28 @@ export function plrCalcOptionCount(dept, assortPeriodId, clustScenario, clustSce
   const salesUPeriod = Math.round(salesU * (weeks / 26));
   const total        = Math.max(1, Math.round(salesUPeriod / (weeks * positions * ros)));
 
-  const natOpts = Math.round(total * 0.40);
-  const regOpts = Math.round(total * 0.35);
-  const stoOpts = Math.max(0, total - natOpts - regOpts);
+  /* Dept-specific split from Planning Rules; falls back to global default */
+  const deptRule2 = PLANNING_DEPT_SPLITS.find((d) => d.dept === dept) ?? GLOBAL_OPTION_SPLIT;
+  const natOpts   = Math.round(total * deptRule2.national / 100);
+  const regOpts   = Math.round(total * deptRule2.regional / 100);
+  const stoOpts   = Math.max(0, total - natOpts - regOpts);
 
-  const clusterBreakdown = clusters.map((c, i) => ({
-    id: c.id, label: c.label, stores: c.stores.length,
-    opts:     i < stoOpts % clusters.length ? Math.ceil(stoOpts / clusters.length) : Math.floor(stoOpts / clusters.length),
-    national: natOpts,
-    regional: Math.round(regOpts / (clusters.length || 1)),
-    store:    i < stoOpts % clusters.length ? Math.ceil(stoOpts / clusters.length) : Math.floor(stoOpts / clusters.length),
-    ros:      parseFloat(ros.toFixed(2)),
-    salesU:   0,
-    options:  i < stoOpts % clusters.length ? Math.ceil(stoOpts / clusters.length) : Math.floor(stoOpts / clusters.length),
-  }));
+  const clCount = clusters.length || 1;
+  const clusterBreakdown = clusters.map((c, i) => {
+    const clReg   = Math.round(regOpts / clCount);
+    const clSto   = i < stoOpts % clCount ? Math.ceil(stoOpts / clCount) : Math.floor(stoOpts / clCount);
+    const clTotal = natOpts + clReg + clSto;
+    return {
+      id: c.id, label: c.label, stores: c.stores.length,
+      opts:     clTotal,
+      national: natOpts,
+      regional: clReg,
+      store:    clSto,
+      ros:      parseFloat(ros.toFixed(2)),
+      salesU:   0,
+      options:  clTotal,
+    };
+  });
 
   return {
     total, national: natOpts, regional: regOpts, store: stoOpts,

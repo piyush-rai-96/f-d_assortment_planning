@@ -86,7 +86,7 @@
 /* 5-stat summary row inside hero */
 .nat-hero-stats {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, 1fr) 1.4fr;
   border-top: 1px solid rgba(255,255,255,0.1);
   margin-top: var(--sp-2);
 }
@@ -108,6 +108,28 @@
   color: rgba(255,255,255,0.55);
   text-transform: uppercase;
   letter-spacing: 0.07em;
+}
+
+/* ── Option target mini progress bar (in hero) ───────────────────────────── */
+.nat-opt-target { background: rgba(255,255,255,0.04); border-radius: 0; }
+.nat-opt-bar-track {
+  height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.nat-opt-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.nat-opt-bar-pct {
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 3px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 /* ── OTB budget bar ───────────────────────────────────────────────────────── */

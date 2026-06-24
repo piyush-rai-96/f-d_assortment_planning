@@ -42,6 +42,41 @@
   flex-shrink: 0;
 }
 
+/* ── Option target progress bar ─────────────────────────────────────────── */
+.rr-opt-target {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r2);
+  padding: var(--sp-2) var(--sp-3);
+}
+.rr-opt-target-header {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+  flex-wrap: wrap;
+}
+.rr-opt-target-label {
+  font-size: var(--fs-micro);
+  color: var(--color-text-subtle);
+  letter-spacing: 0.02em;
+}
+.rr-opt-target-label strong { color: var(--color-text-strong); font-weight: 700; }
+.rr-opt-target-count {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rr-opt-bar-track {
+  height: 5px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.rr-opt-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
 /* ── OTB slot indicator ──────────────────────────────────────────────────── */
 .rr-otb-slot {
   display: flex; align-items: center; gap: var(--sp-2);

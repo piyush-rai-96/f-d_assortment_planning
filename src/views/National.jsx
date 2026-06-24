@@ -9,8 +9,13 @@ import { FD_SKUS } from "../data/skus.js";
 import { FD_ASSORTMENT } from "../data/assortment.js";
 import { FD_OTB_DEPTS, fmtCurrency } from "../data/otb.js";
 import { getWpMetrics } from "../data/wpMetrics.js";
+import { plrCalcOptionCount, ASSORT_PERIODS } from "../data/plr.js";
+import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
 import { panelSx } from "../styles/panelSx.js";
 import "./National.css";
+
+/* Depts shown in the dept filter that have active SS26 periods */
+const ACTIVE_DEPTS = ["Wood", "Tile", "Laminate & Vinyl"];
 
 const TOTAL_STORES = FD_STORES.length;
 const DEPT_FILTERS = ["All", "Wood", "Tile", "Laminate & Vinyl"];
@@ -168,6 +173,19 @@ export default function National({ onNavigate }) {
     [deptFilter]
   );
 
+  /* Option count target (national) — computed from Planning Rules splits */
+  const optionTarget = useMemo(() => {
+    const depts = deptFilter === "All" ? ACTIVE_DEPTS : [deptFilter];
+    let totalNat = 0;
+    depts.forEach((dept) => {
+      const period = ASSORT_PERIODS.find((p) => p.dept === dept && p.status === "active");
+      if (!period) return;
+      const result = plrCalcOptionCount(dept, period.id, "B", FD_CLUST_SCENARIOS, FD_SKUS, FD_ASSORTMENT);
+      if (result) totalNat += result.national;
+    });
+    return totalNat;
+  }, [deptFilter]);
+
   /* 5 hero stats */
   const heroStats = useMemo(() => {
     const hardLocked = filteredSkus.filter((s) => agentRecMap[s.sku]?.locked).length;
@@ -283,7 +301,7 @@ export default function National({ onNavigate }) {
             ))}
           </div>
         </div>
-        {/* 5-stat summary row */}
+        {/* 5-stat summary row + option target */}
         <div className="nat-hero-stats">
           {heroStats.map((stat) => (
             <div key={stat.label} className="nat-hero-stat">
@@ -293,6 +311,25 @@ export default function National({ onNavigate }) {
               <div className="nat-hero-stat-lbl">{stat.label}</div>
             </div>
           ))}
+          {optionTarget > 0 && (() => {
+            const keepCount  = filteredSkus.filter((s) => effDec(s.sku) === "keep").length;
+            const addCount   = filteredSkus.filter((s) => effDec(s.sku) === "add").length;
+            const curated    = keepCount + addCount;
+            const pct        = Math.min(100, Math.round((curated / optionTarget) * 100));
+            const barColor   = pct >= 100 ? "#6EEDB8" : pct >= 70 ? "#93C5FD" : "#FCD34D";
+            return (
+              <div key="opt-target" className="nat-hero-stat nat-opt-target">
+                <div className="nat-hero-stat-val" style={{ color: barColor }}>
+                  {curated} / {optionTarget}
+                </div>
+                <div className="nat-hero-stat-lbl">Option Target</div>
+                <div className="nat-opt-bar-track">
+                  <div className="nat-opt-bar-fill" style={{ width: `${pct}%`, background: barColor }} />
+                </div>
+                <div className="nat-opt-bar-pct">{pct}%</div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

@@ -1080,10 +1080,11 @@
 
 /* Per-cluster breakdown table */
 .plr-clust-breakdown {
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.08);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
+  margin-top: 12px;
 }
 
 .plr-clust-bk-title {
@@ -1091,9 +1092,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .07em;
-  color: rgba(255,255,255,.4);
+  color: var(--color-text-subtle);
   padding: 8px 14px 6px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .plr-clust-bk-head {
@@ -1101,10 +1102,10 @@
   grid-template-columns: 1fr 60px 80px 80px 80px 60px;
   gap: 4px;
   padding: 6px 14px;
-  background: rgba(255,255,255,.04);
+  background: var(--color-surface-sunken);
   font-size: 10px;
   font-weight: 700;
-  color: rgba(255,255,255,.35);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: .05em;
 }
@@ -1114,20 +1115,20 @@
   grid-template-columns: 1fr 60px 80px 80px 80px 60px;
   gap: 4px;
   padding: 7px 14px;
-  border-top: 1px solid rgba(255,255,255,.05);
+  border-top: 1px solid var(--color-border);
   font-size: 12px;
   align-items: center;
   transition: background .1s;
 }
 
-.plr-clust-bk-row:hover { background: rgba(255,255,255,.04); }
+.plr-clust-bk-row:hover { background: var(--color-surface-alt); }
 
 .plr-clust-bk-label {
   display: flex;
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: rgba(255,255,255,.8);
+  color: var(--color-text-strong);
 }
 
 .plr-clust-bk-r {
@@ -1135,7 +1136,7 @@
 }
 
 .plr-clust-bk-muted {
-  color: rgba(255,255,255,.35);
+  color: var(--color-text-muted);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */

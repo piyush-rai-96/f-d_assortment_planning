@@ -9,11 +9,17 @@ import SkuSwatch from "../components/SkuSwatch.jsx";
 import { color } from "../styles/tokens.js";
 import { FD_STORES } from "../data/stores.js";
 import { FD_SKUS } from "../data/skus.js";
+import { FD_ASSORTMENT } from "../data/assortment.js";
+import { FD_CLUST_SCENARIOS } from "../data/clusters.js";
+import { plrCalcOptionCount, ASSORT_PERIODS } from "../data/plr.js";
 import { isMandatory, clusterLockedIds, newPlrSkus, storeUniqueRows } from "../data/curation.js";
 import { storeLocationBudget, otbStoreConsumed, fmtCurrency } from "../data/otb.js";
 import { WpMetricsPanel } from "./National.jsx";
 import "./StoreCuration.css";
 import { panelSx, softSx } from "../styles/panelSx.js";
+
+const SC_B = FD_CLUST_SCENARIOS.B;
+const ACTIVE_DEPTS_SC = ["Wood", "Tile", "Laminate & Vinyl"];
 
 const paneSx = { ...panelSx, padding: 0, overflow: "hidden" };
 
@@ -249,6 +255,24 @@ export default function StoreCuration({ onNavigate, user }) {
 
   const store = FD_STORES.find((s) => s.id === storeId) || FD_STORES[0];
 
+  /* ── Store option target computed from Planning Rules splits ────────────── */
+  const storeTarget = useMemo(() => {
+    const cluster = SC_B.clusters.find((cl) => cl.stores.includes(storeId));
+    if (!cluster) return null;
+    const depts = deptFilter === "All" ? ACTIVE_DEPTS_SC : [deptFilter];
+    let total = 0;
+    depts.forEach((dept) => {
+      const period = ASSORT_PERIODS.find((p) => p.dept === dept && p.status === "active");
+      if (!period) return;
+      const result = plrCalcOptionCount(dept, period.id, "B", FD_CLUST_SCENARIOS, FD_SKUS, FD_ASSORTMENT);
+      if (!result) return;
+      const cb = result.clusterBreakdown.find((c) => c.id === cluster.id);
+      if (!cb) return;
+      total += Math.round(cb.store / Math.max(1, cluster.stores.length));
+    });
+    return total > 0 ? { target: total, clusterLabel: cluster.label } : null;
+  }, [storeId, deptFilter]);
+
   const lists = useMemo(() => {
     const existing  = storeUniqueRows(storeId);
     const existIds  = new Set(existing.map((r) => r.sku));
@@ -387,6 +411,29 @@ export default function StoreCuration({ onNavigate, user }) {
             </div>
           </div>
         </div>
+
+        {/* Store option target progress */}
+        {storeTarget && (() => {
+          const curated  = totalKeeps + totalAdds;
+          const tgt      = storeTarget.target;
+          const pct      = Math.min(100, Math.round((curated / tgt) * 100));
+          const barColor = pct >= 100 ? "var(--color-success)" : pct >= 70 ? "var(--color-info)" : "var(--color-warning)";
+          return (
+            <div className="sc-opt-target">
+              <div className="sc-opt-target-header">
+                <span className="sc-opt-target-label">
+                  Store Option Target · <strong>{storeTarget.clusterLabel}</strong> cluster
+                </span>
+                <span className="sc-opt-target-count" style={{ color: barColor }}>
+                  {curated} / {tgt} curated ({pct}%)
+                </span>
+              </div>
+              <div className="sc-opt-bar-track">
+                <div className="sc-opt-bar-fill" style={{ width: `${pct}%`, background: barColor }} />
+              </div>
+            </div>
+          );
+        })()}
       </Card>
 
       {/* ── Filters strip ──────────────────────────────────────────────────── */}
